@@ -1,11 +1,11 @@
-# Use a lightweight OpenJDK image
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:21-jdk AS build
 
-# Create a directory for the app
 WORKDIR /app
 
-# Copy the jar file
-COPY target/*.jar app.jar
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x ./mvnw && ./mvnw dependency:go-offline
 
-# Run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY src ./src
+
+CMD ["./mvnw", "spring-boot:run"]
