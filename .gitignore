@@ -40,4 +40,8 @@ Thumbs.db
 # === Devcontainers (optional) ===
 .devcontainer/.env
 .devcontainer/
+docker-compose.override.yml
+
+# === Spring Boot Security .env ===
+.env
 
