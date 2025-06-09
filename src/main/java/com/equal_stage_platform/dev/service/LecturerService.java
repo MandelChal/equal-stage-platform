@@ -1,0 +1,143 @@
+package com.equal_stage_platform.dev.service;
+
+// ---- necessary packages ----
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+// ---- class imports ----
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
+import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.repository.LecturerRepository;
+import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.LecturerStatus;
+
+@Service
+public class LecturerService {
+    private final LecturerRepository lecturerRepository;
+    public LecturerService(LecturerRepository lecturerRepository) {
+        this.lecturerRepository = lecturerRepository;
+    }
+
+    // ---------------------- create / update / retrieve methods ----------------------
+    /**
+     * Creates a new lecturer in the system.
+     *
+     * @param lecturerData The data for the new lecturer.
+     * @return A ResponseLecturerDTO containing the created lecturer's details.
+     */
+    public ResponseLecturerDTO createLecturer(CreateLecturerDTO lecturerData){   
+        // save the lecturer to the database
+        Lecturer lecturer = lecturerRepository.save(new Lecturer(lecturerData));
+        // return the saved lecturer as a ResponseLecturerDTO
+        return new ResponseLecturerDTO(lecturer);
+    }
+
+    /**
+     * Retrieves all lecturers from the system.
+     *
+     * @return A list of ResponseLecturerDTO containing details of all lecturers.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> getAllLecturers() {
+        List<Lecturer> lecturers = lecturerRepository.findAll();
+        return lecturers.stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .toList();
+    }
+
+    /**
+     * Retrieves a lecturer by their user ID.
+     *
+     * @param userId The ID of the lecturer to retrieve.
+     * @return A ResponseLecturerDTO containing the lecturer's details.
+     */
+    @Transactional(readOnly = true)
+    public ResponseLecturerDTO getLecturerById(Long userId) {
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+        
+        return new ResponseLecturerDTO(lecturer);
+    }
+
+    /**
+     * Retrieves a lecturer by their user ID.
+     *
+     * @param userId The ID of the lecturer to retrieve.
+     * @return A ResponseLecturerDTO containing the lecturer's details.
+     */
+    @Transactional(readOnly = true)
+    public Lecturer getLecturerEntityById(Long userId) {
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+        
+        return lecturer;
+    }
+    
+    /**
+     * Retrieves all lecturers with a specific status.
+     *
+     * @param status The status of the lecturers to retrieve.
+     * @return A list of ResponseLecturerDTO containing details of lecturers with the specified status.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> getLecturersByStatus(LecturerStatus status) {
+        List<Lecturer> lecturers = lecturerRepository.findByStatus(status);
+        return lecturers.stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .toList();
+    }
+    
+    /**
+     * Retrieves all lectures associated with a specific lecturer by their user ID.
+     *
+     * @param userId The ID of the lecturer whose lectures are to be retrieved.
+     * @return A list of Lecture objects associated with the specified lecturer.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getLecturesByLecturerId(Long userId) {
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+        return lecturer.getLectures()
+                .stream()
+                .map(lecture -> new ResponseLectureDTO(userId, lecture))
+                .toList();
+    }
+    
+    // ---------------------- lecturer status update methods ----------------------
+    /**
+     * Updates the status of a lecturer by an admin.
+     *
+     * @param approvingUserId The ID of the admin approving the status change.
+     * @param userId The ID of the lecturer whose status is to be updated.
+     * @param status The new status for the lecturer.
+     * @return A boolean indicating whether the update was successful.
+     */
+    @Transactional
+    public boolean updateLecturerStatusByAdmin(Long approvingUserId, Long userId, LecturerStatus status) {
+        //TODO - check if the approving user is an admin
+        //TODO - check if the userId exists in the database
+        //TODO - update user status
+        return true;
+    }
+
+    /**
+     * Updates the status of a lecturer.
+     *
+     * @param userId The ID of the lecturer whose status is to be updated.
+     * @param status The new status for the lecturer.
+     * @return A boolean indicating whether the update was successful.
+     */
+    @Transactional
+    public boolean updateLecturerStatus(Long userId, LecturerStatus status) {
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+        lecturer.setStatus(status);
+        lecturerRepository.save(lecturer);
+        return true;
+    }
+
+
+}

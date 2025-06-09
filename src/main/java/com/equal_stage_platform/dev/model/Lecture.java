@@ -1,41 +1,57 @@
-// package com.equal_stage_platform.dev.model;
+package com.equal_stage_platform.dev.model;
 
 
-// import java.time.LocalDateTime;
+import java.time.LocalDateTime;
+import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import jakarta.persistence.*;
+import lombok.Data;
+import java.util.HashSet;
+import java.util.Set;
+@Data
+@Entity
+@Table(name = "0!58$_lectures")
+public class Lecture {
 
-// import jakarta.persistence.*;
-// import lombok.Data;
-// @Data
-// @Entity
-// @Table(name = "0!58$_lectures")
-// public class Lecture {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "lecture_id", nullable = false, unique = true)
+    private Long lectureId;
 
-//     @Id
-//     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//     @Column(name = "lecture_id", nullable = false, unique = true)
-//     private Long lectureId;
+    @Column(name = "title", nullable = false)
+    private String title;
 
-//     @Column(name = "title", nullable = false)
-//     private String title;
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    private String description;
 
-//     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
-//     private String description;
+    @Column(name = "duration", nullable = false)
+    private Integer duration; // Duration in minutes
 
-//     @Column(name = "duration", nullable = false)
-//     private Integer duration; // Duration in minutes
+    @Column(name = "price", nullable = false)
+    private Integer price;
 
-//     @Column(name = "price", nullable = false)
-//     private Integer price;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-//     @Column(name = "created_at", nullable = false, updatable = false)
-//     private LocalDateTime createdAt;
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
-//     @Column(name = "updated_at", nullable = false)
-//     private LocalDateTime updatedAt;
+    @ManyToMany(mappedBy = "lectures")
+    private Set<Lecturer> lecturers = new HashSet<>();
 
-    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private LectureStatus status;
 
-
-    
-    
-// }
+    public Lecture(CreateLectureDTO lectureData, Lecturer lecturer) {
+        this.title = lectureData.getTitle();
+        this.description = lectureData.getDescription();
+        this.duration = lectureData.getDuration();
+        this.price = lectureData.getPrice();
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+        this.status = lectureData.getLectureStatus();
+        this.lecturers = new HashSet<>();
+        this.lecturers.add(lecturer);
+    }
+}
