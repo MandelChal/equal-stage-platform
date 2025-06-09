@@ -13,7 +13,6 @@ import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.LectureStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
-import com.equal_stage_platform.dev.service.LecturerService;
 
 @Service
 public class LectureService {
@@ -28,8 +27,7 @@ public class LectureService {
      * @param lectureData The data for the new lecture.
      * @return A LectureDTO containing the created lecture's details.
      */
-    public ResponseLectureDTO createLecture(CreateLectureDTO lectureData) {
-        Lecturer lecturer = getLecturerEntityById(lectureData.getUserId());
+    public ResponseLectureDTO createLecture(CreateLectureDTO lectureData, Lecturer lecturer) {
         Lecture lecture = lectureRepository.save(new Lecture(lectureData, lecturer));
         // link the lecture to the lecturer
         return new ResponseLectureDTO(lectureData.getUserId(), lecture);
