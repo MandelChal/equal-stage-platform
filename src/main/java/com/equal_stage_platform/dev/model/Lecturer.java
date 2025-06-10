@@ -6,7 +6,9 @@ import java.util.HashSet;
 import java.util.Set;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 @Data
 @Entity
 @Table(name = "0!58$_lecturers")
@@ -46,7 +48,7 @@ public class Lecturer {
     @Column(name = "status", nullable = false)
     private LecturerStatus status;
 
-    @ManyToMany(mappedBy = "0!58$_lectures")
+    @ManyToMany
     @JoinTable(
         name = "0!58$_lectures_lecturers",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -63,10 +65,14 @@ public class Lecturer {
         this.email = lecturerData.getEmail();
         this.phone = lecturerData.getPhone();
         this.imageUrl = lecturerData.getImageUrl();
-        
+        this.status = LecturerStatus.PENDING; // Default status when created
+        this.lectures = new HashSet<>(); // Initialize the set of lectures
         // Set created and updated timestamps
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.lastUpdatedAt = now;
+    }
+    public void enrollLecture(Lecture lecture) {
+        this.lectures.add(lecture);
     }
 }

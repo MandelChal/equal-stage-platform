@@ -105,6 +105,26 @@ public class LecturerService {
                 .map(lecture -> new ResponseLectureDTO(userId, lecture))
                 .toList();
     }
+
+    /**
+     * Retrieves a specific lecture by its ID and the lecturer's user ID.
+     * 
+     * @param lecturerId The ID of the lecturer.
+     * @param lectureId The ID of the lecture to retrieve.
+     * @return A ResponseLectureDTO containing the details of the specified lecture.
+     */
+    @Transactional(readOnly = true)
+    public ResponseLectureDTO getLectureById(Long lecturerId, Long lectureId) {
+        Lecturer lecturer = lecturerRepository.findById(lecturerId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + lecturerId));
+        
+        return lecturer.getLectures()
+                .stream()
+                .filter(lecture -> lecture.getLectureId().equals(lectureId))
+                .findFirst()
+                .map(lecture -> new ResponseLectureDTO(lecturerId, lecture))
+                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
+    }
     
     // ---------------------- lecturer status update methods ----------------------
     /**
@@ -116,11 +136,11 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public boolean updateLecturerStatusByAdmin(Long approvingUserId, Long userId, LecturerStatus status) {
+    public ResponseLecturerDTO updateLecturerStatusByAdmin(Long approvingUserId, Long userId, LecturerStatus status) {
         //TODO - check if the approving user is an admin
         //TODO - check if the userId exists in the database
         //TODO - update user status
-        return true;
+        return updateLecturerStatus(userId, status);
     }
 
     /**
@@ -131,12 +151,12 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public boolean updateLecturerStatus(Long userId, LecturerStatus status) {
+    public ResponseLecturerDTO updateLecturerStatus(Long userId, LecturerStatus status) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
         lecturer.setStatus(status);
         lecturerRepository.save(lecturer);
-        return true;
+        return new ResponseLecturerDTO(lecturer);
     }
 
 

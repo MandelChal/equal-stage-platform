@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 @Data
 @Entity
 @Table(name = "0!58$_lectures")
@@ -42,7 +45,7 @@ public class Lecture {
     @Column(name = "status", nullable = false)
     private LectureStatus status;
 
-    public Lecture(CreateLectureDTO lectureData, Lecturer lecturer) {
+    public Lecture(CreateLectureDTO lectureData) {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
@@ -52,6 +55,5 @@ public class Lecture {
         this.updatedAt = now;
         this.status = lectureData.getLectureStatus();
         this.lecturers = new HashSet<>();
-        this.lecturers.add(lecturer);
     }
 }

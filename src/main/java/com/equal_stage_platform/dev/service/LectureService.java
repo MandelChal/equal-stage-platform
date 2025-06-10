@@ -10,6 +10,7 @@ import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
+import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.LectureStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
@@ -17,7 +18,9 @@ import com.equal_stage_platform.dev.model.Lecturer;
 @Service
 public class LectureService {
     private final LectureRepository lectureRepository;
-    public LectureService(LectureRepository lectureRepository) {
+    private final LecturerRepository lecturerRepository;
+    public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository) {
+        this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
     }
     // ---------------------- create / update / retrieve methods ----------------------
@@ -27,10 +30,15 @@ public class LectureService {
      * @param lectureData The data for the new lecture.
      * @return A LectureDTO containing the created lecture's details.
      */
-    public ResponseLectureDTO createLecture(CreateLectureDTO lectureData, Lecturer lecturer) {
-        Lecture lecture = lectureRepository.save(new Lecture(lectureData, lecturer));
-        // link the lecture to the lecturer
-        return new ResponseLectureDTO(lectureData.getUserId(), lecture);
+    @Transactional
+    public ResponseLectureDTO createLecture(CreateLectureDTO lectureData) {
+        // search for the lecturer by userId
+        Long lecturerId = lectureData.getUserId();
+        Lecturer lecturer = lecturerRepository.findById(lecturerId)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with ID: " + lecturerId));
+        Lecture lecture = lectureRepository.save(new Lecture(lectureData));
+        lecturer.enrollLecture(lecture);
+        return new ResponseLectureDTO(lecturerId, lecture);
     }
 
     /**
@@ -58,15 +66,15 @@ public class LectureService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public boolean updateLectureStatus(Long lectureId, Long lecturerId, LectureStatus status) {
+    public ResponseLectureDTO updateLectureStatus(Long lectureId, LectureStatus status) {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
-        if (lecture.getLecturers().stream().noneMatch(lecturer -> lecturer.getUserId().equals(lecturerId))) {
-            throw new RuntimeException("Lecturer with ID " + lecturerId + " is not associated with this lecture.");
-        }
         lecture.setStatus(status);
         lectureRepository.save(lecture);
-        return true;
+        return new ResponseLectureDTO(lecture.getLecturers().stream()
+                .findFirst()
+                .map(lecturer -> lecturer.getUserId())
+                .orElse(null), lecture);
     }
 
     /**
@@ -83,6 +91,18 @@ public class LectureService {
                 .map(lecturer -> new ResponseLecturerDTO(lecturer))
                 .toList();
     }
-
-
+    /**
+     * Retrieves all lectures in the system.
+     *
+     * @return A list of ResponseLectureDTO containing details of all lectures.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getAllLectures() {
+        return lectureRepository.findAll().stream()
+                .map(lecture -> new ResponseLectureDTO(lecture.getLecturers().stream()
+                        .findFirst()
+                        .map(lecturer -> lecturer.getUserId())
+                        .orElse(null), lecture))
+                .toList();
+    }
 }
