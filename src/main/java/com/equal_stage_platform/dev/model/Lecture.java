@@ -1,8 +1,9 @@
 package com.equal_stage_platform.dev.model;
 
-
 import java.time.LocalDateTime;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.HashSet;

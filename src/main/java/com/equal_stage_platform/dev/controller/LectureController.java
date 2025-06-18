@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.equal_stage_platform.dev.model.LectureStatus;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
 @RestController
 @RequestMapping("/lectures")

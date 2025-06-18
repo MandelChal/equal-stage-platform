@@ -1,0 +1,19 @@
+package com.equal_stage_platform.dev.model.enums;
+
+public enum SecurityEventType {
+    LOGIN_SUCCESS,
+    LOGIN_FAILED,
+    LOGOUT,
+    USER_CREATED,
+    USER_UPDATED,
+    USER_DELETED,
+    USER_BLOCKED,
+    USER_UNBLOCKED,
+    USER_PASSWORD_CHANGED,
+    USER_PASSWORD_RESET,
+    FIRST_ADMIN_CREATED,
+    ADMIN_CREATED,
+    ADMIN_DELETED,
+    ADMIN_PASSWORD_CHANGED,
+    UNAUTHORIZED_ACCESS_ATTEMPT
+}

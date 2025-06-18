@@ -1,4 +1,4 @@
-package com.equal_stage_platform.dev.model;
+package com.equal_stage_platform.dev.model.enums;
 
 public enum LectureStatus {
     ON_AIR,

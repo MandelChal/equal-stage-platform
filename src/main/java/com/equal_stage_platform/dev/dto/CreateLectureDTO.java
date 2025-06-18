@@ -1,6 +1,7 @@
 package com.equal_stage_platform.dev.dto;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
+
 import lombok.Data;
-import com.equal_stage_platform.dev.model.LectureStatus;
 @Data
 public class CreateLectureDTO {
     private Long userId;

@@ -12,7 +12,7 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecturer;
-import com.equal_stage_platform.dev.model.LecturerStatus;
+import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 @Service
 public class LecturerService {

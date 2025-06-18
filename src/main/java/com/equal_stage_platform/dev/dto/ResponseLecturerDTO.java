@@ -1,7 +1,7 @@
 package com.equal_stage_platform.dev.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import com.equal_stage_platform.dev.model.LecturerStatus;
+import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import java.util.Set;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;

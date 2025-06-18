@@ -1,5 +1,6 @@
 package com.equal_stage_platform.dev.model;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
