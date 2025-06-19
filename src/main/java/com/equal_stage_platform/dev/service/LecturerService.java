@@ -13,6 +13,7 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 @Service
@@ -87,7 +88,7 @@ public class LecturerService {
     public List<ResponseLecturerDTO> getLecturersByStatus(LecturerStatus status) {
         List<Lecturer> lecturers = lecturerRepository.findByStatus(status);
         return lecturers.stream()
-                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
                 .toList();
     }
     
@@ -125,23 +126,6 @@ public class LecturerService {
                 .findFirst()
                 .map(lecture -> new ResponseLectureDTO(lecturerId, lecture))
                 .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
-    }
-    
-    // ---------------------- lecturer status update methods ----------------------
-    /**
-     * Updates the status of a lecturer by an admin.
-     *
-     * @param approvingUserId The ID of the admin approving the status change.
-     * @param userId The ID of the lecturer whose status is to be updated.
-     * @param status The new status for the lecturer.
-     * @return A boolean indicating whether the update was successful.
-     */
-    @Transactional
-    public ResponseLecturerDTO updateLecturerStatusByAdmin(UUID approvingUserId, UUID userId, LecturerStatus status) {
-        //TODO - check if the approving user is an admin
-        //TODO - check if the userId exists in the database
-        //TODO - update user status
-        return updateLecturerStatus(userId, status);
     }
 
     /**

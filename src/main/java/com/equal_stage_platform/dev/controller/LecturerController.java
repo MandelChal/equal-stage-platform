@@ -33,19 +33,17 @@ public class LecturerController {
 
     @PatchMapping("/update/{lecturerId}/status/{status}")
     public ResponseEntity<ResponseLecturerDTO> updateLecturerStatus(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
-        //TODO - how to verify that the user asking for the update is not another user?
         return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status));
-    }
-
-    @PatchMapping("/adminUpdate/{lecturerId}/status")
-    public ResponseEntity<ResponseLecturerDTO> adminUpdateLecturerStatus(@PathVariable UUID adminId, @PathVariable UUID userId, @PathVariable LecturerStatus status) {
-        //TODO - how to verify that the user asking for the update is an admin?
-        return ResponseEntity.ok(lecturerService.updateLecturerStatusByAdmin(adminId, userId, status));
     }
 
     @GetMapping("/all")
     public ResponseEntity<List<ResponseLecturerDTO>> getAllLecturers() {
         return ResponseEntity.ok(lecturerService.getAllLecturers());
+    }
+
+    @GetMapping("/all/approved")
+    public ResponseEntity<List<ResponseLecturerDTO>> getAllApprovedLecturers() {
+        return ResponseEntity.ok(lecturerService.getLecturersByStatus(LecturerStatus.APPROVED));
     }
 
     @GetMapping("/{userId}")
@@ -61,5 +59,20 @@ public class LecturerController {
     @GetMapping("/lectures/{lecturerId}/{lectureId}")
     public ResponseEntity<ResponseLectureDTO> getLectureById(@PathVariable UUID lecturerId, @PathVariable Long lectureId) {
         return ResponseEntity.ok(lecturerService.getLectureById(lecturerId, lectureId));
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<ResponseLecturerDTO>> getPendingLecturers() {
+        return ResponseEntity.ok(lecturerService.getLecturersByStatus(LecturerStatus.PENDING));
+    }
+
+    @PostMapping("/approve/{lecturerId}")
+    public ResponseEntity<ResponseLecturerDTO> approveLecturer(@PathVariable UUID lecturerId) {
+        return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED));
+    }
+
+    @PostMapping("/reject/{lecturerId}")
+    public ResponseEntity<ResponseLecturerDTO> rejectLecturer(@PathVariable UUID lecturerId) {
+        return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.REJECTED));
     }
 }

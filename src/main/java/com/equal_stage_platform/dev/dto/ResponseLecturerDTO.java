@@ -37,4 +37,20 @@ public class ResponseLecturerDTO {
         this.status = lecturer.getStatus();
         this.lectures = lecturer.getLectures();
     }
+    
+    public ResponseLecturerDTO(Lecturer lecturer, Set<Lecture> lectures) {
+        this.userId = lecturer.getUserId();
+        this.firstName = lecturer.getFirstName();
+        this.lastName = lecturer.getLastName();
+        this.bio = lecturer.getBio();
+        this.city = lecturer.getCity();
+        this.email = lecturer.getEmail();
+        this.phone = lecturer.getPhone();
+        this.imageUrl = lecturer.getImageUrl();
+        this.createdAt = lecturer.getCreatedAt().toString();
+        this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
+        this.status = lecturer.getStatus();
+        this.lectures = lectures;
+    }
+
 }

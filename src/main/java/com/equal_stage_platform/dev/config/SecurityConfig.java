@@ -33,10 +33,12 @@ public class SecurityConfig {
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/lecturers/update/**").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lecturers/adminUpdate/**").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/all").permitAll()
+                .requestMatchers("/lecturers/all").hasRole("ADMIN")
+                .requestMatchers("/lecturers/all/approved").permitAll()
                 .requestMatchers("/lecturers/{userId}").permitAll()
                 .requestMatchers("/lecturers/lectures/{lecturerId}/all").permitAll()
                 .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}").permitAll()
+                .requestMatchers("/lecturers/pending").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/create").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lectures/update/**").hasAnyRole("LECTURER", "ADMIN")

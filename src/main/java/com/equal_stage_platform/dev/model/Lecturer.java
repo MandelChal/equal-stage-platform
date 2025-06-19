@@ -1,11 +1,13 @@
 package com.equal_stage_platform.dev.model;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -77,5 +79,10 @@ public class Lecturer {
     }
     public void enrollLecture(Lecture lecture) {
         this.lectures.add(lecture);
+    }
+    public Set<Lecture> getLecturesByStatus(LectureStatus status) {
+        return this.lectures.stream()
+            .filter(lecture -> lecture.getStatus() == status)
+            .collect(Collectors.toSet());
     }
 }
