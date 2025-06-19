@@ -1,102 +1,124 @@
 package com.equal_stage_platform.dev.model;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * מייצג ישות הרצאה במסד הנתונים.
- * ממופה לטבלה 'lectures'.
- */
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @Entity
 @Table(name = "lectures")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"lectures"})
 public class Lecture {
 
-    /**
-     * מזהה ייחודי של ההרצאה.
-     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "lecture_id")
+     @Column(name = "lecture_id", nullable = false, unique = true)
     private Integer lectureId;
 
-    /**
-     * מזהה המרצה שמעביר את ההרצאה (foreign key ל-lecturers).
-     */
-    @ManyToOne
-    @JoinColumn(name = "lecturer_id", nullable = false)
-    private Lecturer lecturer;
+    // @ManyToOne
+    // @JoinColumn(name = "lecturer_id", nullable = false)
+    // private Lecturer lecturer;
 
-    /**
-     * כותרת ההרצאה.
-     */
     @Column(name = "title", nullable = false)
     private String title;
 
-    /**
-     * תיאור ההרצאה.
-     */
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    /**
-     * מיקום ההרצאה (פיזי או בזום).
-     */
     @Column(name = "location")
     private String location;
 
-    /**
-     * תאריך ושעת התחלה של ההרצאה.
-     */
+    @Column(name = "is_available", nullable = true)
+    private Boolean isAvailable;
+
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 
-    /**
-     * תאריך ושעת סיום של ההרצאה.
-     */
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
 
-    /**
-     * תמונה או פוסטר של ההרצאה (אם יש).
-     */
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
-    /**
-     * האם ההרצאה מתקיימת באופן מקוון.
-     */
     @Column(name = "is_online")
     private Boolean isOnline;
 
-    /**
-     * תאריך יצירה של ההרצאה (לשימוש פנימי).
-     */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * קשר Many-to-Many עם תגיות הרצאה דרך טבלת חיבור בשם tags_lecture.
-     */
-    @ManyToMany
-    @JoinTable(name = "tags_lecture", joinColumns = @JoinColumn(name = "lecture_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
-    private List<Tag> tags = new ArrayList<>();
+    @Column(name = "price", nullable = false)
+    private Integer price;
 
-    /**
-     * פעולה שמתבצעת אוטומטית לפני יצירת ישות חדשה:
-     * קובעת את createdAt לזמן נוכחי אם לא הוגדר.
-     */
+
+    @ManyToMany(mappedBy = "lectures", fetch = FetchType.LAZY)
+    @JsonIgnore      
+    private Set<Lecturer> lecturers = new HashSet<>();
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        if (isAvailable == null) {
+            isAvailable = true;
+        }
+        if (isOnline == null) {
+            isOnline = false;
+        }
     }
-}
+
+    public void addLecturer(Lecturer lecturer) {
+        if (lecturer != null) {
+            this.lecturers.add(lecturer);
+            // lecturer.getLectures().add(this);
+        }
+    }
+    
+    public void removeLecturer(Lecturer lecturer) {
+        if (lecturer != null) {
+            this.lecturers.remove(lecturer);
+            // lecturer.getLectures().remove(this);
+        }
+    }
+    
+    public void removeAllLecturers() {
+        Set<Lecturer> lecturersCopy = new HashSet<>(this.lecturers);
+        
+        for (Lecturer lecturer : lecturersCopy) {
+            this.removeLecturer(lecturer);
+        }
+    }
+    
+    public void setLecturers(Set<Lecturer> newLecturers) {
+        this.removeAllLecturers();
+        
+        if (newLecturers != null) {
+            for (Lecturer lecturer : newLecturers) {
+                this.addLecturer(lecturer);
+            }
+        }
+    }
+
+   }
