@@ -1,4 +1,6 @@
 package com.equal_stage_platform.dev.dto;
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
@@ -9,7 +11,7 @@ import com.equal_stage_platform.dev.model.Lecturer;
 @Data
 @AllArgsConstructor
 public class ResponseLecturerDTO {
-    private Long userId;
+    private UUID userId;
     private String firstName;
     private String lastName;
     private String bio;

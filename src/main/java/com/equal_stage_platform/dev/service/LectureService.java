@@ -4,6 +4,7 @@ package com.equal_stage_platform.dev.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.UUID;
 
 // ---- class imports ----
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
@@ -33,12 +34,12 @@ public class LectureService {
     @Transactional
     public ResponseLectureDTO createLecture(CreateLectureDTO lectureData) {
         // search for the lecturer by userId
-        Long lecturerId = lectureData.getUserId();
-        Lecturer lecturer = lecturerRepository.findById(lecturerId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with ID: " + lecturerId));
+        UUID userID = lectureData.getUserId();
+        Lecturer lecturer = lecturerRepository.findById(userID)
+                .orElseThrow(() -> new RuntimeException("Lecturer not found with ID: " + userID));
         Lecture lecture = lectureRepository.save(new Lecture(lectureData));
         lecturer.enrollLecture(lecture);
-        return new ResponseLectureDTO(lecturerId, lecture);
+        return new ResponseLectureDTO(userID, lecture);
     }
 
     /**

@@ -5,6 +5,8 @@ import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,8 +17,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "0!58$_lecturers")
 public class Lecturer {
     @Id
-    @Column(name = "user_id", nullable = false, unique = true)
-    private Long userId;
+    @Column(name = "user_id", nullable = false, unique = true,columnDefinition = "UUID")
+    private UUID userId;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;

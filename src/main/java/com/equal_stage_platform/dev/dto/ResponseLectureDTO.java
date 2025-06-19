@@ -1,10 +1,12 @@
 package com.equal_stage_platform.dev.dto;
+import java.util.UUID;
+
 import lombok.Data;
 import com.equal_stage_platform.dev.model.Lecture;
 
 @Data
 public class ResponseLectureDTO {
-    private long userId;
+    private UUID userId;
     private Long lectureId;
     private String title;
     private String description;
@@ -16,7 +18,7 @@ public class ResponseLectureDTO {
     public ResponseLectureDTO() {
         // Default constructor
     }
-    public ResponseLectureDTO(Long userId, Lecture lecture) {
+    public ResponseLectureDTO(UUID userId, Lecture lecture) {
         this.userId = userId;
         this.lectureId = lecture.getLectureId();
         this.title = lecture.getTitle();

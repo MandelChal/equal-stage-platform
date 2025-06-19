@@ -26,11 +26,22 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                //----Auth endpoints----
                 .requestMatchers("/api/auth/registerAdmin").permitAll()  // Allow initial admin setup
                 .requestMatchers("/api/auth/create-admin").hasRole("ADMIN")  // Only admins can create new admins
-                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/me/**").permitAll()
+                //----Lecturer endpoints----
+                .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/lecturers/update/**").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lecturers/adminUpdate/**").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lecturers/all").permitAll()
+                .requestMatchers("/lecturers/{userId}").permitAll()
+                .requestMatchers("/lecturers/lectures/{lecturerId}/all").permitAll()
+                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}").permitAll()
+                //----Lecture endpoints----
+                .requestMatchers("/lectures/create").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lectures/update/**").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lectures/all").permitAll()
+                .requestMatchers("/lectures/{lectureId}").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

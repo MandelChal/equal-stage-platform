@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 // ---- class imports ----
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
@@ -55,7 +56,7 @@ public class LecturerService {
      * @return A ResponseLecturerDTO containing the lecturer's details.
      */
     @Transactional(readOnly = true)
-    public ResponseLecturerDTO getLecturerById(Long userId) {
+    public ResponseLecturerDTO getLecturerById(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
         
@@ -69,7 +70,7 @@ public class LecturerService {
      * @return A ResponseLecturerDTO containing the lecturer's details.
      */
     @Transactional(readOnly = true)
-    public Lecturer getLecturerEntityById(Long userId) {
+    public Lecturer getLecturerEntityById(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
         
@@ -97,7 +98,7 @@ public class LecturerService {
      * @return A list of Lecture objects associated with the specified lecturer.
      */
     @Transactional(readOnly = true)
-    public List<ResponseLectureDTO> getLecturesByLecturerId(Long userId) {
+    public List<ResponseLectureDTO> getLecturesByLecturerId(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
         return lecturer.getLectures()
@@ -114,7 +115,7 @@ public class LecturerService {
      * @return A ResponseLectureDTO containing the details of the specified lecture.
      */
     @Transactional(readOnly = true)
-    public ResponseLectureDTO getLectureById(Long lecturerId, Long lectureId) {
+    public ResponseLectureDTO getLectureById(UUID lecturerId, Long lectureId) {
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + lecturerId));
         
@@ -136,7 +137,7 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public ResponseLecturerDTO updateLecturerStatusByAdmin(Long approvingUserId, Long userId, LecturerStatus status) {
+    public ResponseLecturerDTO updateLecturerStatusByAdmin(UUID approvingUserId, UUID userId, LecturerStatus status) {
         //TODO - check if the approving user is an admin
         //TODO - check if the userId exists in the database
         //TODO - update user status
@@ -151,7 +152,7 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public ResponseLecturerDTO updateLecturerStatus(Long userId, LecturerStatus status) {
+    public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
         lecturer.setStatus(status);

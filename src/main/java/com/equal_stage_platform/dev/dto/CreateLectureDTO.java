@@ -1,10 +1,12 @@
 package com.equal_stage_platform.dev.dto;
+import java.util.UUID;
+
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
 import lombok.Data;
 @Data
 public class CreateLectureDTO {
-    private Long userId;
+    private UUID userId;
     private Long lectureId;
     private String title;
     private String description;
