@@ -5,6 +5,7 @@ import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Data;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,6 +41,7 @@ public class Lecture {
     private LocalDateTime updatedAt;
 
     @ManyToMany(mappedBy = "lectures")
+    @EqualsAndHashCode.Exclude
     private Set<Lecturer> lecturers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
@@ -55,6 +57,5 @@ public class Lecture {
         this.createdAt = now;
         this.updatedAt = now;
         this.status = lectureData.getLectureStatus();
-        this.lecturers = new HashSet<>();
     }
 }

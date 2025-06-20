@@ -27,11 +27,7 @@ public class AuthService {
             throw new AuthException("Email is taken");
         }
 
-        User user = User.builder()
-            .email(email)
-            .password(passwordEncoder.encode(password))
-            .role(Role.USER)
-            .build();
+        User user = new User(email, passwordEncoder.encode(password));
 
         userRepository.save(user);
         return "User registered successfully";

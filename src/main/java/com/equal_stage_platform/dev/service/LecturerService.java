@@ -15,6 +15,7 @@ import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecturer;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
+import com.equal_stage_platform.dev.exception.LecturerException;
 
 @Service
 public class LecturerService {
@@ -59,7 +60,7 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public ResponseLecturerDTO getLecturerById(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
         
         return new ResponseLecturerDTO(lecturer);
     }
@@ -73,7 +74,7 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public Lecturer getLecturerEntityById(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
         
         return lecturer;
     }
@@ -101,7 +102,7 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getLecturesByLecturerId(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
         return lecturer.getLectures()
                 .stream()
                 .map(lecture -> new ResponseLectureDTO(userId, lecture))
@@ -118,14 +119,14 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public ResponseLectureDTO getLectureById(UUID lecturerId, Long lectureId) {
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + lecturerId));
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + lecturerId));
         
         return lecturer.getLectures()
                 .stream()
                 .filter(lecture -> lecture.getLectureId().equals(lectureId))
                 .findFirst()
                 .map(lecture -> new ResponseLectureDTO(lecturerId, lecture))
-                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
+                .orElseThrow(() -> new LecturerException("Lecture not found with ID: " + lectureId));
     }
 
     /**
@@ -138,7 +139,7 @@ public class LecturerService {
     @Transactional
     public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status) {
         Lecturer lecturer = lecturerRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with userId: " + userId));
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
         lecturer.setStatus(status);
         lecturerRepository.save(lecturer);
         return new ResponseLecturerDTO(lecturer);

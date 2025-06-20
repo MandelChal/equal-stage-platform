@@ -14,7 +14,9 @@ import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
+import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.exception.LectureException;
 
 @Service
 public class LectureService {
@@ -36,7 +38,10 @@ public class LectureService {
         // search for the lecturer by userId
         UUID userID = lectureData.getUserId();
         Lecturer lecturer = lecturerRepository.findById(userID)
-                .orElseThrow(() -> new RuntimeException("Lecturer not found with ID: " + userID));
+                .orElseThrow(() -> new LectureException("Lecturer not found with ID: " + userID));
+        if (lecturer.getStatus() != LecturerStatus.APPROVED) {
+            throw new LectureException("Lecturer is not approved");
+        }
         Lecture lecture = lectureRepository.save(new Lecture(lectureData));
         lecturer.enrollLecture(lecture);
         return new ResponseLectureDTO(userID, lecture);
@@ -51,7 +56,7 @@ public class LectureService {
     @Transactional(readOnly = true)
     public ResponseLectureDTO getLectureById(Long lectureId) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
+                .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         return new ResponseLectureDTO(lecture.getLecturers().stream()
                 .findFirst()
                 .map(lecturer -> lecturer.getUserId())
@@ -67,9 +72,13 @@ public class LectureService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public ResponseLectureDTO updateLectureStatus(Long lectureId, LectureStatus status) {
+    public ResponseLectureDTO updateLectureStatus(UUID userId, Long lectureId, LectureStatus status) {
+        // check if lectureId is owned by userId
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
+                .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
+        if (!lecture.getLecturers().stream().anyMatch(lecturer -> lecturer.getUserId().equals(userId))) {
+            throw new LectureException("You are not authorized to update this lecture");
+        }
         lecture.setStatus(status);
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture.getLecturers().stream()
@@ -87,7 +96,7 @@ public class LectureService {
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> getLecturersByLectureId(Long lectureId) {
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new RuntimeException("Lecture not found with ID: " + lectureId));
+                .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         return lecture.getLecturers().stream()
                 .map(lecturer -> new ResponseLecturerDTO(lecturer))
                 .toList();

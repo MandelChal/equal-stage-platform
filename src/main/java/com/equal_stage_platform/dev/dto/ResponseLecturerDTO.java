@@ -3,13 +3,17 @@ import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import java.util.Set;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
+import java.util.stream.Collectors;
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class ResponseLecturerDTO {
     private UUID userId;
     private String firstName;
@@ -22,7 +26,7 @@ public class ResponseLecturerDTO {
     private String createdAt;
     private String lastUpdatedAt;
     private LecturerStatus status;
-    private Set<Lecture> lectures;
+    private Set<ResponseLectureDTO> lectures;
     public ResponseLecturerDTO(Lecturer lecturer) {
         this.userId = lecturer.getUserId();
         this.firstName = lecturer.getFirstName();
@@ -35,7 +39,9 @@ public class ResponseLecturerDTO {
         this.createdAt = lecturer.getCreatedAt().toString();
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();
-        this.lectures = lecturer.getLectures();
+        this.lectures = lecturer.getLectures().stream()
+            .map(lecture -> new ResponseLectureDTO(this.userId, lecture))
+            .collect(Collectors.toSet());
     }
     
     public ResponseLecturerDTO(Lecturer lecturer, Set<Lecture> lectures) {
@@ -50,7 +56,9 @@ public class ResponseLecturerDTO {
         this.createdAt = lecturer.getCreatedAt().toString();
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();
-        this.lectures = lectures;
+        this.lectures = lectures.stream()
+            .map(lecture -> new ResponseLectureDTO(this.userId, lecture))
+            .collect(Collectors.toSet());
     }
 
 }

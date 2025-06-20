@@ -2,49 +2,94 @@ package com.equal_stage_platform.dev.controller;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
-import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.service.LectureService;
-import java.util.List;
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.HttpStatus;
 
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
+import com.equal_stage_platform.dev.service.JwtService;
+import com.equal_stage_platform.dev.exception.LectureException;
+import com.equal_stage_platform.dev.exception.AuthException;
 
 @RestController
 @RequestMapping("/lectures")
 public class LectureController {
 
     private final LectureService lectureService;
-    public LectureController(LectureService lectureService) {
+    private final JwtService jwtService;
+    public LectureController(LectureService lectureService, JwtService jwtService) {
         this.lectureService = lectureService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseLectureDTO> createLecture(@RequestBody CreateLectureDTO lectureData) {
-        return ResponseEntity.ok(lectureService.createLecture(lectureData));
+    public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @RequestBody CreateLectureDTO lectureData) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            lectureData.setUserId(userId);
+            return ResponseEntity.ok(lectureService.createLecture(lectureData));
+        } catch (LectureException e) {
+            // logger.error("LectureException while creating lecture", e);
+            return e.getMessage().equals("Lecturer is not approved") ? ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()) : ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while creating lecture", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while creating lecture", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PatchMapping("/update/{lectureId}/status/{status}")
-    public ResponseEntity<ResponseLectureDTO> updateLectureStatus(@PathVariable Long lectureId, @PathVariable LectureStatus status) {
-        return ResponseEntity.ok(lectureService.updateLectureStatus(lectureId, status));
+    public ResponseEntity<?> updateLectureStatus(@RequestHeader("Authorization") String token, @PathVariable Long lectureId, @PathVariable LectureStatus status) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return ResponseEntity.ok(lectureService.updateLectureStatus(userId, lectureId, status));
+        } catch (LectureException e) {
+            // logger.error("LectureException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<ResponseLectureDTO>> getAllLectures() {
-        return ResponseEntity.ok(lectureService.getAllLectures());
+    public ResponseEntity<?> getAllLectures() {
+        try {
+            return ResponseEntity.ok(lectureService.getAllLectures());
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching all lectures", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching all lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/{lectureId}")
-    public ResponseEntity<ResponseLectureDTO> getLectureById(@PathVariable Long lectureId) {
-        return ResponseEntity.ok(lectureService.getLectureById(lectureId));
+    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) {
+        try {
+            return ResponseEntity.ok(lectureService.getLectureById(lectureId));
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
-
-    
-    
 }

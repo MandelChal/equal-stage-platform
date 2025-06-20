@@ -39,6 +39,8 @@ public class SecurityConfig {
                 .requestMatchers("/lecturers/lectures/{lecturerId}/all").permitAll()
                 .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}").permitAll()
                 .requestMatchers("/lecturers/pending").hasRole("ADMIN")
+                .requestMatchers("/lecturers/approve/**").hasRole("ADMIN")
+                .requestMatchers("/lecturers/reject/**").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/create").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lectures/update/**").hasAnyRole("LECTURER", "ADMIN")

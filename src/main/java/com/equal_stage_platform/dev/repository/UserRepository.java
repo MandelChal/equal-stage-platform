@@ -11,7 +11,6 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByUserId(UUID userId);
-    Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
     Optional<User> findByRole(Role role);
     List<User> findByStatus(UserStatus status); // ACTIVE, BLOCKED, DELETED

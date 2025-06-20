@@ -1,6 +1,7 @@
 package com.equal_stage_platform.dev.model;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -52,5 +53,16 @@ public class User {
 
     @Column(name = "next_password_change", nullable = false)
     private LocalDateTime nextPasswordChange;
+
+    public User(String email, String password) {
+        this.email = email;
+        this.password = password;
+        this.createdAt = LocalDateTime.now();
+        this.lastUpdatedAt = this.createdAt;
+        this.role = Role.USER;
+        this.status = UserStatus.ACTIVE;
+        this.nextPasswordChange = LocalDateTime.now().plusDays(30*4);
+        this.pastPasswords = new HashSet<>();
+    }
 
 }

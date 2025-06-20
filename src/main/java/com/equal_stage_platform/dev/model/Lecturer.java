@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -59,6 +60,7 @@ public class Lecturer {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "lecture_id")
     )
+    @EqualsAndHashCode.Exclude
     private Set<Lecture> lectures = new HashSet<>();
     
     public Lecturer(CreateLecturerDTO lecturerData) {
@@ -71,7 +73,6 @@ public class Lecturer {
         this.phone = lecturerData.getPhone();
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
-        this.lectures = new HashSet<>(); // Initialize the set of lectures
         // Set created and updated timestamps
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
