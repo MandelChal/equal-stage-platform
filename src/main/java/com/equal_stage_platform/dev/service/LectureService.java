@@ -6,15 +6,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.SimpleLecturerDTO;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
-
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 
