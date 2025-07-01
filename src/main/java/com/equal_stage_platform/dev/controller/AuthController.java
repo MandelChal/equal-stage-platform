@@ -1,8 +1,11 @@
 package com.equal_stage_platform.dev.controller;
 
 import com.equal_stage_platform.dev.dto.RegisterRequest;
+import com.equal_stage_platform.dev.dto.ResetPassDTO;
 import com.equal_stage_platform.dev.dto.LoginRequest;
+import com.equal_stage_platform.dev.dto.PassDTO;
 import com.equal_stage_platform.dev.dto.CreateAdminRequest;
+import com.equal_stage_platform.dev.dto.ForgotPassDTO;
 import com.equal_stage_platform.dev.exception.AuthException;
 import com.equal_stage_platform.dev.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -91,6 +95,46 @@ public class AuthController {
             @RequestBody CreateAdminRequest createAdminRequest) {
         try {
             String result = authService.createAdmin(token, createAdminRequest.getEmail());
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred");
+        }
+    }
+
+    @PostMapping("/forgot-pass")
+    public ResponseEntity<?> forgotPass(@RequestBody ForgotPassDTO forgotPassRequest){
+        try {
+            String result = authService.forgotPass(forgotPassRequest.getEmail());
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred");
+        }
+    }
+
+    @PostMapping("/reset-pass-token")
+    public ResponseEntity<?> resetPassToken(@RequestHeader String token, @RequestBody PassDTO passDto){
+        try{
+            String result = authService.resetPassToken(token, passDto.getPass());
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred");
+        }
+    }
+
+    @PostMapping("/reset-pass")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> resetPass(@RequestHeader String token, @RequestBody ResetPassDTO resetPassRequest){
+        try{
+            String result = authService.resetPass(token, resetPassRequest.getOldPassword(), resetPassRequest.getNewPassword());
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

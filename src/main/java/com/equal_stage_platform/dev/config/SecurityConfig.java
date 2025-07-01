@@ -27,8 +27,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                 //----Auth endpoints----
-                .requestMatchers("/api/auth/registerAdmin").permitAll()  // Allow initial admin setup
+                .requestMatchers("/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth//reset-pass-token").permitAll()  // Allow initial admin setup
                 .requestMatchers("/api/auth/create-admin").hasRole("ADMIN")  // Only admins can create new admins
+                .requestMatchers("/api/auth/reset-pass").hasRole("USER") 
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/lecturers/update/**").hasAnyRole("LECTURER", "ADMIN")

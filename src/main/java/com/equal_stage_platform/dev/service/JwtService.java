@@ -41,6 +41,15 @@ public class JwtService {
             .compact();
     }
 
+    public String generateResetToken(long expiration){
+        return Jwts.builder()
+        .setIssuedAt(new Date())
+        .setExpiration(new Date(expiration))
+        .setId(UUID.randomUUID().toString())
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+    }
+
     public UUID extractUserId(String token) {
         return UUID.fromString(Jwts.parserBuilder().setSigningKey(key).build()
             .parseClaimsJws(token).getBody().getSubject());
@@ -61,7 +70,7 @@ public class JwtService {
         return userId.equals(((CustomUserDetails) userDetails).getId()) && !isTokenExpired(token);
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         Date expiration = Jwts.parserBuilder().setSigningKey(key).build()
             .parseClaimsJws(token).getBody().getExpiration();
         return expiration.before(new Date());

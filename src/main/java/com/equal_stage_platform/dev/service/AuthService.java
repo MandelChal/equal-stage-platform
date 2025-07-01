@@ -1,9 +1,11 @@
 package com.equal_stage_platform.dev.service;
 
 import com.equal_stage_platform.dev.exception.AuthException;
+import com.equal_stage_platform.dev.model.PasswordResetToken;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.model.enums.UserStatus;
+import com.equal_stage_platform.dev.repository.PasswordResetTokenRepository;
 import com.equal_stage_platform.dev.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +23,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public String register(String email, String password) {
         if (userRepository.findByEmail(email).isPresent()) {
@@ -106,4 +109,36 @@ public class AuthService {
         userRepository.save(newAdmin);
         return "New admin user created successfully";
     }
+    
+    public String forgotPass(String userEmail){
+        long tokenExpireTime = System.currentTimeMillis() + 300000; // 5 min expiration time
+        User requestingUser = userRepository.findByEmail(userEmail)
+            .orElseThrow(()-> new AuthException("User not found"));
+        PasswordResetToken tokenResetEntity = new PasswordResetToken(jwtService.generateResetToken(tokenExpireTime),requestingUser, tokenExpireTime);
+        // Generate a Secure Token 
+        // Build the Reset Link 
+        // Send the Link via Email
+        return "If your email exists, you will receive a reset link.";
+    }
+
+    public String resetPassToken(String token, String newPass){
+        //TODO - add mechanizm that deleteds expired tokens once a day automaticaly
+        if(jwtService.isTokenExpired(token)){ new AuthException("Token Expired");}
+        PasswordResetToken obj = passwordResetTokenRepository.findByToken(token)
+            .orElseThrow(() -> new AuthException("Token Unvalid"));
+        //TODO - write in security db
+        User user = obj.getUser();
+        user.setPassword(newPass);
+        userRepository.save(user);
+        return "Password Changes Succeesfuly";
+    }
+    public String resetPass(String token, String oldPass, String newPass){
+        UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+        User requestingUser = userRepository.findById(userId)
+            .orElseThrow(() -> new AuthException("User not found"));
+        if (!passwordEncoder.matches(oldPass, requestingUser.getPassword())) {
+            throw new AuthException("Invalid oldPass");
+        }
+        requestingUser.setPassword(newPass);
+        return "Password Changes Succeesfuly";    }
 }

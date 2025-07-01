@@ -9,7 +9,6 @@ import java.util.Set;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
 import java.util.stream.Collectors;
-import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 
 @Data
 @AllArgsConstructor
