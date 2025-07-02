@@ -9,10 +9,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -28,6 +31,8 @@ public class FlowIntegrationTest {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+
 
 	// Helper to register and login, returns JWT token
 	private String registerAndLogin(String email, String password) throws Exception {
@@ -86,29 +91,48 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to create lecturer
-	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl) throws Exception {
+	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea) throws Exception {
 		mockMvc.perform(post("/lecturers/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"firstName\":\"" + firstName + "\", \"lastName\":\"" + lastName + "\", \"bio\":\"" + bio + "\", \"city\":\"" + city + "\", \"email\":\"" + email + "\", \"phone\":\"" + phone + "\", \"imageUrl\":\"" + imageUrl + "\"}"))
+				.content("{\"firstName\":\"" + firstName + "\", " +
+				"\"lastName\":\"" + lastName + "\", " +
+				"\"bio\":\"" + bio + "\", " +
+				"\"city\":\"" + city + "\", " +
+				"\"email\":\"" + email + "\", " +
+				"\"phone\":\"" + phone + "\", " +
+				"\"imageUrl\":\"" + imageUrl + "\", " +
+				"\"workingArea\":\"" + workingArea.name() + "\"}"))
 				.andExpect(status().isOk());
 	}
 
 	// Helper to create lecture
-	private void createLectureBeforeApproval(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus) throws Exception {
+	private void createLectureBeforeApproval(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl) throws Exception {
 		mockMvc.perform(post("/lectures/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"title\":\"" + title + "\", \"description\":\"" + description + "\", \"duration\":\"" + duration + "\", \"price\":\"" + price + "\", \"lectureStatus\":\"" + lectureStatus + "\"}"))
+				.content("{\"title\":\"" + title + "\", " +
+						 "\"description\":\"" + description + "\", " +
+						 "\"duration\":" + duration + ", " +
+						 "\"price\":" + price + ", " +
+						 "\"lectureStatus\":\"" + lectureStatus + "\", " +
+						 "\"isOnline\":" + isOnline + ", " +
+						 "\"imageUrl\":\"" + imageUrl + "\"}"))
 				.andExpect(status().isConflict());
 	}
 
 	// Helper to create lecture
-	private void createLecture(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus) throws Exception {
+	private void createLecture(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl) throws Exception {
 		mockMvc.perform(post("/lectures/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"title\":\"" + title + "\", \"description\":\"" + description + "\", \"duration\":\"" + duration + "\", \"price\":\"" + price + "\", \"lectureStatus\":\"" + lectureStatus + "\"}"))
+				.content("{\"title\":\"" + title + "\", " +
+						 "\"description\":\"" + description + "\", " +
+						 "\"duration\":" + duration + ", " +
+						 "\"price\":" + price + ", " +
+						 "\"lectureStatus\":\"" + lectureStatus + "\", " +
+						 "\"isOnline\":" + isOnline + ", " +
+						 "\"imageUrl\":\"" + imageUrl + "\"}"))
 				.andExpect(status().isOk());
 	}
 
@@ -132,6 +156,19 @@ public class FlowIntegrationTest {
 				.andExpect(status().isOk());
 	}
 
+	private void searchLectureByTitle(String title) throws Exception {
+		String response = mockMvc.perform(get("/lectures/search/" + title))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+	
+		ResponseLectureDTO dto = objectMapper.readValue(response, ResponseLectureDTO.class);
+	
+		// Assuming ResponseLectureDTO has a getLecture() method that returns a Lecture object
+		assertEquals(title, dto.getTitle());
+	}
+
 	@Test
 	public void testFullFlow() throws Exception {
 		// 1. user1 registers
@@ -153,10 +190,10 @@ public class FlowIntegrationTest {
 		makeAdmin(user1Token, "user2@example.com");
 
 		// 7. user1 creates a lecturer
-		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "1234567890", "https://example.com/image.jpg");
+		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "1234567890", "https://example.com/image.jpg", Area.CENTER);
 
 		// 7.1 user1 creates a lecture before approval
-		createLectureBeforeApproval(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR);
+		createLectureBeforeApproval(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image3.jpg");
 		
 		// 7.2 Admin approves the lecturer
 		Set<ResponseLecturerDTO> lecturers = getPendingLecturers(user1Token);
@@ -164,14 +201,14 @@ public class FlowIntegrationTest {
 
 		// 8. user1 creates 3 lectures
 		for (int i = 1; i <= 3; i++) {
-			createLecture(user1Token, "Lecture" + i + "_user1", "Description of Lecture" + i + "_user1", 60, 100, LectureStatus.ON_AIR);
+			createLecture(user1Token, "Lecture" + i + "_user1", "Description of Lecture" + i + "_user1", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*100+".jpg");
 		}
 
 		// 9. user2 creates a lecturer
-		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0987654321", "https://example.com/image2.jpg");
+		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0987654321", "https://example.com/image2.jpg", Area.NORTH);
 
 		// 9.1 user2 creates a lecture before approval
-		createLectureBeforeApproval(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR);
+		createLectureBeforeApproval(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image4.jpg");
 
 		// 9.2 Admin approves the lecturer
 		Set<ResponseLecturerDTO> lecturers2 = getPendingLecturers(user2Token);
@@ -179,7 +216,9 @@ public class FlowIntegrationTest {
 
 		// 10. user2 creates 3 lectures after approval
 		for (int i = 1; i <= 3; i++) {
-			createLecture(user2Token, "Lecture" + i + "_user2", "Description of Lecture" + i + "_user2", 60, 100, LectureStatus.ON_AIR);
+			createLecture(user2Token, "Lecture" + i + "_user2", "Description of Lecture" + i + "_user2", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*500+".jpg");
 		}
+
+		searchLectureByTitle("Lecture2_user2");
 	}
 }

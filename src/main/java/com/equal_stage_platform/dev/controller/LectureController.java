@@ -46,7 +46,7 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while creating lecture", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while updating lecture status", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
@@ -76,7 +76,7 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while fetching all lectures", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
@@ -89,7 +89,33 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while fetching lecture by ID", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/all/isOnline")
+    public ResponseEntity<?> getLectureById() {
+        try {
+            return ResponseEntity.ok(lectureService.getAllOnlineLectures());
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/search/{lectureTitle}")
+    public ResponseEntity<?> searchLectureByTitle(@PathVariable String lectureTitle) {
+        try {
+            return ResponseEntity.ok(lectureService.getLectureByTitle(lectureTitle));
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 }

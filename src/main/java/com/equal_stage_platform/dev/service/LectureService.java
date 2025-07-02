@@ -102,17 +102,69 @@ public class LectureService {
                 .toList();
     }
     /**
-     * Retrieves all lectures in the system.
+     * Retrieves all lectures in the system that are OnAir and their Lecturers ia Approved.
      *
      * @return A list of ResponseLectureDTO containing details of all lectures.
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllLectures() {
         return lectureRepository.findAll().stream()
-                .map(lecture -> new ResponseLectureDTO(lecture.getLecturers().stream()
-                        .findFirst()
-                        .map(lecturer -> lecturer.getUserId())
-                        .orElse(null), lecture))
+                .filter(this::hasOnAirStatus)
+                .filter(this::hasApprovedLecturer)
+                .map(this::toResponseLectureDTOWithApprovedLecturer)
                 .toList();
+    }
+
+    /**
+     * Retrieves all lectures in the system that are OnAir and their Lecturers ia Approved **and they are Online**
+     *
+     * @return A list of ResponseLectureDTO containing details of all lectures.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getAllOnlineLectures() {
+        return lectureRepository.findAll().stream()
+                .filter(this::isOnline)
+                .filter(this::hasOnAirStatus)
+                .filter(this::hasApprovedLecturer)
+                .map(this::toResponseLectureDTOWithApprovedLecturer)
+                .toList();
+    }
+
+        /**
+     * Searches for a lecture by Title.
+     * Retrieves a lecture iff their Lecturers ia Approved and lecture status is OnAir
+     *
+     * @return A list of ResponseLectureDTO containing details of all lectures.
+     */
+    @Transactional(readOnly = true)
+    public ResponseLectureDTO getLectureByTitle(String title) {
+        Lecture lecture = lectureRepository.findByTitle(title)
+            .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
+        if(hasOnAirStatus(lecture) && hasApprovedLecturer(lecture))
+            return toResponseLectureDTOWithApprovedLecturer(lecture);
+        throw new LectureException("Lecture not found with title: " + title);
+    }
+
+    private boolean isOnline(Lecture lecture){
+        return lecture.isOnline();
+    }
+
+    private boolean hasOnAirStatus(Lecture lecture){
+        return lecture.getStatus() == LectureStatus.ON_AIR;
+    }
+    
+    private boolean hasApprovedLecturer(Lecture lecture) {
+        return !lecture.getLecturers().isEmpty() &&
+            lecture.getLecturers().stream()
+                .allMatch(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED);
+    }
+
+    private ResponseLectureDTO toResponseLectureDTOWithApprovedLecturer(Lecture lecture) {
+        UUID approvedLecturerId = lecture.getLecturers().stream()
+                .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
+                .findFirst()
+                .map(Lecturer::getUserId)
+                .orElse(null);
+        return new ResponseLectureDTO(approvedLecturerId, lecture);
     }
 }

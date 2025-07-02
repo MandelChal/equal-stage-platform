@@ -1,6 +1,10 @@
 package com.equal_stage_platform.dev.dto;
 import java.util.UUID;
 
+import org.hibernate.validator.constraints.URL;
+
+import com.equal_stage_platform.dev.model.enums.Area;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
@@ -32,11 +36,16 @@ public class CreateLecturerDTO {
     @Pattern(regexp = "^05\\d{8}$", message = "Invalid phone number format")
     private String phone;
 
+    @URL(message = "Invalid URL format")
     private String imageUrl;
+
+    @NotBlank(message = "Working Area is requires")
+    private Area workingArea;
+
     public CreateLecturerDTO() {
         // Default constructor
     }
-    public CreateLecturerDTO(String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl) {
+    public CreateLecturerDTO(String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea) {
         this.userId = null;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -45,5 +54,6 @@ public class CreateLecturerDTO {
         this.email = email;
         this.phone = phone;
         this.imageUrl = imageUrl;
+        this.workingArea = workingArea;
     }
 }

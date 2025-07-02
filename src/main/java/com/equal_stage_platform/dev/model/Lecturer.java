@@ -1,5 +1,6 @@
 package com.equal_stage_platform.dev.model;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
@@ -54,6 +55,10 @@ public class Lecturer {
     @Column(name = "status", nullable = false)
     private LecturerStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "workingArea", nullable = false)
+    private Area workingArea;
+
     @ManyToMany
     @JoinTable(
         name = "0!58$_lectures_lecturers",
@@ -77,6 +82,7 @@ public class Lecturer {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.lastUpdatedAt = now;
+        this.workingArea = lecturerData.getWorkingArea();
     }
     public void enrollLecture(Lecture lecture) {
         this.lectures.add(lecture);

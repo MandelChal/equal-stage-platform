@@ -28,6 +28,9 @@ public class Lecture {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
     @Column(name = "duration", nullable = false)
     private Integer duration; // Duration in minutes
 
@@ -40,13 +43,16 @@ public class Lecture {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @ManyToMany(mappedBy = "lectures")
+    @ManyToMany(mappedBy = "lectures", fetch = FetchType.LAZY)
     @EqualsAndHashCode.Exclude
     private Set<Lecturer> lecturers = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private LectureStatus status;
+
+    @Column(name = "isOnline", nullable = false)
+    private boolean isOnline;
 
     public Lecture(CreateLectureDTO lectureData) {
         this.title = lectureData.getTitle();
@@ -56,6 +62,8 @@ public class Lecture {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        // this.imageUrl = lectureData.get
         this.status = lectureData.getLectureStatus();
+        this.isOnline = lectureData.isOnline();
     }
 }
