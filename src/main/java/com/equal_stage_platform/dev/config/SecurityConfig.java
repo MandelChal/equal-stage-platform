@@ -32,9 +32,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/reset-pass").hasRole("USER") 
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/lecturers/adminUpdate/**", "/lecturers/update/**").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/all").hasRole("ADMIN")
-                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/{userId}", "/lecturers/all/approved").permitAll()
+                .requestMatchers("/lecturers/adminUpdate/**", "/lecturers/update/**", "/lecturers/delLecturerProfile").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lecturers/all", "/lecturers/del/{userId}").hasRole("ADMIN")
+                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/searchById/{userId}", "/lecturers/all/approved","/lecturers/search/{name}").permitAll()
                 .requestMatchers("/lecturers/reject/**", "/lecturers/approve/**", "/lecturers/all", "/lecturers/pending").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")

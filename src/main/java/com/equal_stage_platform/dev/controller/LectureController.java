@@ -1,3 +1,4 @@
+
 package com.equal_stage_platform.dev.controller;
 
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,7 @@ import com.equal_stage_platform.dev.service.LectureService;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +26,7 @@ import com.equal_stage_platform.dev.exception.AuthException;
 @RestController
 @RequestMapping("/lectures")
 public class LectureController {
+    //TODO: check each endpoint is registered in config
 
     private final LectureService lectureService;
     private final JwtService jwtService;
@@ -70,7 +73,7 @@ public class LectureController {
     @GetMapping("/all")
     public ResponseEntity<?> getAllLectures() {
         try {
-            return ResponseEntity.ok(lectureService.getAllLectures());
+            return ResponseEntity.ok(lectureService.getAllLectures()); // retrive lectures of approved lecturers and ON_AIR status
         } catch (LectureException e) {
             // logger.error("LectureException while fetching all lectures", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -80,8 +83,22 @@ public class LectureController {
         }
     }
 
+    //TODO - add breakpoint for Admin only - retrives all lectures - without filtering any
+    // @GetMapping("/allAdmin")
+    // public ResponseEntity<?> getAllLecturesForAdmin() {
+    //     try {
+    //         return ResponseEntity.ok(?????);
+    //     } catch (LectureException e) {
+    //         // logger.error("LectureException while fetching all lectures", e);
+    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    //     } catch (Exception e) {
+    //         // logger.error("Unexpected error while fetching all lectures", e);
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+    //     }
+    // }
+
     @GetMapping("/{lectureId}")
-    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) {
+    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) { //TODO: decide if return Lecture only if status is ON_AIR and its lecturer is APPROVED (right now its not implemented)
         try {
             return ResponseEntity.ok(lectureService.getLectureById(lectureId));
         } catch (LectureException e) {
@@ -94,7 +111,7 @@ public class LectureController {
     }
 
     @GetMapping("/all/isOnline")
-    public ResponseEntity<?> getLectureById() {
+    public ResponseEntity<?> getOnlineLectures() {
         try {
             return ResponseEntity.ok(lectureService.getAllOnlineLectures());
         } catch (LectureException e) {
@@ -118,4 +135,45 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
+
+    @GetMapping("/physical")
+    public ResponseEntity<?> getPhysicalLectures() {
+        try {
+            return ResponseEntity.ok(lectureService.getPhysicalLectures()); //TODO - retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+
+    // הרצאות לפי מרצה
+    @GetMapping("/lecturer/{lecturerId}")
+    public ResponseEntity<?> getLecturesByLecturer(@PathVariable Long lecturerId) {
+        try {
+            return ResponseEntity.ok(lectureService.getLecturesByLecturer(lecturerId)); //TODO - retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
+    }
+
+    // מחיקת הרצאה
+    @DeleteMapping("/{lectureId}")
+    public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Integer lectureId) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); //TODO - update lectureService.deleteLecture wo get userId, check that lectureId is registered under lecturer with userId, make sure lectureService.deleteLecture will return String "Lecture deleted successfully" on success
+        } catch (LectureException e) {
+            // logger.error("LectureException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }
+}
+

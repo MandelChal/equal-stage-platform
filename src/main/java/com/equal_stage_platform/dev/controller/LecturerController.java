@@ -10,6 +10,7 @@ import com.equal_stage_platform.dev.service.LecturerService;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -93,7 +94,7 @@ public class LecturerController {
         }
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("searchById/{userId}")
     public ResponseEntity<?> getLecturerById(@PathVariable UUID userId) {
         try {
             return ResponseEntity.ok(lecturerService.getLecturerById(userId));
@@ -171,6 +172,54 @@ public class LecturerController {
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    //TODO - replaced @RequestParam String name TO , added {name} to route 
+    @GetMapping("/search/{name}")
+    public ResponseEntity<?> searchLecturersByName(@PathVariable String name) {
+        try {
+            return ResponseEntity.ok(lecturerService.searchLecturersByName(name));
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    // TODO -> 1. verify that delete lecturer will deletes its lectures
+    // TODO -> 2. make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
+    // TODO -> 3. changed "@PathVariable Long userId" TO "@PathVariable UUID lecturerId" - implement the change in lecturerService.deleteLecturer
+    // TODO -> 4. make sure that 
+    @DeleteMapping("del/{userId}")
+    public ResponseEntity<String> deleteLecturer(@PathVariable UUID userId) {
+        try {
+            return ResponseEntity.ok(lecturerService.deleteLecturer(userId);); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("delLecturerProfile")
+    public ResponseEntity<String> deleteLecturer(@RequestHeader("Authorization") String token) { //TODO -> verify that delete lecturer will deletes its lectures
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while creating lecturer", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while creating lecturer", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());

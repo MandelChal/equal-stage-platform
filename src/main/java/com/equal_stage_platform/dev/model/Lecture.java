@@ -66,4 +66,23 @@ public class Lecture {
         this.status = lectureData.getLectureStatus();
         this.isOnline = lectureData.isOnline();
     }
+
+    public void enrollLecturer(Lecturer lecturer) {
+        if (lecturer != null) {
+            this.lecturers.add(lecturer);
+        }
+    }
+    
+    public void removeLecturer(Lecturer lecturer) {
+        if (lecturer != null) {
+            this.lecturers.remove(lecturer);
+            lecturer.removeLecture(this);
+        }
+    }
+    
+    public void removeAllLecturers() {       
+        for (Lecturer lecturer : this.lecturers) {
+            this.removeLecturer(lecturer);
+        }
+    }
 }

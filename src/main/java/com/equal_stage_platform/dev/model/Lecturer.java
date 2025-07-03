@@ -85,11 +85,24 @@ public class Lecturer {
         this.workingArea = lecturerData.getWorkingArea();
     }
     public void enrollLecture(Lecture lecture) {
-        this.lectures.add(lecture);
+        if(lecture!=null){
+            this.lectures.add(lecture);
+        }
     }
     public Set<Lecture> getLecturesByStatus(LectureStatus status) {
         return this.lectures.stream()
             .filter(lecture -> lecture.getStatus() == status)
             .collect(Collectors.toSet());
+    }
+        
+    public void removeLecture(Lecture lecture) {
+        if (lecture != null) {
+            this.lectures.remove(lecture);
+        }
+    }
+
+    // Full name helper method
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 }

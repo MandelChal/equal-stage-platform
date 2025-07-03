@@ -13,6 +13,7 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.exception.LecturerException;
@@ -128,7 +129,6 @@ public class LecturerService {
                 .map(lecture -> new ResponseLectureDTO(lecturerId, lecture))
                 .orElseThrow(() -> new LecturerException("Lecture not found with ID: " + lectureId));
     }
-
     /**
      * Updates the status of a lecturer.
      *
@@ -146,4 +146,75 @@ public class LecturerService {
     }
 
 
+    // /**
+    //  * חיפוש מרצים לפי שם
+    //  */
+    // @Transactional(readOnly = true)
+    // public List<ResponseLecturerDTO> searchLecturersByName(String name) {
+    //     return lecturerRepository.findByNameContaining(name).stream()
+    //         .map(lecturer -> new ResponseLecturerDTO(lecturer))
+    //         .toList()
+    //         .orElseThrow(() -> new LecturerException("There is no Lecturer with Name: " + name));
+    // }
+
+
+    //TODO - Was getLecturersByCity, changed to getLecturersByArea
+    /**
+     * קבלת מרצים לפי עיר
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> getLecturersByArea(Area area) {
+        List<Lecturer> lecturers = lecturerRepository.findAll();
+        return lecturers.stream()
+                .filter(lecturer->this.checkArea(lecturer, area))
+                .filter(this::isApproved)
+                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .toList();
+    }
+
+    private boolean checkArea(Lecturer lecturer, Area area){
+        return lecturer.getWorkingArea()==area;
+    }
+
+    private boolean isApproved(Lecturer lecturer){
+        return lecturer.getStatus() == LecturerStatus.APPROVED;
+    }
+
+    //TODO -> check logic, basically remove lecturer from each lecture, for each lecture check if has 0 lectures dua to delete, delete lecture if has 0
+    // /**
+    //  * מחיקת מרצה
+    //  */
+    // public void deleteLecturer(Long userId) {
+    //     Lecturer lecturer = lecturerRepository.findById(userId)
+    //         .orElseThrow(() -> new RuntimeException("Lecturer not found with id: " + userId));
+        
+    //     // הסרת הקשרים עם הרצאות לפני המחיקה
+    //     lecturer.removeAllLectures();
+    //     lecturerRepository.save(lecturer);
+        
+    //     // מחיקת המרצה
+    //     lecturerRepository.deleteById(userId);
+    // }
+
+    //TODO -> check id needed
+    // /**
+    //  * קבלת מרצים עם הרצאות
+    //  */
+    // @Transactional(readOnly = true)
+    // public List<ResponseLecturerDTO> getLecturersWithLectures() {
+    //     return lecturerRepository.findLecturersWithLectures().stream()
+    //         .map(this::convertToResponseDTO)
+    //         .collect(Collectors.toList());
+    // }
+
+    //TODO - itay did not go over next function
+    /**
+     * קבלת מרצה לפי אימייל
+     */
+    // @Transactional(readOnly = true)
+    // public ResponseLecturerDTO getLecturerByEmail(String email) {
+    //     Lecturer lecturer = lecturerRepository.findByEmail(email)
+    //         .orElseThrow(() -> new RuntimeException("Lecturer not found with email: " + email));
+    //     return convertToResponseDTO(lecturer);
+    // }
 }

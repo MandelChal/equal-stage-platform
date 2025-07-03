@@ -13,6 +13,7 @@ public class EqualStagePlatformApplication {
 	public String hello() {
 		return "hello world";
 	}
+
 	public static void main(String[] args) {
 		SpringApplication.run(EqualStagePlatformApplication.class, args);
 	}

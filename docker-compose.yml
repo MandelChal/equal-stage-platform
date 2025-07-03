@@ -1,17 +1,17 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:15
-    restart: always
+  postgres:
+    image: postgres:latest
+    container_name: equal_stage_postgres
     environment:
-      POSTGRES_DB: EqualStageDB
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: equal_stage_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:alpine
@@ -21,19 +21,23 @@ services:
   app:
     build: .
     depends_on:
-      - db
+      - postgres
     ports:
       - "8080:8080"
     env_file:
       - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/EqualStageDB
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/equal_stage_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
 
     volumes:
       - .:/app
       
 volumes:
+<<<<<<< HEAD
   pgdata:
 
+=======
+  postgres_data:
+>>>>>>> origin/dev-michal

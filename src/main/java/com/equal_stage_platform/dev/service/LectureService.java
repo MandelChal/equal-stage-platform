@@ -167,4 +167,33 @@ public class LectureService {
                 .orElse(null);
         return new ResponseLectureDTO(approvedLecturerId, lecture);
     }
+
+    // //TODO - UPDATE 
+    // public List<ResponseLectureDTO> getPhysicalLectures() { //non online le
+    //     return lectureRepository.findByIsOnlineFalse().stream()
+    //             .map(this::mapToResponseDTO)
+    //             .collect(Collectors.toList());
+    // }
+
+    // //TODO - UPDATE TO SEARCH BY AREA
+    // public List<ResponseLectureDTO> getLecturesByLocation(String location) {
+    //     return lectureRepository.findByLocationContainingIgnoreCase(location).stream()
+    //             .map(this::mapToResponseDTO)
+    //             .collect(Collectors.toList());
+    // }
+
+    // //TODO - UPDATE WITH EXEPTIONS
+    // public List<ResponseLectureDTO> getLecturesByLecturer(Long lecturerId) {
+    //     return lectureRepository.findByLecturerId(lecturerId).stream()
+    //             .map(this::mapToResponseDTO)
+    //             .collect(Collectors.toList());
+    // }
+
+    // // TODO -> implement full logic: go over each lecturer and remove the lecture from their lists
+    // public void deleteLecture(Integer lectureId) {
+    //     if (!lectureRepository.existsById(lectureId)) {
+    //         throw new RuntimeException("Lecture not found with id: " + lectureId);
+    //     }
+    //     lectureRepository.deleteById(lectureId);
+    // }
 }
