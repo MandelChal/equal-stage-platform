@@ -83,7 +83,7 @@ public class LectureController {
         }
     }
 
-    //TODO - add breakpoint for Admin only - retrives all lectures - without filtering any
+    //TODO - itay -> add breakpoint for Admin only - retrives all lectures - without filtering any
     // @GetMapping("/allAdmin")
     // public ResponseEntity<?> getAllLecturesForAdmin() {
     //     try {
@@ -98,7 +98,7 @@ public class LectureController {
     // }
 
     @GetMapping("/{lectureId}")
-    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) { //TODO: decide if return Lecture only if status is ON_AIR and its lecturer is APPROVED (right now its not implemented)
+    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) { //TODO: itay -> decide if return Lecture only if status is ON_AIR and its lecturer is APPROVED (right now its not implemented)
         try {
             return ResponseEntity.ok(lectureService.getLectureById(lectureId));
         } catch (LectureException e) {
@@ -139,7 +139,7 @@ public class LectureController {
     @GetMapping("/physical")
     public ResponseEntity<?> getPhysicalLectures() {
         try {
-            return ResponseEntity.ok(lectureService.getPhysicalLectures()); //TODO - retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
+            return ResponseEntity.ok(lectureService.getPhysicalLectures()); //TODO - Michal -> retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
         } catch (LectureException e) {
             // logger.error("LectureException while fetching lecture by ID", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -153,16 +153,17 @@ public class LectureController {
     // הרצאות לפי מרצה
     @GetMapping("/lecturer/{lecturerId}")
     public ResponseEntity<?> getLecturesByLecturer(@PathVariable Long lecturerId) {
-        try {
-            return ResponseEntity.ok(lectureService.getLecturesByLecturer(lecturerId)); //TODO - retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
+        // try { //TODO - Michal -> wrap with try catch like other functions
+            return ResponseEntity.ok(lectureService.getLecturesByLecturer(lecturerId)); //TODO - Michal -> retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
     }
 
     // מחיקת הרצאה
+    // TODO -> itay : implement delete, check on who want to delete
     @DeleteMapping("/{lectureId}")
     public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Integer lectureId) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); //TODO - update lectureService.deleteLecture wo get userId, check that lectureId is registered under lecturer with userId, make sure lectureService.deleteLecture will return String "Lecture deleted successfully" on success
+            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); //TODO - Itay -> update lectureService.deleteLecture wo get userId, check that lectureId is registered under lecturer with userId, make sure lectureService.deleteLecture will return String "Lecture deleted successfully" on success
         } catch (LectureException e) {
             // logger.error("LectureException while updating lecture status", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -175,5 +176,5 @@ public class LectureController {
         }
     }
 }
-}
+
 

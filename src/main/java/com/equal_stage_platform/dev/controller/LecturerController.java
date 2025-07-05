@@ -53,8 +53,9 @@ public class LecturerController {
         }
     }
 
-    //TODO - verify if to get userId from token or from path variable
-    //TODO - think of generic way to keep same code for lecturer and admin
+    //TODO - Itay -> (old comment) verify if to get userId from token or from path variable
+    //TODO - Itay -> (old comment) think of generic way to keep same code for lecturer and admin
+    //TODO -> Itay -> (new comment) change implementation to 2 endpoints -> 1 for admin and 1 for lecturer
     @PatchMapping("/update/{lecturerId}/status/{status}")
     public ResponseEntity<?> updateLecturerStatus(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
         try {
@@ -68,6 +69,7 @@ public class LecturerController {
         }
     }
 
+    // TODO - Itay -> change this to be admin only
     @GetMapping("/all")
     public ResponseEntity<?> getAllLecturers() {
         try {
@@ -107,6 +109,7 @@ public class LecturerController {
         }
     }
 
+    //TODO - Itay - check if lecturerId is lecturer that is approved
     @GetMapping("/lectures/{lecturerId}/all")
     public ResponseEntity<?> getLecturesByLecturerId(@PathVariable UUID lecturerId) {
         try {
@@ -123,6 +126,7 @@ public class LecturerController {
         }
     }
 
+    //TODO - Itay -> check that lecturer is approved and lectureID ia ON_AIR
     @GetMapping("/lectures/{lecturerId}/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable UUID lecturerId, @PathVariable Long lectureId) {
         try {
@@ -179,6 +183,7 @@ public class LecturerController {
     }
 
     //TODO - replaced @RequestParam String name TO , added {name} to route 
+    // TODO - Michal - check that flow in lecturerService is ok
     @GetMapping("/search/{name}")
     public ResponseEntity<?> searchLecturersByName(@PathVariable String name) {
         try {
@@ -192,6 +197,7 @@ public class LecturerController {
         }
     }
 
+    // TODO - Itay
     // TODO -> 1. verify that delete lecturer will deletes its lectures
     // TODO -> 2. make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
     // TODO -> 3. changed "@PathVariable Long userId" TO "@PathVariable UUID lecturerId" - implement the change in lecturerService.deleteLecturer
@@ -199,7 +205,7 @@ public class LecturerController {
     @DeleteMapping("del/{userId}")
     public ResponseEntity<String> deleteLecturer(@PathVariable UUID userId) {
         try {
-            return ResponseEntity.ok(lecturerService.deleteLecturer(userId);); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
+            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -209,6 +215,7 @@ public class LecturerController {
         }
     }
 
+    //TODO - Itay
     @DeleteMapping("delLecturerProfile")
     public ResponseEntity<String> deleteLecturer(@RequestHeader("Authorization") String token) { //TODO -> verify that delete lecturer will deletes its lectures
         try {

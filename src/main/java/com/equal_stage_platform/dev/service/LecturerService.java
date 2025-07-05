@@ -4,6 +4,7 @@ package com.equal_stage_platform.dev.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -146,21 +147,26 @@ public class LecturerService {
     }
 
 
-    // /**
-    //  * חיפוש מרצים לפי שם
-    //  */
-    // @Transactional(readOnly = true)
-    // public List<ResponseLecturerDTO> searchLecturersByName(String name) {
-    //     return lecturerRepository.findByNameContaining(name).stream()
-    //         .map(lecturer -> new ResponseLecturerDTO(lecturer))
-    //         .toList()
-    //         .orElseThrow(() -> new LecturerException("There is no Lecturer with Name: " + name));
-    // }
+    /**
+     * Search lecturers by name
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> searchLecturersByName(String name) {
+        List<ResponseLecturerDTO> lecturers = lecturerRepository.findByNameContaining(name).stream()
+            .map(lecturer -> new ResponseLecturerDTO(lecturer))
+            .toList();
+        
+        if (lecturers.isEmpty()) {
+            throw new LecturerException("There is no Lecturer with Name: " + name);
+        }
+        
+        return lecturers;
+    }
 
 
     //TODO - Was getLecturersByCity, changed to getLecturersByArea
     /**
-     * קבלת מרצים לפי עיר
+     * קבלת מרצים לפי אזור
      */
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> getLecturersByArea(Area area) {
@@ -180,41 +186,42 @@ public class LecturerService {
         return lecturer.getStatus() == LecturerStatus.APPROVED;
     }
 
-    //TODO -> check logic, basically remove lecturer from each lecture, for each lecture check if has 0 lectures dua to delete, delete lecture if has 0
-    // /**
-    //  * מחיקת מרצה
-    //  */
-    // public void deleteLecturer(Long userId) {
-    //     Lecturer lecturer = lecturerRepository.findById(userId)
-    //         .orElseThrow(() -> new RuntimeException("Lecturer not found with id: " + userId));
+    // TODO -> Itay - check logic, basically remove lecturer from each lecture, for each lecture check if has 0 lectures dua to delete, delete lecture if has 0
+    /**
+     * מחיקת מרצה
+     */
+    public String deleteLecturer(UUID userId) {
+        return "Not Implemented";
+        // Lecturer lecturer = lecturerRepository.findById(userId)
+        //     .orElseThrow(() -> new LecturerException("Lecturer not found with id: " + userId));
         
-    //     // הסרת הקשרים עם הרצאות לפני המחיקה
-    //     lecturer.removeAllLectures();
-    //     lecturerRepository.save(lecturer);
+        // // הסרת הקשרים עם הרצאות לפני המחיקה
+        // lecturer.removeAllLectures();
+        // lecturerRepository.save(lecturer);
         
-    //     // מחיקת המרצה
-    //     lecturerRepository.deleteById(userId);
-    // }
+        // // מחיקת המרצה
+        // lecturerRepository.deleteById(userId);
+    }
 
-    //TODO -> check id needed
-    // /**
-    //  * קבלת מרצים עם הרצאות
-    //  */
-    // @Transactional(readOnly = true)
-    // public List<ResponseLecturerDTO> getLecturersWithLectures() {
-    //     return lecturerRepository.findLecturersWithLectures().stream()
-    //         .map(this::convertToResponseDTO)
-    //         .collect(Collectors.toList());
-    // }
+    //TODO -> Itay - check if needed
+    /**
+     * קבלת מרצים עם הרצאות
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> getLecturersWithLectures() {
+        return new ArrayList<>();
+        // return lecturerRepository.findLecturersWithLectures().stream()
+        //     .map(this::convertToResponseDTO)
+        //     .collect(Collectors.toList());
+    }
 
-    //TODO - itay did not go over next function
     /**
      * קבלת מרצה לפי אימייל
      */
-    // @Transactional(readOnly = true)
-    // public ResponseLecturerDTO getLecturerByEmail(String email) {
-    //     Lecturer lecturer = lecturerRepository.findByEmail(email)
-    //         .orElseThrow(() -> new RuntimeException("Lecturer not found with email: " + email));
-    //     return convertToResponseDTO(lecturer);
-    // }
+    @Transactional(readOnly = true)
+    public ResponseLecturerDTO getLecturerByEmail(String email) {
+        Lecturer lecturer = lecturerRepository.findByEmail(email)
+            .orElseThrow(() -> new LecturerException("Lecturer not found with email: " + email));
+        return new ResponseLecturerDTO(lecturer);
+    }
 }
