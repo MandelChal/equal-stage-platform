@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 import io.lettuce.core.dynamic.annotation.Param;
@@ -34,4 +35,6 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     // Lecturers who have lectures
     @Query("SELECT DISTINCT l FROM Lecturer l WHERE SIZE(l.lectures) > 0")
     List<Lecturer> findLecturersWithLectures();
+
+    List<Lecturer> findByAreaAndStatus(Area area, LecturerStatus status);
 }

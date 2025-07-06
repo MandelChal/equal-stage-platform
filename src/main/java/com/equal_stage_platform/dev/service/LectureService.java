@@ -4,7 +4,6 @@ package com.equal_stage_platform.dev.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,7 +49,7 @@ public class LectureService {
         }
         Lecture lecture = lectureRepository.save(new Lecture(lectureData));
         lecturer.enrollLecture(lecture);
-        return new ResponseLectureDTO(userID, lecture);
+        return new ResponseLectureDTO(lecture);
     }
 
     /**
@@ -63,10 +62,7 @@ public class LectureService {
     public ResponseLectureDTO getLectureById(Long lectureId) {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
-        return new ResponseLectureDTO(lecture.getLecturers().stream()
-                .findFirst()
-                .map(lecturer -> lecturer.getUserId())
-                .orElse(null), lecture);
+        return new ResponseLectureDTO(lecture);
     }
 
     /**
@@ -87,10 +83,7 @@ public class LectureService {
         }
         lecture.setStatus(status);
         lectureRepository.save(lecture);
-        return new ResponseLectureDTO(lecture.getLecturers().stream()
-                .findFirst()
-                .map(lecturer -> lecturer.getUserId())
-                .orElse(null), lecture);
+        return new ResponseLectureDTO(lecture);
     }
 
     /**
@@ -107,6 +100,7 @@ public class LectureService {
                 .map(lecturer -> new ResponseLecturerDTO(lecturer))
                 .toList();
     }
+
     /**
      * Retrieves all lectures in the system that are OnAir and their Lecturers ia Approved.
      *
@@ -114,10 +108,26 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllLectures() {
-        return lectureRepository.findAll().stream()
-                .filter(this::hasOnAirStatus)
-                .filter(this::hasApprovedLecturer)
-                .map(this::toResponseLectureDTOWithApprovedLecturer)
+        List<Lecture> lectures =  lectureRepository.findByStatus(LectureStatus.ON_AIR);
+        if (lectures.isEmpty()) {
+            throw new LectureException("No lectures found with status ON_AIR");
+        }
+        return lectures.stream()
+                .filter(this::hasApprovedLecturers)
+                .map(lecture -> new ResponseLectureDTO(lecture))
+                .toList();
+    }
+
+    /**
+     * Retrieves all lectures in the system.
+     *
+     * @return A list of ResponseLectureDTO containing details of all lectures.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getAllLecturesAdmin() {
+        return lectureRepository.findAll()
+                .stream()
+                .map(lecture -> new ResponseLectureDTO(lecture))
                 .toList();
     }
 
@@ -128,15 +138,17 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllOnlineLectures() {
-        return lectureRepository.findAll().stream()
-                .filter(this::isOnline)
-                .filter(this::hasOnAirStatus)
-                .filter(this::hasApprovedLecturer)
-                .map(this::toResponseLectureDTOWithApprovedLecturer)
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, true);
+        if (lectures.isEmpty()) {
+            throw new LectureException("No online lectures found with status ON_AIR");
+        }
+        return lectures.stream()
+                .filter(this::hasApprovedLecturers)
+                .map(lecture -> new ResponseLectureDTO(lecture))
                 .toList();
     }
 
-        /**
+    /**
      * Searches for a lecture by Title.
      * Retrieves a lecture iff their Lecturers ia Approved and lecture status is OnAir
      *
@@ -146,58 +158,46 @@ public class LectureService {
     public ResponseLectureDTO getLectureByTitle(String title) {
         Lecture lecture = lectureRepository.findByTitle(title)
             .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
-        if(hasOnAirStatus(lecture) && hasApprovedLecturer(lecture))
-            return toResponseLectureDTOWithApprovedLecturer(lecture);
+        if(hasOnAirStatus(lecture) && hasApprovedLecturers(lecture))
+            return new ResponseLectureDTO(lecture);
         throw new LectureException("Lecture not found with title: " + title);
-    }
-
-    private boolean isOnline(Lecture lecture){
-        return lecture.isOnline();
     }
 
     private boolean hasOnAirStatus(Lecture lecture){
         return lecture.getStatus() == LectureStatus.ON_AIR;
     }
     
-    private boolean hasApprovedLecturer(Lecture lecture) {
+    private boolean hasApprovedLecturers(Lecture lecture) {
         return !lecture.getLecturers().isEmpty() &&
             lecture.getLecturers().stream()
                 .allMatch(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED);
     }
 
-    private ResponseLectureDTO toResponseLectureDTOWithApprovedLecturer(Lecture lecture) {
-        UUID approvedLecturerId = lecture.getLecturers().stream()
-                .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
-                .findFirst()
-                .map(Lecturer::getUserId)
-                .orElse(null);
-        return new ResponseLectureDTO(approvedLecturerId, lecture);
+    /**
+     * Retrieves all physical lectures in the system that are OnAir and their Lecturers ia Approved.
+     *
+     * @return A list of ResponseLectureDTO containing details of all physical lectures.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getPhysicalLectures() {
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, false);
+        if (lectures.isEmpty()) {
+            throw new LectureException("No Physical lectures found with status ON_AIR");
+        }
+        return lectures.stream()
+                .filter(this::hasApprovedLecturers)
+                .map(lecture -> new ResponseLectureDTO(lecture))
+                .toList();
     }
 
-    //TODO - Itay - UPDATE 
-    public List<ResponseLectureDTO> getPhysicalLectures() { //non online le
-        return new ArrayList<>();
-        // return lectureRepository.findByIsOnlineFalse().stream()
-        //         .map(this::mapToResponseDTO)
-        //         .collect(Collectors.toList());
-    }
-
-    //TODO - Itay - UPDATE TO SEARCH BY AREA
-    public List<ResponseLectureDTO> getLecturesByLocation(String location) {
-        return new ArrayList<>();
-        // return lectureRepository.findByLocationContainingIgnoreCase(location).stream()
-        //         .map(this::mapToResponseDTO)
-        //         .collect(Collectors.toList());
-    }
-
-    //TODO - Itay - UPDATE WITH EXEPTIONS
-    public List<ResponseLectureDTO> getLecturesByLecturer(Long lecturerId) {
-        return new ArrayList<>();
-        // return lectureRepository.findByLecturerId(lecturerId).stream()
-        //         .map(this::mapToResponseDTO)
-        //         .collect(Collectors.toList());
-    }
-
+    /**
+     * Deletes a lecture by its ID.
+     *
+     * @param userId The ID of the user requesting the deletion.
+     * @param lectureId The ID of the lecture to delete.
+     * @return A message indicating the result of the deletion.
+     */
+    @Transactional
     public String deleteLecture(UUID userId, Long lectureId) {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));

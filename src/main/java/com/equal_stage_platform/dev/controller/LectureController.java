@@ -88,22 +88,22 @@ public class LectureController {
         }
     }
 
-    //TODO - itay -> add breakpoint for Admin only - retrives all lectures - without filtering any
-    // @GetMapping("/allAdmin")
-    // public ResponseEntity<?> getAllLecturesForAdmin() {
-    //     try {
-    //         return ResponseEntity.ok(?????);
-    //     } catch (LectureException e) {
-    //         // logger.error("LectureException while fetching all lectures", e);
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-    //     } catch (Exception e) {
-    //         // logger.error("Unexpected error while fetching all lectures", e);
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-    //     }
-    // }
+    @GetMapping("/allAdmin")
+    @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
+    public ResponseEntity<?> getAllLecturesForAdmin() {
+        try {
+            return ResponseEntity.ok(lectureService.getAllLecturesAdmin());
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching all lectures", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching all lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 
     @GetMapping("/{lectureId}")
-    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) { //TODO: itay -> decide if return Lecture only if status is ON_AIR and its lecturer is APPROVED (right now its not implemented)
+    public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) {
         try {
             return ResponseEntity.ok(lectureService.getLectureById(lectureId));
         } catch (LectureException e) {
@@ -144,7 +144,7 @@ public class LectureController {
     @GetMapping("/physical")
     public ResponseEntity<?> getPhysicalLectures() {
         try {
-            return ResponseEntity.ok(lectureService.getPhysicalLectures()); //TODO - Michal -> retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
+            return ResponseEntity.ok(lectureService.getPhysicalLectures());
         } catch (LectureException e) {
             // logger.error("LectureException while fetching lecture by ID", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -152,14 +152,6 @@ public class LectureController {
             // logger.error("Unexpected error while fetching lecture by ID", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-    }
-
-
-    // הרצאות לפי מרצה
-    @GetMapping("/lecturer/{lecturerId}")
-    public ResponseEntity<?> getLecturesByLecturer(@PathVariable Long lecturerId) {
-        // try { //TODO - Michal -> wrap with try catch like other functions
-            return ResponseEntity.ok(lectureService.getLecturesByLecturer(lecturerId)); //TODO - Michal -> retrive lectures that their lecturer is Approved status and return ON_AIR lectures (check lectureService.getAllOnlineLectures() implementation )
     }
 
     // מחיקת הרצאה

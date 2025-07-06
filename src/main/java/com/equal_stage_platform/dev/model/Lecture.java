@@ -8,7 +8,10 @@ import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Data;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -92,5 +95,11 @@ public class Lecture {
 
     public boolean searchLecturer(Lecturer lecturer) {
         return this.lecturers.contains(lecturer);
+    }
+
+    public List<UUID> getLecturersIds() {
+        return this.lecturers.stream()
+                .map(Lecturer::getUserId)
+                .toList();
     }
 }

@@ -39,7 +39,7 @@ public class ResponseLecturerDTO {
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();
         this.lectures = lecturer.getLectures().stream()
-            .map(lecture -> new ResponseLectureDTO(this.userId, lecture))
+            .map(lecture -> new ResponseLectureDTO(lecture))
             .collect(Collectors.toSet());
     }
     
@@ -56,7 +56,7 @@ public class ResponseLecturerDTO {
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();
         this.lectures = lectures.stream()
-            .map(lecture -> new ResponseLectureDTO(this.userId, lecture))
+            .map(lecture -> new ResponseLectureDTO(lecture))
             .collect(Collectors.toSet());
     }
 

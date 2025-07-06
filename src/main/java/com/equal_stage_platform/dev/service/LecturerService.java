@@ -4,7 +4,7 @@ package com.equal_stage_platform.dev.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,10 +14,8 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
-import com.equal_stage_platform.dev.repository.UserRepository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
-import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
@@ -114,14 +112,18 @@ public class LecturerService {
     public List<ResponseLectureDTO> getLecturesByLecturerId(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
+        if (lecturer.getStatus() != LecturerStatus.APPROVED) {
+            throw new LecturerException("Lecturer with userId: " + userId + " is not approved.");
+        }
         return lecturer.getLectures()
                 .stream()
-                .map(lecture -> new ResponseLectureDTO(userId, lecture))
+                .map(lecture -> new ResponseLectureDTO(lecture))
                 .toList();
     }
 
     /**
      * Retrieves a specific lecture by its ID and the lecturer's user ID.
+     * checks if the lecturer is approved and lecture is On_AIR.
      * 
      * @param lecturerId The ID of the lecturer.
      * @param lectureId The ID of the lecture to retrieve.
@@ -131,12 +133,15 @@ public class LecturerService {
     public ResponseLectureDTO getLectureById(UUID lecturerId, Long lectureId) {
         Lecturer lecturer = lecturerRepository.findById(lecturerId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + lecturerId));
-        
+        if (lecturer.getStatus() != LecturerStatus.APPROVED) {
+            throw new LecturerException("Lecturer with userId: " + lecturerId + " is not approved.");
+        }
         return lecturer.getLectures()
                 .stream()
                 .filter(lecture -> lecture.getLectureId().equals(lectureId))
+                .filter(lecture -> lecture.getStatus() == LectureStatus.ON_AIR)
                 .findFirst()
-                .map(lecture -> new ResponseLectureDTO(lecturerId, lecture))
+                .map(lecture -> new ResponseLectureDTO(lecture))
                 .orElseThrow(() -> new LecturerException("Lecture not found with ID: " + lectureId));
     }
     /**
@@ -147,10 +152,15 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status) {
+    public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
+        if(!isAdmin && lecturer.getStatus().equals(LecturerStatus.PENDING)) {
+            // user is no admin and lecturer is pending, so no update allowed
+            throw new LecturerException("You are not authorized to update this lecturer's status");
+        }
         lecturer.setStatus(status);
+        lecturer.setLastUpdatedAt(LocalDateTime.now());
         lecturerRepository.save(lecturer);
         return new ResponseLecturerDTO(lecturer);
     }
@@ -173,31 +183,28 @@ public class LecturerService {
     }
 
 
-    //TODO - Was getLecturersByCity, changed to getLecturersByArea
     /**
-     * קבלת מרצים לפי אזור
+     * Retrieves all lecturers in a specific area.
+     *
+     * @param area The area to filter lecturers by.
+     * @return A list of ResponseLecturerDTO containing details of lecturers in the specified area.
      */
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> getLecturersByArea(Area area) {
-        List<Lecturer> lecturers = lecturerRepository.findAll();
+        List<Lecturer> lecturers = lecturerRepository.findByAreaAndStatus(area, LecturerStatus.APPROVED);
+        if (lecturers.isEmpty()) {
+            throw new LecturerException("There are no lecturers in the area: " + area);
+        }
         return lecturers.stream()
-                .filter(lecturer->this.checkArea(lecturer, area))
-                .filter(this::isApproved)
                 .map(lecturer -> new ResponseLecturerDTO(lecturer))
                 .toList();
     }
 
-    private boolean checkArea(Lecturer lecturer, Area area){
-        return lecturer.getWorkingArea()==area;
-    }
-
-    private boolean isApproved(Lecturer lecturer){
-        return lecturer.getStatus() == LecturerStatus.APPROVED;
-    }
-
-    // TODO -> Itay - check logic, basically remove lecturer from each lecture, for each lecture check if has 0 lectures dua to delete, delete lecture if has 0
     /**
-     * מחיקת מרצה
+     * Deletes a lecturer from the system.
+     *
+     * @param userId The ID of the lecturer to delete.
+     * @return A message indicating the result of the deletion.
      */
     @Transactional
     public String deleteLecturer(UUID userId) {
@@ -214,20 +221,11 @@ public class LecturerService {
         return "Lecturer with userId: " + userId + " has been deleted successfully.";       
     }
 
-    //TODO -> Itay - check if needed
     /**
-     * קבלת מרצים עם הרצאות
-     */
-    @Transactional(readOnly = true)
-    public List<ResponseLecturerDTO> getLecturersWithLectures() {
-        return new ArrayList<>();
-        // return lecturerRepository.findLecturersWithLectures().stream()
-        //     .map(this::convertToResponseDTO)
-        //     .collect(Collectors.toList());
-    }
-
-    /**
-     * קבלת מרצה לפי אימייל
+     * Retrieves a lecturer by their email address.
+     *
+     * @param email The email address of the lecturer to retrieve.
+     * @return A ResponseLecturerDTO containing the lecturer's details.
      */
     @Transactional(readOnly = true)
     public ResponseLecturerDTO getLecturerByEmail(String email) {

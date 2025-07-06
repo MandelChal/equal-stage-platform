@@ -84,7 +84,9 @@ public class Lecturer {
         this.lastUpdatedAt = now;
         this.workingArea = lecturerData.getWorkingArea();
     }
+    
     public void enrollLecture(Lecture lecture) {
+        this.lastUpdatedAt = LocalDateTime.now();
         if(lecture!=null){
             this.lectures.add(lecture);
         }
@@ -96,6 +98,7 @@ public class Lecturer {
     }
         
     public void removeLecture(Lecture lecture) {
+        this.lastUpdatedAt = LocalDateTime.now();
         if (lecture != null) {
             this.lectures.remove(lecture);
         }

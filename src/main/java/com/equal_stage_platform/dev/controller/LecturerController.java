@@ -26,6 +26,8 @@ import com.equal_stage_platform.dev.exception.AuthException;
 @RestController
 @RequestMapping("/lecturers")
 public class LecturerController {
+    // TODO: check all endpoints are registered in security config
+
     // If you want to log errors, uncomment the next line:
     // private static final Logger logger = LoggerFactory.getLogger(LecturerController.class);
 
@@ -54,13 +56,14 @@ public class LecturerController {
         }
     }
 
-    //TODO - Itay -> (old comment) verify if to get userId from token or from path variable
-    //TODO - Itay -> (old comment) think of generic way to keep same code for lecturer and admin
-    //TODO -> Itay -> (new comment) change implementation to 2 endpoints -> 1 for admin and 1 for lecturer
-    @PatchMapping("/update/{lecturerId}/status/{status}")
-    public ResponseEntity<?> updateLecturerStatus(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
+
+    @PatchMapping("/admin_update/{lecturerId}/status/{status}")
+    public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
         try {
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status));
+            if(status == null || status == LecturerStatus.PENDING) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid status provided");
+            } 
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, true));
         } catch (LecturerException e) {
             // logger.error("LecturerException while updating lecturer status", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -70,8 +73,25 @@ public class LecturerController {
         }
     }
 
-    // TODO - Itay -> change this to be admin only
+    @PatchMapping("/update/status/{status}")
+    public ResponseEntity<?> updateLecturerStatus(@RequestHeader("Authorization") String token, @PathVariable LecturerStatus status) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            if(status == null || status == LecturerStatus.PENDING) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid status provided");
+            } 
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, false));
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while updating lecturer status", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecturer status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
     @GetMapping("/all")
+    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> getAllLecturers() {
         try {
             return ResponseEntity.ok(lecturerService.getAllLecturers());
@@ -110,7 +130,6 @@ public class LecturerController {
         }
     }
 
-    //TODO - Itay - check if lecturerId is lecturer that is approved
     @GetMapping("/lectures/{lecturerId}/all")
     public ResponseEntity<?> getLecturesByLecturerId(@PathVariable UUID lecturerId) {
         try {
@@ -127,7 +146,6 @@ public class LecturerController {
         }
     }
 
-    //TODO - Itay -> check that lecturer is approved and lectureID ia ON_AIR
     @GetMapping("/lectures/{lecturerId}/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable UUID lecturerId, @PathVariable Long lectureId) {
         try {
@@ -158,9 +176,10 @@ public class LecturerController {
     }
 
     @PostMapping("/approve/{lecturerId}")
+    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId) {
         try {
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED));
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED, true));
         } catch (LecturerException e) {
             // logger.error("LecturerException while approving lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -171,9 +190,10 @@ public class LecturerController {
     }
 
     @PostMapping("/reject/{lecturerId}")
+    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId) {
         try {
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.REJECTED));
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.REJECTED, true));
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -183,8 +203,6 @@ public class LecturerController {
         }
     }
 
-    //TODO - replaced @RequestParam String name TO , added {name} to route 
-    // TODO - Michal - check that flow in lecturerService is ok
     @GetMapping("/search/{name}")
     public ResponseEntity<?> searchLecturersByName(@PathVariable String name) {
         try {

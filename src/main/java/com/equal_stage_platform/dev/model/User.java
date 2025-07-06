@@ -73,4 +73,12 @@ public class User {
         return this.role == Role.LECTURER;
     }
 
+    public void updatePass(String newPass){
+        this.pastPasswords.add(this.password); // Store the old password
+        this.password = newPass;
+        LocalDateTime now = LocalDateTime.now();
+        this.lastUpdatedAt = now;
+        this.nextPasswordChange = now.plusMonths(3); // Set next password change to 3 months from now
+    }
+
 }

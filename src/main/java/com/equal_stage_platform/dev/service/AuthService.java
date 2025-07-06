@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -118,6 +119,7 @@ public class AuthService {
         // Generate a Secure Token 
         // Build the Reset Link 
         // Send the Link via Email
+        //TODO - upfate last update time in entitiy
         return "If your email exists, you will receive a reset link.";
     }
 
@@ -128,10 +130,11 @@ public class AuthService {
             .orElseThrow(() -> new AuthException("Token Unvalid"));
         //TODO - write in security db
         User user = obj.getUser();
-        user.setPassword(newPass);
+        user.updatePass(passwordEncoder.encode(newPass));
         userRepository.save(user);
         return "Password Changes Succeesfuly";
     }
+
     public String resetPass(String token, String oldPass, String newPass){
         UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
         User requestingUser = userRepository.findById(userId)
@@ -139,7 +142,8 @@ public class AuthService {
         if (!passwordEncoder.matches(oldPass, requestingUser.getPassword())) {
             throw new AuthException("Invalid oldPass");
         }
-        requestingUser.setPassword(newPass);
+        requestingUser.updatePass(passwordEncoder.encode(newPass));
+        userRepository.save(requestingUser);
         return "Password Changes Succeesfuly";    
     }
 
