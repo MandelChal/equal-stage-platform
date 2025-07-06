@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -134,6 +135,20 @@ public class AuthController {
     public ResponseEntity<?> resetPass(@RequestHeader String token, @RequestBody ResetPassDTO resetPassRequest){
         try{
             String result = authService.resetPass(token, resetPassRequest.getOldPassword(), resetPassRequest.getNewPassword());
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete-account")
+    // @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> deleteAccount(@RequestHeader String token) {
+        try {
+            String result = authService.deleteUser(token);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

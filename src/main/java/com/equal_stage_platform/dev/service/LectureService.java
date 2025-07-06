@@ -14,19 +14,23 @@ import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
+import com.equal_stage_platform.dev.repository.UserRepository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.exception.LectureException;
 
 @Service
 public class LectureService {
     private final LectureRepository lectureRepository;
     private final LecturerRepository lecturerRepository;
-    public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository) {
+    private final UserRepository userRepository;
+    public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository, UserRepository userRepository) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
+        this.userRepository = userRepository;
     }
     // ---------------------- create / update / retrieve methods ----------------------
     /**
@@ -194,12 +198,21 @@ public class LectureService {
         //         .collect(Collectors.toList());
     }
 
-    // TODO -> Itay - implement full logic: go over each lecturer and remove the lecture from their lists
-    public String deleteLecture(UUID userId, Integer lectureId) {
-        return "Not Implemented";
-        // if (!lectureRepository.existsById(lectureId)) {
-        //     throw new LectureException("Lecture not found with id: " + lectureId);
-        // }
-        // lectureRepository.deleteById(lectureId);
+    public String deleteLecture(UUID userId, Long lectureId) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new LectureException("User not found with ID: " + userId));
+        if (!user.isAdmin()) {
+            Lecturer lecturer = lecturerRepository.findById(userId)
+                    .orElseThrow(() -> new LectureException("Lecturer not found with ID: " + userId));
+    
+            if (!lecture.searchLecturer(lecturer)) {
+                throw new LectureException("You are not authorized to delete this lecture");
+            }
+        }
+        lecture.removeAllLecturers();
+        lectureRepository.delete(lecture);
+        return "Lecture deleted successfully";
     }
 }

@@ -85,4 +85,12 @@ public class Lecture {
             this.removeLecturer(lecturer);
         }
     }
+
+    public int getLecturerCount() {
+        return this.lecturers.size();
+    }
+
+    public boolean searchLecturer(Lecturer lecturer) {
+        return this.lecturers.contains(lecturer);
+    }
 }

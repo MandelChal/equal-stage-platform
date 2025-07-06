@@ -14,6 +14,7 @@ import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import io.lettuce.core.dynamic.annotation.Param;
 
 public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
+    // Search lecturer by Status
     List<Lecturer> findByStatus(LecturerStatus status);
 
     // Search lecturer by email

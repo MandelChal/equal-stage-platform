@@ -12,6 +12,7 @@ import com.equal_stage_platform.dev.service.LectureService;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,6 +37,7 @@ public class LectureController {
     }
 
     @PostMapping("/create")
+    // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can create lectures
     public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @RequestBody CreateLectureDTO lectureData) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
@@ -54,6 +56,7 @@ public class LectureController {
     }
 
     @PatchMapping("/update/{lectureId}/status/{status}")
+    // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can create lectures
     public ResponseEntity<?> updateLectureStatus(@RequestHeader("Authorization") String token, @PathVariable Long lectureId, @PathVariable LectureStatus status) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
@@ -70,10 +73,12 @@ public class LectureController {
         }
     }
 
+
+    // retrive lectures of approved lecturers and ON_AIR status
     @GetMapping("/all")
     public ResponseEntity<?> getAllLectures() {
         try {
-            return ResponseEntity.ok(lectureService.getAllLectures()); // retrive lectures of approved lecturers and ON_AIR status
+            return ResponseEntity.ok(lectureService.getAllLectures()); 
         } catch (LectureException e) {
             // logger.error("LectureException while fetching all lectures", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -158,12 +163,12 @@ public class LectureController {
     }
 
     // מחיקת הרצאה
-    // TODO -> itay : implement delete, check on who want to delete
-    @DeleteMapping("/{lectureId}")
-    public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Integer lectureId) {
+    @DeleteMapping("/del/{lectureId}")
+    // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can delete lectures
+    public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Long lectureId) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); //TODO - Itay -> update lectureService.deleteLecture wo get userId, check that lectureId is registered under lecturer with userId, make sure lectureService.deleteLecture will return String "Lecture deleted successfully" on success
+            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); 
         } catch (LectureException e) {
             // logger.error("LectureException while updating lecture status", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

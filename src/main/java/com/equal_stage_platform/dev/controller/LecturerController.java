@@ -10,6 +10,7 @@ import com.equal_stage_platform.dev.service.LecturerService;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -197,15 +198,11 @@ public class LecturerController {
         }
     }
 
-    // TODO - Itay
-    // TODO -> 1. verify that delete lecturer will deletes its lectures
-    // TODO -> 2. make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
-    // TODO -> 3. changed "@PathVariable Long userId" TO "@PathVariable UUID lecturerId" - implement the change in lecturerService.deleteLecturer
-    // TODO -> 4. make sure that 
     @DeleteMapping("del/{userId}")
+    // @PreAuthorize("hasRole('ADMIN')") // endpoint for admin to delete any lecturer
     public ResponseEntity<String> deleteLecturer(@PathVariable UUID userId) {
         try {
-            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
+            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); 
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -215,9 +212,9 @@ public class LecturerController {
         }
     }
 
-    //TODO - Itay
-    @DeleteMapping("delLecturerProfile")
-    public ResponseEntity<String> deleteLecturer(@RequestHeader("Authorization") String token) { //TODO -> verify that delete lecturer will deletes its lectures
+    @DeleteMapping("del/self")
+    // @PreAuthorize("hasRole('LECTURER')") // endpoint for lecturer to delete their own profile
+    public ResponseEntity<String> deleteLecturer(@RequestHeader("Authorization") String token) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
             return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success

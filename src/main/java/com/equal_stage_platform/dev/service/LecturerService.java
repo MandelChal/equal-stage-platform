@@ -12,18 +12,27 @@ import java.util.UUID;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
+import com.equal_stage_platform.dev.repository.UserRepository;
+import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.exception.LecturerException;
+import com.equal_stage_platform.dev.model.enums.Role;
 
 @Service
 public class LecturerService {
     private final LecturerRepository lecturerRepository;
-    public LecturerService(LecturerRepository lecturerRepository) {
+    private final LectureRepository lectureRepository;
+    private final AuthService authService;
+    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService) {
         this.lecturerRepository = lecturerRepository;
+        this.lectureRepository = lectureRepository;
+        this.authService = authService;
     }
 
     // ---------------------- create / update / retrieve methods ----------------------
@@ -190,17 +199,19 @@ public class LecturerService {
     /**
      * מחיקת מרצה
      */
+    @Transactional
     public String deleteLecturer(UUID userId) {
-        return "Not Implemented";
-        // Lecturer lecturer = lecturerRepository.findById(userId)
-        //     .orElseThrow(() -> new LecturerException("Lecturer not found with id: " + userId));
-        
-        // // הסרת הקשרים עם הרצאות לפני המחיקה
-        // lecturer.removeAllLectures();
-        // lecturerRepository.save(lecturer);
-        
-        // // מחיקת המרצה
-        // lecturerRepository.deleteById(userId);
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
+        for(Lecture lecture : lecturer.getLectures()){
+            lecture.removeLecturer(lecturer);
+            if(lecture.getLecturerCount() == 0) {
+                lectureRepository.delete(lecture);
+            }
+        }
+        authService.changeRole(userId, Role.USER);
+        lecturerRepository.delete(lecturer);
+        return "Lecturer with userId: " + userId + " has been deleted successfully.";       
     }
 
     //TODO -> Itay - check if needed

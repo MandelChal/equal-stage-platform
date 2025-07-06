@@ -140,5 +140,35 @@ public class AuthService {
             throw new AuthException("Invalid oldPass");
         }
         requestingUser.setPassword(newPass);
-        return "Password Changes Succeesfuly";    }
+        return "Password Changes Succeesfuly";    
+    }
+
+    public String changeRole(UUID userId, Role newRole) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new AuthException("User not found"));
+
+        if (user.getRole() == newRole) {
+            throw new AuthException("User already has this role");
+        }
+
+        user.setRole(newRole);
+        userRepository.save(user);
+        return "User role changed successfully";
+    }
+
+    public String deleteUser(String token) {
+        UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new AuthException("User not found"));
+        if (user.isAdmin()) {
+            throw new AuthException("Cannot delete admin user");
+        }
+        if (user.isLecturer()){
+            throw new AuthException("Error: Cannot delete a lecturer user. Please remove the lecturer profile first.");
+        }
+      
+        // Delete the user
+        userRepository.delete(user);
+        return "User deleted successfully";
+    }
 }

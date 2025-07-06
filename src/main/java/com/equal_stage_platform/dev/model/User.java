@@ -65,4 +65,12 @@ public class User {
         this.pastPasswords = new HashSet<>();
     }
 
+    public boolean isAdmin() {
+        return this.role == Role.ADMIN;
+    }
+
+    public boolean isLecturer() {
+        return this.role == Role.LECTURER;
+    }
+
 }
