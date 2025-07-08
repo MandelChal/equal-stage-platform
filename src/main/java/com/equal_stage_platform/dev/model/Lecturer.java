@@ -91,6 +91,7 @@ public class Lecturer {
             this.lectures.add(lecture);
         }
     }
+    
     public Set<Lecture> getLecturesByStatus(LectureStatus status) {
         return this.lectures.stream()
             .filter(lecture -> lecture.getStatus() == status)

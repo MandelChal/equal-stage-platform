@@ -12,7 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,6 +47,11 @@ public class AuthService {
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
         return Map.of("token", accessToken, "refresh", refreshToken);
+    }
+
+    public Role getUserRole(UUID userId) {
+        return userRepository.getRoleByUserId(userId)
+            .orElseThrow(() -> new AuthException("User not found or role not assigned"));
     }
 
     public Map<String, String> refresh(String refreshToken) {

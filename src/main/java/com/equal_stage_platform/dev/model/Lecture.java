@@ -83,8 +83,9 @@ public class Lecture {
         }
     }
     
-    public void removeAllLecturers() {       
-        for (Lecturer lecturer : this.lecturers) {
+    public void removeAllLecturers() {
+        HashSet<Lecturer> lecturersCopy = new HashSet<>(this.lecturers);       
+        for (Lecturer lecturer : lecturersCopy) {
             this.removeLecturer(lecturer);
         }
     }

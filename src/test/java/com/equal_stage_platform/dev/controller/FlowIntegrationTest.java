@@ -18,6 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 import java.util.Set;
 import java.util.UUID;
@@ -138,7 +140,7 @@ public class FlowIntegrationTest {
 
 	// Helper to get pending lecturers
 	private Set<ResponseLecturerDTO> getPendingLecturers(String token) throws Exception {
-		String response = mockMvc.perform(get("/lecturers/pending")
+		String response = mockMvc.perform(get("/lecturers/admin/pending")
 			.header("Authorization", "Bearer " + token))
 			.andExpect(status().isOk())
 			.andReturn()
@@ -151,7 +153,7 @@ public class FlowIntegrationTest {
 
 	// Helper to approve lecturer
 	private void approveLecturer(String token, UUID lecturerId) throws Exception {
-		mockMvc.perform(post("/lecturers/approve/" + lecturerId)
+		mockMvc.perform(post("/lecturers/admin/approve/" + lecturerId)
 			.header("Authorization", "Bearer " + token))
 				.andExpect(status().isOk());
 	}
@@ -165,8 +167,70 @@ public class FlowIntegrationTest {
 	
 		ResponseLectureDTO dto = objectMapper.readValue(response, ResponseLectureDTO.class);
 	
-		// Assuming ResponseLectureDTO has a getLecture() method that returns a Lecture object
+		// Assuming ResponseLectureDTO has a getTitle() method that returns the lecture title
 		assertEquals(title, dto.getTitle());
+	}
+
+	// Add helper for updating lecturer status
+	private void updateLecturerStatus(String token, String status, boolean isAdmin, UUID lecturerId) throws Exception {
+		if (isAdmin) {
+			mockMvc.perform(patch("/lecturers/admin/" + lecturerId + "/status/" + status)
+					.header("Authorization", "Bearer " + token))
+					.andExpect(status().isOk());
+		} else {
+			mockMvc.perform(patch("/lecturers/update/status/" + status)
+					.header("Authorization", "Bearer " + token))
+					.andExpect(status().isOk());
+		}
+	}
+
+	// Add helper for updating lecturer status expecting failure
+	private void updateLecturerStatusExpectFail(String token, String status) throws Exception {
+		mockMvc.perform(patch("/lecturers/update/status/" + status)
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().isBadRequest());
+	}
+
+	// Add helper for getting a specific lecture by lecturer id
+	private void getLectureByLecturerId(String token, UUID lecturerId, int lectureNum, int expectedStatus) throws Exception {
+		mockMvc.perform(get("/lecturers/lectures/" + lecturerId + "/" + lectureNum)
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	// Add helper for getting all lectures by lecturer id
+	private void getLecturesByLecturerId(String token, UUID lecturerId, int expectedStatus) throws Exception {
+		mockMvc.perform(get("/lecturers/lectures/" + lecturerId + "/all")
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	// Add helper for searching lecturer by id
+	private void searchLecturerById(String token, UUID lecturerId, int expectedStatus) throws Exception {
+		mockMvc.perform(get("/lecturers/search/id/" + lecturerId)
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	// Add helper for searching lecturer by name
+	private void searchLecturerByName(String token, String name, int expectedStatus) throws Exception {
+		mockMvc.perform(get("/lecturers/search/name/" + name)
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	// Add helper for deleting lecturer by admin
+	private void deleteLecturerByAdmin(String adminToken, UUID lecturerId) throws Exception {
+		mockMvc.perform(delete("/lecturers/admin/del/" + lecturerId)
+				.header("Authorization", "Bearer " + adminToken))
+				.andExpect(status().isOk());
+	}
+
+	// Add helper for deleting lecturer by self
+	private void deleteLecturerBySelf(String token) throws Exception {
+		mockMvc.perform(delete("/lecturers/del/self")
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().isOk());
 	}
 
 	@Test
@@ -220,5 +284,68 @@ public class FlowIntegrationTest {
 		}
 
 		searchLectureByTitle("Lecture2_user2");
+
+		// === Begin user3 flow ===
+		// 1. user3 registers
+		String user3Token = registerAndLogin("user3@example.com", "Password!5678");
+
+		// 2. user3 creates lecturer
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "5551234567", "https://example.com/image5.jpg", Area.SOUTH);
+
+		// 3. user1 approves pending lecturers (user3)
+		Set<ResponseLecturerDTO> lecturers3 = getPendingLecturers(user1Token);
+		UUID user3LecturerId = lecturers3.iterator().next().getUserId();
+		approveLecturer(user1Token, user3LecturerId);
+
+		// 4. user3 creates 3 lectures
+		for (int i = 1; i <= 3; i++) {
+			createLecture(user3Token, "Lecture" + i + "_user3", "Description of Lecture" + i + "_user3", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*700+".jpg");
+		}
+
+		// 5. user3 tries to update status to PENDING and gets rejected
+		updateLecturerStatusExpectFail(user3Token, "PENDING");
+
+		// 6. user3 updates his status to FREEZE
+		updateLecturerStatus(user3Token, "FREEZE", false, null);
+
+		// 7. user2 tries to get a specific lecture of user3 lecturer and gets rejected
+		getLectureByLecturerId(user2Token, user3LecturerId, 1, 404);
+
+		// 8. user2 tries to get lectures of user3 lecturer and gets rejected
+		getLecturesByLecturerId(user2Token, user3LecturerId, 404);
+
+		// 9. user2 tries to search user3 by its id and gets rejected
+		searchLecturerById(user2Token, user3LecturerId, 404);
+
+		// 10. user2 tries to search lecturer of user3 by name and gets rejected
+		searchLecturerByName(user2Token, "Alice", 404);
+
+		// 11. user1 updates user3 status to Approved
+		updateLecturerStatus(user3Token, "APPROVED", false, null);
+
+		// 12. user2 tries to search lecturer of user3 by its id and succeeds
+		searchLecturerById(user2Token, user3LecturerId, 200);
+
+		// 13. user2 tries to search lecturer of user3 by name and succeeds
+		searchLecturerByName(user2Token, "Alice", 200);
+
+		// 14. user2 tries to get a specific lecture of user3 lecturer and succeeds
+		getLectureByLecturerId(user2Token, user3LecturerId, 7, 200);
+
+		// 15. user2 tries to get lectures of user3 lecturer and succeeds
+		getLecturesByLecturerId(user2Token, user3LecturerId, 200);
+
+		// 16. user3 deletes his own lecturer profile
+		deleteLecturerBySelf(user3Token);
+
+		// 17. user3 creates a new lecturer
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "5551234568", "https://example.com/image6.jpg", Area.SOUTH);
+
+		// 18. user1 deletes user3 lecturer profile
+		// Get the new lecturer id
+		Set<ResponseLecturerDTO> newLecturers3 = getPendingLecturers(user1Token);
+		UUID newUser3LecturerId = newLecturers3.iterator().next().getUserId();
+		approveLecturer(user1Token, newUser3LecturerId);
+		deleteLecturerByAdmin(user1Token, newUser3LecturerId);
 	}
 }

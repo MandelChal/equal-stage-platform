@@ -4,6 +4,7 @@ package com.equal_stage_platform.dev.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,9 +60,14 @@ public class LectureService {
      * @return A ResponseLectureDTO containing the lecture's details.
      */
     @Transactional(readOnly = true)
-    public ResponseLectureDTO getLectureById(Long lectureId) {
+    public ResponseLectureDTO getLectureById(Long lectureId, boolean isAdmin) {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
+        if (!isAdmin){
+            if (!hasOnAirStatus(lecture) || !hasApprovedLecturers(lecture)) {
+                throw new LectureException("Lecture not found with ID: " + lectureId);
+            }
+        }
         return new ResponseLectureDTO(lecture);
     }
 
@@ -82,6 +88,7 @@ public class LectureService {
             throw new LectureException("You are not authorized to update this lecture");
         }
         lecture.setStatus(status);
+        lecture.setUpdatedAt(LocalDateTime.now());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -138,7 +145,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllOnlineLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, true);
+        List<Lecture> lectures = lectureRepository.findByStatusAndIsOnline(LectureStatus.ON_AIR, true);
         if (lectures.isEmpty()) {
             throw new LectureException("No online lectures found with status ON_AIR");
         }
@@ -155,12 +162,14 @@ public class LectureService {
      * @return A list of ResponseLectureDTO containing details of all lectures.
      */
     @Transactional(readOnly = true)
-    public ResponseLectureDTO getLectureByTitle(String title) {
+    public ResponseLectureDTO getLectureByTitle(String title, boolean isAdmin) {
         Lecture lecture = lectureRepository.findByTitle(title)
             .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
-        if(hasOnAirStatus(lecture) && hasApprovedLecturers(lecture))
-            return new ResponseLectureDTO(lecture);
-        throw new LectureException("Lecture not found with title: " + title);
+        if (!isAdmin){
+            if(!hasOnAirStatus(lecture) || !hasApprovedLecturers(lecture))
+                throw new LectureException("Lecture not found with title: " + title);
+        }
+        return new ResponseLectureDTO(lecture);
     }
 
     private boolean hasOnAirStatus(Lecture lecture){
@@ -180,7 +189,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getPhysicalLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, false);
+        List<Lecture> lectures = lectureRepository.findByStatusAndIsOnline(LectureStatus.ON_AIR, false);
         if (lectures.isEmpty()) {
             throw new LectureException("No Physical lectures found with status ON_AIR");
         }

@@ -36,5 +36,5 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     @Query("SELECT DISTINCT l FROM Lecturer l WHERE SIZE(l.lectures) > 0")
     List<Lecturer> findLecturersWithLectures();
 
-    List<Lecturer> findByAreaAndStatus(Area area, LecturerStatus status);
+    List<Lecturer> findByWorkingAreaAndStatus(Area workingArea, LecturerStatus status);
 }

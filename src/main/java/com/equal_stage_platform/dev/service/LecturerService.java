@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 // ---- class imports ----
@@ -67,10 +69,12 @@ public class LecturerService {
      * @return A ResponseLecturerDTO containing the lecturer's details.
      */
     @Transactional(readOnly = true)
-    public ResponseLecturerDTO getLecturerById(UUID userId) {
+    public ResponseLecturerDTO getLecturerById(UUID userId, boolean isAdmin) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
-        
+        if(!isAdmin && lecturer.getStatus() != LecturerStatus.APPROVED) {
+            throw new LecturerException("Lecturer not found with userId: " + userId);
+        }
         return new ResponseLecturerDTO(lecturer);
     }
 
@@ -170,10 +174,17 @@ public class LecturerService {
      * Search lecturers by name
      */
     @Transactional(readOnly = true)
-    public List<ResponseLecturerDTO> searchLecturersByName(String name) {
+    public List<ResponseLecturerDTO> searchLecturersByName(String name, boolean isAdmin) {
         List<ResponseLecturerDTO> lecturers = lecturerRepository.findByNameContaining(name).stream()
             .map(lecturer -> new ResponseLecturerDTO(lecturer))
             .toList();
+
+        if (!isAdmin) {
+            // Filter out lecturers that are not approved if the user is not an admin
+            lecturers = lecturers.stream()
+                .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
+                .toList();
+        }
         
         if (lecturers.isEmpty()) {
             throw new LecturerException("There is no Lecturer with Name: " + name);
@@ -191,7 +202,7 @@ public class LecturerService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> getLecturersByArea(Area area) {
-        List<Lecturer> lecturers = lecturerRepository.findByAreaAndStatus(area, LecturerStatus.APPROVED);
+        List<Lecturer> lecturers = lecturerRepository.findByWorkingAreaAndStatus(area, LecturerStatus.APPROVED);
         if (lecturers.isEmpty()) {
             throw new LecturerException("There are no lecturers in the area: " + area);
         }
@@ -210,7 +221,8 @@ public class LecturerService {
     public String deleteLecturer(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
-        for(Lecture lecture : lecturer.getLectures()){
+        Set<Lecture> lectures = new HashSet<>(lecturer.getLectures());
+        for(Lecture lecture : lectures){
             lecture.removeLecturer(lecturer);
             if(lecture.getLecturerCount() == 0) {
                 lectureRepository.delete(lecture);

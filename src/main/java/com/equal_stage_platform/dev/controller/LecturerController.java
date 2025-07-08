@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.service.LecturerService;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.HttpStatus;
 
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
+import com.equal_stage_platform.dev.model.enums.Role;
+import com.equal_stage_platform.dev.service.AuthService;
 import com.equal_stage_platform.dev.service.JwtService;
 import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.exception.LectureException;
@@ -26,16 +28,16 @@ import com.equal_stage_platform.dev.exception.AuthException;
 @RestController
 @RequestMapping("/lecturers")
 public class LecturerController {
-    // TODO: check all endpoints are registered in security config
-
     // If you want to log errors, uncomment the next line:
     // private static final Logger logger = LoggerFactory.getLogger(LecturerController.class);
 
     private final LecturerService lecturerService;
     private final JwtService jwtService;
-    public LecturerController(LecturerService lecturerService, JwtService jwtService) {
+    private final AuthService authService;
+    public LecturerController(LecturerService lecturerService, JwtService jwtService, AuthService authService) {
         this.lecturerService = lecturerService;
         this.jwtService = jwtService;
+        this.authService = authService;
     }
 
     @PostMapping("/create")
@@ -57,30 +59,28 @@ public class LecturerController {
     }
 
 
-    @PatchMapping("/admin_update/{lecturerId}/status/{status}")
+    @PatchMapping("/admin/{lecturerId}/status/{status}")
     public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
-        try {
-            if(status == null || status == LecturerStatus.PENDING) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid status provided");
-            } 
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, true));
-        } catch (LecturerException e) {
-            // logger.error("LecturerException while updating lecturer status", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            // logger.error("Unexpected error while updating lecturer status", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
+        return updateLecturerStatus(userId, status, true);
     }
 
     @PatchMapping("/update/status/{status}")
     public ResponseEntity<?> updateLecturerStatus(@RequestHeader("Authorization") String token, @PathVariable LecturerStatus status) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return updateLecturerStatus(userId, status, false);
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecturer status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    private ResponseEntity<?> updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin) {
+        try {
             if(status == null || status == LecturerStatus.PENDING) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid status provided");
             } 
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, false));
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, isAdmin));
         } catch (LecturerException e) {
             // logger.error("LecturerException while updating lecturer status", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -90,7 +90,7 @@ public class LecturerController {
         }
     }
 
-    @GetMapping("/all")
+    @GetMapping("/admin/all")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> getAllLecturers() {
         try {
@@ -117,10 +117,19 @@ public class LecturerController {
         }
     }
 
-    @GetMapping("searchById/{userId}")
+    @GetMapping("search/id/{userId}")
     public ResponseEntity<?> getLecturerById(@PathVariable UUID userId) {
+        return getLecturerById(userId, false);
+    }
+
+    @GetMapping("/admin/search/id/{userId}")
+    public ResponseEntity<?> getLecturerByIdAdmin(@PathVariable UUID userId) {
+        return getLecturerById(userId, true);
+    }
+    
+    private ResponseEntity<?> getLecturerById(UUID userId, boolean isAdmin) {
         try {
-            return ResponseEntity.ok(lecturerService.getLecturerById(userId));
+            return ResponseEntity.ok(lecturerService.getLecturerById(userId, isAdmin));
         } catch (LecturerException e) {
             // logger.error("LecturerException while fetching lecturer by ID", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -162,7 +171,7 @@ public class LecturerController {
         }
     }
 
-    @GetMapping("/pending")
+    @GetMapping("/admin/pending")
     public ResponseEntity<?> getPendingLecturers() {
         try {
             return ResponseEntity.ok(lecturerService.getLecturersByStatus(LecturerStatus.PENDING));
@@ -175,11 +184,15 @@ public class LecturerController {
         }
     }
 
-    @PostMapping("/approve/{lecturerId}")
+    @PostMapping("/admin/approve/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId) {
         try {
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED, true));
+            ResponseLecturerDTO lecturer = lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED, true);
+            if(authService.getUserRole(lecturerId) != Role.ADMIN) {
+                authService.changeRole(lecturerId, Role.LECTURER);
+            }
+            return ResponseEntity.ok(lecturer);
         } catch (LecturerException e) {
             // logger.error("LecturerException while approving lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -189,7 +202,7 @@ public class LecturerController {
         }
     }
 
-    @PostMapping("/reject/{lecturerId}")
+    @PostMapping("/admin/reject/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId) {
         try {
@@ -203,47 +216,54 @@ public class LecturerController {
         }
     }
 
-    @GetMapping("/search/{name}")
+    @GetMapping("/search/name/{name}")
     public ResponseEntity<?> searchLecturersByName(@PathVariable String name) {
+        return searchLecturersByName(name, false);
+    }
+
+    @GetMapping("/admin/search/name/{name}")
+    public ResponseEntity<?> searchLecturersByNameAdmin(@PathVariable String name) {
+        return searchLecturersByName(name, true);
+    }
+
+    private ResponseEntity<?> searchLecturersByName(String name, boolean isAdmin) {
         try {
-            return ResponseEntity.ok(lecturerService.searchLecturersByName(name));
+            return ResponseEntity.ok(lecturerService.searchLecturersByName(name, isAdmin));
         } catch (LecturerException e) {
-            // logger.error("LecturerException while rejecting lecturer", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            // logger.error("LecturerException while searching lecturers by name", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            // logger.error("Unexpected error while rejecting lecturer", e);
+            // logger.error("Unexpected error while searching lecturers by name", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
-    @DeleteMapping("del/{userId}")
+    @DeleteMapping("/admin/del/{userId}")
     // @PreAuthorize("hasRole('ADMIN')") // endpoint for admin to delete any lecturer
-    public ResponseEntity<String> deleteLecturer(@PathVariable UUID userId) {
-        try {
-            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); 
-        } catch (LecturerException e) {
-            // logger.error("LecturerException while rejecting lecturer", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            // logger.error("Unexpected error while rejecting lecturer", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
+    public ResponseEntity<?> deleteLecturer(@PathVariable UUID userId) {
+        return deleteLecturer(userId, true);
     }
 
     @DeleteMapping("del/self")
     // @PreAuthorize("hasRole('LECTURER')") // endpoint for lecturer to delete their own profile
-    public ResponseEntity<String> deleteLecturer(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> deleteLecturer(@RequestHeader("Authorization") String token) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            return ResponseEntity.ok(lecturerService.deleteLecturer(userId)); //TODO - make sure that lecturerService.deleteLecturer will return "Lecturer deleted successfully" on success
-        } catch (LecturerException e) {
-            // logger.error("LecturerException while creating lecturer", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (AuthException e) {
-            // logger.error("AuthException while creating lecturer", e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+            return deleteLecturer(userId, false);
         } catch (Exception e) {
             // logger.error("Unexpected error while rejecting lecturer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    private ResponseEntity<?> deleteLecturer(UUID userId, boolean isAdmin) {
+        try {
+            return ResponseEntity.ok(lecturerService.deleteLecturer(userId));
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while deleting lecturer", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while deleting lecturer", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }

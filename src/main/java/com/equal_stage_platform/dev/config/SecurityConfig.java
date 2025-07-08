@@ -25,20 +25,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
                 //----Auth endpoints----
-                .requestMatchers("/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth//reset-pass-token").permitAll()  // Allow initial admin setup
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout","/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth//reset-pass-token").permitAll()
                 .requestMatchers("/api/auth/create-admin").hasRole("ADMIN")  // Only admins can create new admins
-                .requestMatchers("/api/auth/reset-pass").hasRole("USER") 
+                .requestMatchers("/api/auth/reset-pass").hasAnyRole("USER", "ADMIN")
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/lecturers/adminUpdate/**", "/lecturers/update/**", "/lecturers/delLecturerProfile").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/all", "/lecturers/del/{userId}").hasRole("ADMIN")
-                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/searchById/{userId}", "/lecturers/all/approved","/lecturers/search/{name}").permitAll()
-                .requestMatchers("/lecturers/reject/**", "/lecturers/approve/**", "/lecturers/all", "/lecturers/pending").hasRole("ADMIN")
+                .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/search/**", "/lecturers/all/approved").permitAll()
+                .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")
                 //----Lecture endpoints----
-                .requestMatchers("/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lectures/{lectureId}", "/all/isOnline", "/lectures/all", "/lectures/search/**").permitAll()
+                .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
+                .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/all", "/lectures/search/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
