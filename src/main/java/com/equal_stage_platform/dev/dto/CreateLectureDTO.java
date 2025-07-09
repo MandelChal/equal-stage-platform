@@ -5,6 +5,8 @@ import org.hibernate.validator.constraints.URL;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import jakarta.validation.constraints.NotNull;
+
 @Data
 public class CreateLectureDTO {
     private UUID userId;
@@ -15,16 +17,16 @@ public class CreateLectureDTO {
     @NotBlank(message = "Description is required")
     private String description;
 
+    @NotNull(message = "Duration is required")
     private Integer duration; // Duration in minutes
 
-    @NotBlank(message = "Price is required")
+    @NotNull(message = "Price is required")
     private Integer price;
 
-    @NotBlank(message = "Lecture status is required")
+    @NotNull(message = "Lecture status is required")
     private LectureStatus lectureStatus;
 
-    @NotBlank(message = "Lecture online status is required")
-    private boolean isOnline;
+    private boolean online;
 
     @URL(message = "Invalid URL format")
     private String imageUrl;
@@ -32,14 +34,14 @@ public class CreateLectureDTO {
     public CreateLectureDTO() {
         // Default constructor
     }
-    public CreateLectureDTO(String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl) {
+    public CreateLectureDTO(String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean online, String imageUrl) {
         this.userId = null;
         this.title = title;
         this.description = description;
         this.duration = duration;
         this.price = price;
         this.lectureStatus = lectureStatus;
-        this.isOnline = isOnline;
+        this.online = online;
         this.imageUrl = imageUrl;
     }
 }

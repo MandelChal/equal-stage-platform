@@ -16,7 +16,7 @@ public class ResponseLectureDTO {
     private String createdAt; // ISO 8601 format
     private String updatedAt; // ISO 8601 format
     private String status; // LectureStatus as a string
-    private boolean isOnline;
+    private boolean online;
     private String imageUrl;
     public ResponseLectureDTO() {
         // Default constructor
@@ -31,7 +31,7 @@ public class ResponseLectureDTO {
         this.createdAt = lecture.getCreatedAt().toString();
         this.updatedAt = lecture.getUpdatedAt().toString();
         this.status = lecture.getStatus().name();
-        this.isOnline = lecture.isOnline();
+        this.online = lecture.isOnline();
         this.imageUrl = lecture.getImageUrl();
     }
 }

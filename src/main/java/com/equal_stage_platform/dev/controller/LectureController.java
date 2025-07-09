@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.service.LectureService;
+
+import jakarta.validation.Valid;
+
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -22,15 +25,15 @@ import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.service.JwtService;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.exception.AuthException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/lectures")
 public class LectureController {
     private final LectureService lectureService;
     private final JwtService jwtService;
-    private static final Logger logger = LoggerFactory.getLogger(LectureController.class);
+    // private static final Logger logger = LoggerFactory.getLogger(LectureController.class);
     public LectureController(LectureService lectureService, JwtService jwtService) {
         this.lectureService = lectureService;
         this.jwtService = jwtService;
@@ -38,19 +41,19 @@ public class LectureController {
 
     @PostMapping("/create")
     // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can create lectures
-    public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @RequestBody CreateLectureDTO lectureData) {
+    public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLectureDTO lectureData) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
             lectureData.setUserId(userId);
-            logger.info("Attempting to create lecture for user ID: {}", userId);
-            ResponseEntity<?> response = ResponseEntity.ok(lectureService.createLecture(lectureData));
-            logger.info("Lecture created successfully for user ID: {}", userId);
+            // logger.info("Attempting to create lecture for user ID: {}", userId);
+            ResponseEntity<?> response = ResponseEntity.status(HttpStatus.CREATED).body(lectureService.createLecture(lectureData));
+            // logger.info("Lecture created successfully for user ID: {}", userId);
             return response;
         } catch (LectureException e) {
-            logger.error("LectureException while creating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
-            return e.getMessage().equals("Lecturer is not approved") ? ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage()) : ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            // logger.error("LectureException while creating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (AuthException e) {
-            logger.error("AuthException while creating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
+            // logger.error("AuthException while creating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while creating lecture", e);

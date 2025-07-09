@@ -145,7 +145,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllOnlineLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndIsOnline(LectureStatus.ON_AIR, true);
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, true);
         if (lectures.isEmpty()) {
             throw new LectureException("No online lectures found with status ON_AIR");
         }
@@ -189,7 +189,7 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getPhysicalLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndIsOnline(LectureStatus.ON_AIR, false);
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, false);
         if (lectures.isEmpty()) {
             throw new LectureException("No Physical lectures found with status ON_AIR");
         }

@@ -12,8 +12,8 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
     // get lectures by status
     List<Lecture> findByStatus(LectureStatus status);
 
-    // get lectures by isOnline
-    List<Lecture> findByIsOnline(boolean isOnline);
+    // get lectures by online
+    List<Lecture> findByOnline(boolean online);
 
-    List<Lecture> findByStatusAndIsOnline(LectureStatus status, boolean isOnline);
+    List<Lecture> findByStatusAndOnline(LectureStatus status, boolean online);
 }

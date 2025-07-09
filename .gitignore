@@ -45,3 +45,8 @@ docker-compose.override.yml
 # === Spring Boot Security .env ===
 .env
 
+# === Michal's code files ===
+src/main/java/com/equal_stage_platform/dev/controller/AdvancedFakerController.java
+src/main/java/com/equal_stage_platform/dev/controller/DebugController.java
+src/main/java/com/equal_stage_platform/dev/fake/
+src/main/java/com/equal_stage_platform/dev/service/AdvancedLectureFakerService.java

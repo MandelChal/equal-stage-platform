@@ -34,15 +34,13 @@ public class FlowIntegrationTest {
 	@Autowired
 	private ObjectMapper objectMapper;
 
-
-
 	// Helper to register and login, returns JWT token
 	private String registerAndLogin(String email, String password) throws Exception {
 		// Register
 		mockMvc.perform(post("/api/auth/register")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + email + "\", \"password\":\"" + password + "\"}"))
-				.andExpect(status().isOk());
+				.andExpect(status().isCreated());
 
 		// Login
 		MvcResult result = mockMvc.perform(post("/api/auth/login")
@@ -58,42 +56,24 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to register admin
-	private void registerAdmin(String token) throws Exception {
+	private void registerAdmin(String token, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/api/auth/registerAdmin")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
-
-	// Helper to attempt admin creation and expect failure
-	private void attemptRegisterAdminExpectFail(String token) throws Exception {
-		mockMvc.perform(post("/api/auth/registerAdmin")
-				.header("Authorization", "Bearer " + token)
-				.contentType(MediaType.APPLICATION_JSON))
-				.andExpect(status().isConflict());
-	}
-
 
 	// Helper to make admin by admin
-	private void makeAdminWrongEmail(String adminToken, String email) throws Exception {
+	private void makeAdmin(String adminToken, String email, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/api/auth/create-admin")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + email + "\"}"))
-				.andExpect(status().isForbidden());
-	}
-
-	// Helper to make admin by admin
-	private void makeAdmin(String adminToken, String email) throws Exception {
-		mockMvc.perform(post("/api/auth/create-admin")
-				.header("Authorization", "Bearer " + adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"" + email + "\"}"))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	// Helper to create lecturer
-	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea) throws Exception {
+	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lecturers/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -105,11 +85,12 @@ public class FlowIntegrationTest {
 				"\"phone\":\"" + phone + "\", " +
 				"\"imageUrl\":\"" + imageUrl + "\", " +
 				"\"workingArea\":\"" + workingArea.name() + "\"}"))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
+
 	// Helper to create lecture
-	private void createLectureBeforeApproval(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl) throws Exception {
+	private void createLecture(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lectures/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -118,24 +99,9 @@ public class FlowIntegrationTest {
 						 "\"duration\":" + duration + ", " +
 						 "\"price\":" + price + ", " +
 						 "\"lectureStatus\":\"" + lectureStatus + "\", " +
-						 "\"isOnline\":" + isOnline + ", " +
+						 "\"online\":" + isOnline + ", " +
 						 "\"imageUrl\":\"" + imageUrl + "\"}"))
-				.andExpect(status().isConflict());
-	}
-
-	// Helper to create lecture
-	private void createLecture(String token, String title, String description, Integer duration, Integer price, LectureStatus lectureStatus, boolean isOnline, String imageUrl) throws Exception {
-		mockMvc.perform(post("/lectures/create")
-				.header("Authorization", "Bearer " + token)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"title\":\"" + title + "\", " +
-						 "\"description\":\"" + description + "\", " +
-						 "\"duration\":" + duration + ", " +
-						 "\"price\":" + price + ", " +
-						 "\"lectureStatus\":\"" + lectureStatus + "\", " +
-						 "\"isOnline\":" + isOnline + ", " +
-						 "\"imageUrl\":\"" + imageUrl + "\"}"))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	// Helper to get pending lecturers
@@ -152,10 +118,10 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to approve lecturer
-	private void approveLecturer(String token, UUID lecturerId) throws Exception {
+	private void approveLecturer(String token, UUID lecturerId, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lecturers/admin/approve/" + lecturerId)
 			.header("Authorization", "Bearer " + token))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	private void searchLectureByTitle(String title) throws Exception {
@@ -172,23 +138,23 @@ public class FlowIntegrationTest {
 	}
 
 	// Add helper for updating lecturer status
-	private void updateLecturerStatus(String token, String status, boolean isAdmin, UUID lecturerId) throws Exception {
+	private void updateLecturerStatus(String token, String status, boolean isAdmin, UUID lecturerId, int expectedStatus) throws Exception {
 		if (isAdmin) {
 			mockMvc.perform(patch("/lecturers/admin/" + lecturerId + "/status/" + status)
 					.header("Authorization", "Bearer " + token))
-					.andExpect(status().isOk());
+					.andExpect(status().is(expectedStatus));
 		} else {
 			mockMvc.perform(patch("/lecturers/update/status/" + status)
 					.header("Authorization", "Bearer " + token))
-					.andExpect(status().isOk());
+					.andExpect(status().is(expectedStatus));
 		}
 	}
 
 	// Add helper for updating lecturer status expecting failure
-	private void updateLecturerStatusExpectFail(String token, String status) throws Exception {
+	private void updateLecturerStatusExpect(String token, String status, int expectedStatus) throws Exception {
 		mockMvc.perform(patch("/lecturers/update/status/" + status)
 				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	// Add helper for getting a specific lecture by lecturer id
@@ -220,17 +186,17 @@ public class FlowIntegrationTest {
 	}
 
 	// Add helper for deleting lecturer by admin
-	private void deleteLecturerByAdmin(String adminToken, UUID lecturerId) throws Exception {
+	private void deleteLecturerByAdmin(String adminToken, UUID lecturerId, int expectedStatus) throws Exception {
 		mockMvc.perform(delete("/lecturers/admin/del/" + lecturerId)
 				.header("Authorization", "Bearer " + adminToken))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	// Add helper for deleting lecturer by self
-	private void deleteLecturerBySelf(String token) throws Exception {
+	private void deleteLecturerBySelf(String token, int expectedStatus) throws Exception {
 		mockMvc.perform(delete("/lecturers/del/self")
 				.header("Authorization", "Bearer " + token))
-				.andExpect(status().isOk());
+				.andExpect(status().is(expectedStatus));
 	}
 
 	@Test
@@ -239,48 +205,48 @@ public class FlowIntegrationTest {
 		String user1Token = registerAndLogin("user1@example.com", "Password!1234");
 
 		// 2. user1 registers as admin
-		registerAdmin(user1Token);
+		registerAdmin(user1Token, 200);
 
 		// 3. user2 registers
 		String user2Token = registerAndLogin("user2@example.com", "Password!4321");
 
 		// 4. user2 tries to make himself admin (should fail)
-		attemptRegisterAdminExpectFail(user2Token);
+		registerAdmin(user2Token, 403);
 
-		// 5. user1 makes user2 admin
-		makeAdminWrongEmail(user1Token, "user2");
+		// 5. user1 makes user2 admin (wrong email, should fail)
+		makeAdmin(user1Token, "user2", 400);
 
-		// 6. user1 makes user2 admin
-		makeAdmin(user1Token, "user2@example.com");
+		// 6. user1 makes user2 admin (correct email)
+		makeAdmin(user1Token, "user2@example.com", 200);
 
 		// 7. user1 creates a lecturer
-		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "1234567890", "https://example.com/image.jpg", Area.CENTER);
+		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "0542354687", "https://example.com/image.jpg", Area.CENTER, 201);
 
-		// 7.1 user1 creates a lecture before approval
-		createLectureBeforeApproval(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image3.jpg");
-		
+		// 7.1 user1 creates a lecture before approval (should fail, assuming 403)
+		createLecture(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image3.jpg", 403);
+
 		// 7.2 Admin approves the lecturer
 		Set<ResponseLecturerDTO> lecturers = getPendingLecturers(user1Token);
-		approveLecturer(user1Token, lecturers.iterator().next().getUserId());
+		approveLecturer(user1Token, lecturers.iterator().next().getUserId(), 200);
 
 		// 8. user1 creates 3 lectures
 		for (int i = 1; i <= 3; i++) {
-			createLecture(user1Token, "Lecture" + i + "_user1", "Description of Lecture" + i + "_user1", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*100+".jpg");
+			createLecture(user1Token, "Lecture" + i + "_user1", "Description of Lecture" + i + "_user1", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*100+".jpg", 201);
 		}
 
 		// 9. user2 creates a lecturer
-		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0987654321", "https://example.com/image2.jpg", Area.NORTH);
+		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0598654321", "https://example.com/image2.jpg", Area.NORTH, 201);
 
-		// 9.1 user2 creates a lecture before approval
-		createLectureBeforeApproval(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image4.jpg");
+		// 9.1 user2 creates a lecture before approval (should fail, assuming 403)
+		createLecture(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image4.jpg", 403);
 
 		// 9.2 Admin approves the lecturer
 		Set<ResponseLecturerDTO> lecturers2 = getPendingLecturers(user2Token);
-		approveLecturer(user2Token, lecturers2.iterator().next().getUserId());
+		approveLecturer(user2Token, lecturers2.iterator().next().getUserId(), 200);
 
 		// 10. user2 creates 3 lectures after approval
 		for (int i = 1; i <= 3; i++) {
-			createLecture(user2Token, "Lecture" + i + "_user2", "Description of Lecture" + i + "_user2", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*500+".jpg");
+			createLecture(user2Token, "Lecture" + i + "_user2", "Description of Lecture" + i + "_user2", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*500+".jpg", 201);
 		}
 
 		searchLectureByTitle("Lecture2_user2");
@@ -290,23 +256,23 @@ public class FlowIntegrationTest {
 		String user3Token = registerAndLogin("user3@example.com", "Password!5678");
 
 		// 2. user3 creates lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "5551234567", "https://example.com/image5.jpg", Area.SOUTH);
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "0555123457", "https://example.com/image5.jpg", Area.SOUTH, 201);
 
 		// 3. user1 approves pending lecturers (user3)
 		Set<ResponseLecturerDTO> lecturers3 = getPendingLecturers(user1Token);
 		UUID user3LecturerId = lecturers3.iterator().next().getUserId();
-		approveLecturer(user1Token, user3LecturerId);
+		approveLecturer(user1Token, user3LecturerId, 200);
 
 		// 4. user3 creates 3 lectures
 		for (int i = 1; i <= 3; i++) {
-			createLecture(user3Token, "Lecture" + i + "_user3", "Description of Lecture" + i + "_user3", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*700+".jpg");
+			createLecture(user3Token, "Lecture" + i + "_user3", "Description of Lecture" + i + "_user3", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*700+".jpg", 201);
 		}
 
 		// 5. user3 tries to update status to PENDING and gets rejected
-		updateLecturerStatusExpectFail(user3Token, "PENDING");
+		updateLecturerStatusExpect(user3Token, "PENDING", 400);
 
 		// 6. user3 updates his status to FREEZE
-		updateLecturerStatus(user3Token, "FREEZE", false, null);
+		updateLecturerStatus(user3Token, "FREEZE", false, null, 200);
 
 		// 7. user2 tries to get a specific lecture of user3 lecturer and gets rejected
 		getLectureByLecturerId(user2Token, user3LecturerId, 1, 404);
@@ -320,8 +286,8 @@ public class FlowIntegrationTest {
 		// 10. user2 tries to search lecturer of user3 by name and gets rejected
 		searchLecturerByName(user2Token, "Alice", 404);
 
-		// 11. user1 updates user3 status to Approved
-		updateLecturerStatus(user3Token, "APPROVED", false, null);
+		// 11. user3 updates status to Approved
+		updateLecturerStatus(user3Token, "APPROVED", false, null, 200);
 
 		// 12. user2 tries to search lecturer of user3 by its id and succeeds
 		searchLecturerById(user2Token, user3LecturerId, 200);
@@ -336,16 +302,16 @@ public class FlowIntegrationTest {
 		getLecturesByLecturerId(user2Token, user3LecturerId, 200);
 
 		// 16. user3 deletes his own lecturer profile
-		deleteLecturerBySelf(user3Token);
+		deleteLecturerBySelf(user3Token, 200);
 
 		// 17. user3 creates a new lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "5551234568", "https://example.com/image6.jpg", Area.SOUTH);
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "0555123457", "https://example.com/image6.jpg", Area.SOUTH, 201);
 
 		// 18. user1 deletes user3 lecturer profile
 		// Get the new lecturer id
 		Set<ResponseLecturerDTO> newLecturers3 = getPendingLecturers(user1Token);
 		UUID newUser3LecturerId = newLecturers3.iterator().next().getUserId();
-		approveLecturer(user1Token, newUser3LecturerId);
-		deleteLecturerByAdmin(user1Token, newUser3LecturerId);
+		approveLecturer(user1Token, newUser3LecturerId, 200);
+		deleteLecturerByAdmin(user1Token, newUser3LecturerId, 200);
 	}
 }

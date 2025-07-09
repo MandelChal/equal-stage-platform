@@ -54,8 +54,8 @@ public class Lecture {
     @Column(name = "status", nullable = false)
     private LectureStatus status;
 
-    @Column(name = "isOnline", nullable = false)
-    private boolean isOnline;
+    @Column(name = "online", nullable = false)
+    private boolean online;
 
     public Lecture(CreateLectureDTO lectureData) {
         this.title = lectureData.getTitle();
@@ -67,7 +67,7 @@ public class Lecture {
         this.updatedAt = now;
         // this.imageUrl = lectureData.get
         this.status = lectureData.getLectureStatus();
-        this.isOnline = lectureData.isOnline();
+        this.online = lectureData.isOnline();
     }
 
     public void enrollLecturer(Lecturer lecturer) {

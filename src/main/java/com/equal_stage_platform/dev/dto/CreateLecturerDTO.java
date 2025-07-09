@@ -10,6 +10,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 @AllArgsConstructor
@@ -39,7 +40,7 @@ public class CreateLecturerDTO {
     @URL(message = "Invalid URL format")
     private String imageUrl;
 
-    @NotBlank(message = "Working Area is requires")
+    @NotNull(message = "Working Area is required")
     private Area workingArea;
 
     public CreateLecturerDTO() {

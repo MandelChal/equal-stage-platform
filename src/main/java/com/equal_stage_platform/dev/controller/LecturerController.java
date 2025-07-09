@@ -24,6 +24,7 @@ import com.equal_stage_platform.dev.service.JwtService;
 import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.exception.AuthException;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/lecturers")
@@ -41,11 +42,11 @@ public class LecturerController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createLecturer(@RequestHeader("Authorization") String token, @RequestBody CreateLecturerDTO lecturerData) {
+    public ResponseEntity<?> createLecturer(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLecturerDTO lecturerData) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
             lecturerData.setUserId(userId);
-            return ResponseEntity.ok(lecturerService.createLecturer(lecturerData));
+            return ResponseEntity.status(HttpStatus.CREATED).body(lecturerService.createLecturer(lecturerData));
         } catch (LecturerException e) {
             // logger.error("LecturerException while creating lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -83,7 +84,7 @@ public class LecturerController {
             return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, isAdmin));
         } catch (LecturerException e) {
             // logger.error("LecturerException while updating lecturer status", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while updating lecturer status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());

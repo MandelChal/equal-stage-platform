@@ -11,9 +11,10 @@ import com.equal_stage_platform.dev.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+// import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.Map;
 
 @RestController
@@ -23,10 +24,10 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
             String result = authService.register(registerRequest.getEmail(), registerRequest.getPassword());
-            return ResponseEntity.ok(result);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
@@ -36,7 +37,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             Map<String, String> tokens = authService.login(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(tokens);
@@ -80,7 +81,7 @@ public class AuthController {
             String result = authService.setupFirstAdmin(token);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(e.getMessage());
@@ -88,10 +89,10 @@ public class AuthController {
     }
 
     @PostMapping("/create-admin")
-    @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createAdmin(
             @RequestHeader("Authorization") String token,
-            @RequestBody CreateAdminRequest createAdminRequest) {
+            @Valid @RequestBody CreateAdminRequest createAdminRequest) {
         try {
             String result = authService.createAdmin(token, createAdminRequest.getEmail());
             return ResponseEntity.ok(result);
@@ -104,7 +105,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-pass")
-    public ResponseEntity<?> forgotPass(@RequestBody ForgotPassDTO forgotPassRequest){
+    public ResponseEntity<?> forgotPass(@Valid @RequestBody ForgotPassDTO forgotPassRequest){
         try {
             String result = authService.forgotPass(forgotPassRequest.getEmail());
             return ResponseEntity.ok(result);
@@ -117,7 +118,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-pass-token")
-    public ResponseEntity<?> resetPassToken(@RequestHeader String token, @RequestBody PassDTO passDto){
+    public ResponseEntity<?> resetPassToken(@RequestHeader String token, @Valid @RequestBody PassDTO passDto){
         try{
             String result = authService.resetPassToken(token, passDto.getPass());
             return ResponseEntity.ok(result);
@@ -130,8 +131,8 @@ public class AuthController {
     }
 
     @PostMapping("/reset-pass")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> resetPass(@RequestHeader String token, @RequestBody ResetPassDTO resetPassRequest){
+    // @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> resetPass(@RequestHeader String token, @Valid @RequestBody ResetPassDTO resetPassRequest){
         try{
             String result = authService.resetPass(token, resetPassRequest.getOldPassword(), resetPassRequest.getNewPassword());
             return ResponseEntity.ok(result);
