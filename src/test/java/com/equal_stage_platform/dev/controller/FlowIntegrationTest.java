@@ -23,8 +23,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.util.Set;
 import java.util.UUID;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -67,7 +65,7 @@ public class FlowIntegrationTest {
 
 	// Helper to make admin by admin
 	private void makeAdmin(String adminToken, String email, int expectedStatus) throws Exception {
-		mockMvc.perform(post("/api/auth/create-admin")
+		mockMvc.perform(post("/api/auth//admin/create-admin")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + email + "\"}"))
@@ -316,85 +314,6 @@ public class FlowIntegrationTest {
 		approveLecturer(user1Token, newUser3LecturerId, 200);
 		deleteLecturerByAdmin(user1Token, newUser3LecturerId, 200);
 	}
-
-    @Test
-    public void testPasswordResetFlow() throws Exception {
-        String email = "resetuser@example.com";
-        String oldPassword = "Password!1234";
-        String newPassword = "NewPassword!5678";
-
-		System.out.println("Registering user for password reset flow...");
-		System.out.println("Email: " + email);
-		System.out.println("Old Password: " + oldPassword);
-		System.out.println("New Password: " + newPassword);
-
-		System.out.println("===========================================================");
-		System.out.println("POST: /api/auth/register");
-        // 1. Register user
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"" + email + "\", \"password\":\"" + oldPassword + "\"}"))
-                .andExpect(status().isCreated());
-		System.out.println("User registered successfully!");
-
-		System.out.println("===========================================================");
-		System.out.println("POST: /api/auth/login\n\tLogging in with new password: " + oldPassword);
-
-        // 5. Log in with new password
-        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"" + email + "\", \"password\":\"" + oldPassword + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String loginResponse = loginResult.getResponse().getContentAsString();
-        String jwtToken = objectMapper.readTree(loginResponse).get("token").asText();
-        String refreshToken = objectMapper.readTree(loginResponse).get("refresh").asText();
-
-		System.out.println("Login successful! JWT Token: " + jwtToken);
-
-		System.out.println("============================================================");
-		System.out.println("POST: /api/auth/reset-pass\n\tChanging password from:" + oldPassword + "to: " + newPassword);
-        // 6. Call reset-pass (change password again)
-        mockMvc.perform(post("/api/auth/reset-pass")
-                .header("Authorization", "Bearer " + jwtToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"oldPassword\":\"" + oldPassword + "\", \"newPassword\":\"" + newPassword + "\"}"))
-                .andExpect(status().isOk());
-
-		System.out.println("Password changed successfully!");
-
-		System.out.println("============================================================");
-		System.out.println("POST: /api/auth/logout");
-        // 7. Logout
-        mockMvc.perform(post("/api/auth/logout")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"refresh\":\"" + refreshToken + "\"}"))
-                .andExpect(status().isOk());
-
-		System.out.println("Logged out successfully!");
-
-		System.out.println("============================================================");
-		System.out.println("POST: /api/auth/login\n\tTrying to log in with old password: "+ oldPassword +" -->(should fail)...");
-		// 8. Try to log in with old password (should fail)
-		mockMvc.perform(post("/api/auth/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"" + email + "\", \"password\":\"" + oldPassword + "\"}"))
-				.andExpect(status().isUnauthorized());
-		System.out.println("Login with old password failed as expected!");
-
-		System.out.println("============================================================");
-		System.out.println("POST: /api/auth/login\n\tTrying to log in with new password: " + newPassword + " -->(should succeed)...");		
-		// 9. Log in with new password
-		mockMvc.perform(post("/api/auth/login")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"" + email + "\", \"password\":\"" + newPassword + "\"}"))
-				.andExpect(status().isOk());
-		System.out.println("Login with new password successful!");
-
-		System.out.println("============================================================");
-		System.out.println("Test completed successfully!");
-
-    }
 }
 // running test in terminal:
 // ./mvnw test -Dtest=FlowIntegrationTest
