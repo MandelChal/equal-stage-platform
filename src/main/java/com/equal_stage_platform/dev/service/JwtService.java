@@ -65,6 +65,16 @@ public class JwtService {
             .parseClaimsJws(token).getBody().get("role", String.class);
     }
 
+    public String extractJti(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+            .parseClaimsJws(token).getBody().getId();
+    }
+
+    public Date extractExpiration(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build()
+            .parseClaimsJws(token).getBody().getExpiration();
+    }
+
     public boolean isTokenValid(String token, UserDetails userDetails) {
         UUID userId = extractUserId(token);
         return userId.equals(((CustomUserDetails) userDetails).getId()) && !isTokenExpired(token);

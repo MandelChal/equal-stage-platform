@@ -15,4 +15,11 @@ public class CreateAdminRequest {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public CreateAdminRequest() {
+        // Default constructor
+    }
+    public CreateAdminRequest(String email) {
+        this.email = email;
+    }
 }

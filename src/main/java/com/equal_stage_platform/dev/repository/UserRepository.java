@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByStatus(UserStatus status); // ACTIVE, BLOCKED, DELETED
     @Query("SELECT u.role FROM User u WHERE u.userId = :userId")
     Optional<Role> getRoleByUserId(@Param("userId") UUID userId);
+    boolean existsByEmail(String email);
+    boolean existsByUserId(UUID userId);
 }

@@ -13,6 +13,13 @@ public class PassDTO {
     )
     private String pass;
 
+    public PassDTO() {
+        // Default constructor
+    }
+    public PassDTO(String pass) {
+        this.pass = pass;
+    }
+
     // getter and setter
     public String getPass() { return pass; }
     public void setPass(String pass) { this.pass = pass; }

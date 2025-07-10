@@ -35,4 +35,12 @@ public class RegisterRequest {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public RegisterRequest() {
+        // Default constructor
+    }
+    public RegisterRequest(String email, String password) {
+        this.email = email;
+        this.password = password;
+    }
 }

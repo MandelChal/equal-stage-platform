@@ -40,4 +40,13 @@ public class RefreshTokenService {
     public void revokeToken(String tokenId) {
         redisTemplate.delete("refresh:" + tokenId);
     }
+
+    // JWT Blacklist methods
+    public void blacklistToken(String jti, long expirationMillis) {
+        redisTemplate.opsForValue().set("blacklist:" + jti, "true", expirationMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean isTokenBlacklisted(String jti) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + jti));
+    }
 }

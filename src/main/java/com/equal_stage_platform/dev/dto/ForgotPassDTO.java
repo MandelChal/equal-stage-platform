@@ -17,4 +17,11 @@ public class ForgotPassDTO {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public ForgotPassDTO() {
+        // Default constructor
+    }
+    public ForgotPassDTO(String email) {
+        this.email = email;
+    }
 }

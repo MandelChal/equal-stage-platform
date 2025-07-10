@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -63,9 +64,10 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String token, @RequestBody Map<String, String> body) {
         try {
-            String result = authService.logout(body.get("refresh"));
+            String accessToken = token.replace("Bearer ", "");
+            String result = authService.logout(accessToken, body.get("refresh"));
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -88,7 +90,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/create-admin")
+    @PostMapping("/admin/create-admin")
     // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createAdmin(
             @RequestHeader("Authorization") String token,
@@ -118,7 +120,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-pass-token")
-    public ResponseEntity<?> resetPassToken(@RequestHeader String token, @Valid @RequestBody PassDTO passDto){
+    public ResponseEntity<?> resetPassToken(@RequestHeader("token") String token, @Valid @RequestBody PassDTO passDto){
         try{
             String result = authService.resetPassToken(token, passDto.getPass());
             return ResponseEntity.ok(result);
@@ -132,7 +134,7 @@ public class AuthController {
 
     @PostMapping("/reset-pass")
     // @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> resetPass(@RequestHeader String token, @Valid @RequestBody ResetPassDTO resetPassRequest){
+    public ResponseEntity<?> resetPass(@RequestHeader("Authorization") String token, @Valid @RequestBody ResetPassDTO resetPassRequest){
         try{
             String result = authService.resetPass(token, resetPassRequest.getOldPassword(), resetPassRequest.getNewPassword());
             return ResponseEntity.ok(result);
@@ -146,12 +148,25 @@ public class AuthController {
 
     @DeleteMapping("/delete-account")
     // @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteAccount(@RequestHeader String token) {
+    public ResponseEntity<?> deleteAccount(@RequestHeader("Authorization") String token) {
         try {
             String result = authService.deleteUser(token);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(e.getMessage());
+        }
+    }
+    @DeleteMapping("/admin/delete-account/{userId}")
+    // @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> deleteAccountByAdmin(@PathVariable UUID userId) {
+        try {
+            String result = authService.deleteUserByAdmin(userId);
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(e.getMessage());

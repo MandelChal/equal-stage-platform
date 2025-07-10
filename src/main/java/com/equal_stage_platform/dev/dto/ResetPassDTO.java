@@ -19,4 +19,12 @@ public class ResetPassDTO {
     )
     private String newPassword;
 
+    public ResetPassDTO() {
+        // Default constructor
+    }
+    public ResetPassDTO(String oldPassword, String newPassword) {
+        this.oldPassword = oldPassword;
+        this.newPassword = newPassword;
+    }
+
 }

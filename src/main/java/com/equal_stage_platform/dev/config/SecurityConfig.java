@@ -26,9 +26,10 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 //----Auth endpoints----
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout","/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth//reset-pass-token").permitAll()
-                .requestMatchers("/api/auth/create-admin").hasRole("ADMIN")  // Only admins can create new admins
-                .requestMatchers("/api/auth/reset-pass").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth/reset-pass-token").permitAll()
+                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")  // Only admins can create new admins
+                .requestMatchers("/api/auth/refresh", "/api/auth/logout", "/api/auth/reset-pass").hasAnyRole("USER", "ADMIN", "LECTURER")
+                .requestMatchers("/api/auth/delete-account").hasAnyRole("USER")
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
