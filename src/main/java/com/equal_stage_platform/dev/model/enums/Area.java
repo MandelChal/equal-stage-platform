@@ -1,8 +1,8 @@
 package com.equal_stage_platform.dev.model.enums;
 
-public enum Area{
+public enum Area {
     CENTER,
     NORTH,
-    SOUTH, 
+    SOUTH,
     ONLINE_ONLY
 }
