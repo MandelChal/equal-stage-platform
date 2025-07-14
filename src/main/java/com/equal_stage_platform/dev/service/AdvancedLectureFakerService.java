@@ -148,31 +148,27 @@ public class AdvancedLectureFakerService {
 
     // ========== NEW: Enhanced Lecture Creation with Existing Lecturers ==========
 
-    /**
-     * יוצר הרצאה חדשה עם מרצה ספציפי קיים
-     */
     public Map<String, Object> createLectureWithSpecificLecturer(Lecturer lecturer) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // יצירת הרצאה חדשה
+        
             Lecture lecture = lectureFakerService.generateFakeLecture();
             
-            // התאמת הנושא לתחום המרצה (אם יש מידע על תחום)
             String expertise = getExpertiseFromLecturer(lecturer);
             if (expertise != null && !expertise.isEmpty()) {
                 lecture.setTitle(generateTitleForExpertise(expertise) + " - מאת " + 
                     lecturer.getFirstName() + " " + lecturer.getLastName());
             }
             
-            // שמירת ההרצאה
+      
             lecture = lectureRepository.save(lecture);
             
-            // יצירת הקשר בין ההרצאה למרצה
+   
             lecture.getLecturers().add(lecturer);
             lecturer.enrollLecture(lecture);
             
-            // עדכון בבסיס הנתונים
+        
             lectureRepository.save(lecture);
             lecturerRepository.save(lecturer);
             
@@ -188,9 +184,7 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * יוצר מספר הרצאות עם מרצים קיימים
-     */
+
     public Map<String, Object> createMultipleLecturesWithExistingLecturers(int count, List<Lecturer> availableLecturers) {
         Map<String, Object> result = new HashMap<>();
         List<Lecture> createdLectures = new ArrayList<>();
@@ -199,13 +193,11 @@ public class AdvancedLectureFakerService {
             Random random = new Random();
             
             for (int i = 0; i < count; i++) {
-                // בחירת מרצה אקראי מהרשימה
+        
                 Lecturer selectedLecturer = availableLecturers.get(random.nextInt(availableLecturers.size()));
-                
-                // יצירת הרצאה חדשה
+             
                 Lecture lecture = lectureFakerService.generateFakeLecture();
-                
-                // התאמת הנושא לתחום המרצה
+               
                 String expertise = getExpertiseFromLecturer(selectedLecturer);
                 if (expertise != null && !expertise.isEmpty()) {
                     lecture.setTitle(generateTitleForExpertise(expertise) + 
@@ -237,10 +229,6 @@ public class AdvancedLectureFakerService {
         
         return result;
     }
-
-    /**
-     * יוצר סדרת הרצאות עבור מרצה ספציפי
-     */
     public Map<String, Object> createLectureSeriesForLecturer(Lecturer lecturer, int seriesCount, boolean isWorkshopSeries) {
         Map<String, Object> result = new HashMap<>();
         List<Lecture> createdLectures = new ArrayList<>();
@@ -255,24 +243,24 @@ public class AdvancedLectureFakerService {
             for (int i = 0; i < seriesCount; i++) {
                 Lecture lecture = lectureFakerService.generateFakeLecture();
                 
-                // הגדרת כותרת סדרתית
+                
                 lecture.setTitle(seriesTheme + " " + baseTitle + " - שיעור " + (i + 1) + " מתוך " + seriesCount);
                 
-                // הגדרת תאריכים סדרתיים (כל שבוע)
+                
                 lecture.setCreatedAt(startDate.plusWeeks(i));
                 lecture.setUpdatedAt(startDate.plusWeeks(i).plusHours(isWorkshopSeries ? 4 : 2));
                 
-                // סדנאות בדרך כלל יקרות יותר
+                
                 if (isWorkshopSeries) {
                     lecture.setPrice(lecture.getPrice() + 100);
                     lecture.setDescription("סדנה מעשית ב" + expertise + 
                         " - שיעור " + (i + 1) + ". כולל תרגילים מעשיים וליווי אישי.");
                 }
                 
-                // שמירה
+                
                 lecture = lectureRepository.save(lecture);
                 
-                // יצירת קשר
+                
                 lecture.getLecturers().add(lecturer);
                 lecturer.enrollLecture(lecture);
                 
@@ -280,7 +268,7 @@ public class AdvancedLectureFakerService {
                 createdLectures.add(lecture);
             }
             
-            // עדכון המרצה
+    
             lecturerRepository.save(lecturer);
             
             result.put("success", true);
@@ -297,26 +285,23 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * מחזיר רשימת הרצאות מפורטת עם פאגינציה וסטטיסטיקות
-     */
     public Map<String, Object> getAllLecturesWithDetails(int page, int size, String sortBy, String sortDirection) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // יצירת Pageable
+            
             Sort.Direction direction = Sort.Direction.fromString(sortDirection);
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
             
-            // שליפת הנתונים עם פאגינציה
+            
             Page<Lecture> lecturePage = lectureRepository.findAll(pageable);
             
-            // הכנת רשימה מפורטת עם מידע על המרצים
+            
             List<Map<String, Object>> detailedLectures = lecturePage.getContent().stream()
                 .map(this::createDetailedLectureInfo)
                 .collect(Collectors.toList());
             
-            // הכנת מידע פאגינציה
+            
             Map<String, Object> pagination = new HashMap<>();
             pagination.put("current_page", page);
             pagination.put("page_size", size);
@@ -325,7 +310,7 @@ public class AdvancedLectureFakerService {
             pagination.put("has_next", lecturePage.hasNext());
             pagination.put("has_previous", lecturePage.hasPrevious());
             
-            // הכנת סטטיסטיקות
+            
             Map<String, Object> statistics = generateLectureStatistics();
             
             result.put("success", true);
@@ -341,20 +326,17 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * מחזיר הרצאות של מרצה ספציפי
-     */
     public Map<String, Object> getLecturesByLecturer(Lecturer lecturer) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // שליפת ההרצאות של המרצה
+            
             List<Lecture> lectures = new ArrayList<>(lecturer.getLectures());
             
-            // מיון לפי תאריך
+            
             lectures.sort((l1, l2) -> l1.getCreatedAt().compareTo(l2.getCreatedAt()));
             
-            // הכנת מידע מפורט על כל הרצאה
+            
             List<Map<String, Object>> detailedLectures = lectures.stream()
                 .map(this::createDetailedLectureInfo)
                 .collect(Collectors.toList());
@@ -372,14 +354,11 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * מחזיר הרצאות של מרצים לפי שם (חיפוש חלקי)
-     */
     public Map<String, Object> getLecturesByLecturerName(String lecturerName) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // חיפוש מרצים לפי שם (חיפוש חלקי)
+            
             List<Lecturer> allLecturers = lecturerRepository.findAll();
             List<Lecturer> matchingLecturers = allLecturers.stream()
                 .filter(lecturer -> {
@@ -396,7 +375,7 @@ public class AdvancedLectureFakerService {
                 return result;
             }
             
-            // אסיפת כל ההרצאות של המרצים המתאימים
+            
             List<Lecture> allMatchingLectures = new ArrayList<>();
             Map<String, Object> lecturesByLecturer = new HashMap<>();
             
@@ -418,7 +397,8 @@ public class AdvancedLectureFakerService {
                 allMatchingLectures.addAll(lecturerLectures);
             }
             
-            // מיון כל ההרצאות לפי תאריך
+            
+            
             allMatchingLectures.sort((l1, l2) -> l1.getCreatedAt().compareTo(l2.getCreatedAt()));
             
             List<Map<String, Object>> allDetailedLectures = allMatchingLectures.stream()
@@ -443,14 +423,11 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * יוצר הרצאה פייק למרצה לפי שם (חיפוש חלקי)
-     */
     public Map<String, Object> createFakeLectureForLecturerName(String lecturerName) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // חיפוש מרצים לפי שם
+            
             List<Lecturer> allLecturers = lecturerRepository.findAll();
             List<Lecturer> matchingLecturers = allLecturers.stream()
                 .filter(lecturer -> {
@@ -467,14 +444,14 @@ public class AdvancedLectureFakerService {
                 return result;
             }
             
-            // בחירת מרצה ראשון מהרשימה (או אקראי)
+            
             Lecturer selectedLecturer = matchingLecturers.get(0);
             if (matchingLecturers.size() > 1) {
-                // אם יש מספר מרצים, בחר אקראי
+                
                 selectedLecturer = matchingLecturers.get(random.nextInt(matchingLecturers.size()));
             }
             
-            // יצירת הרצאה פייק
+       
             var lectureResult = createLectureWithSpecificLecturer(selectedLecturer);
             
             if ((Boolean) lectureResult.get("success")) {
@@ -502,9 +479,6 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * יוצר הרצאה פייק עם מרצה אקראי
-     */
     public Map<String, Object> createFakeLectureWithRandomLecturer(List<Lecturer> availableLecturers) {
         Map<String, Object> result = new HashMap<>();
         
@@ -515,10 +489,10 @@ public class AdvancedLectureFakerService {
                 return result;
             }
             
-            // בחירת מרצה אקראי
+            
             Lecturer randomLecturer = availableLecturers.get(random.nextInt(availableLecturers.size()));
             
-            // יצירת הרצאה פייק
+            
             var lectureResult = createLectureWithSpecificLecturer(randomLecturer);
             
             if ((Boolean) lectureResult.get("success")) {
@@ -542,18 +516,18 @@ public class AdvancedLectureFakerService {
     // ========== NEW: Auto-Create Lecturer if Not Exists ==========
 
     /**
-     * יוצר הרצאה עם מרצה - אם המרצה לא קיים, יוצר אותו אוטומטית
-     * @param firstName שם פרטי של המרצה (אופציונלי)
-     * @param lastName שם משפחה של המרצה (אופציונלי)
-     * @param email אימייל של המרצה (אופציונלי)
-     * @param createIfNotExists האם ליצור מרצה חדש אם לא קיים (ברירת מחדל: true)
+    
+     * @param firstName
+     * @param lastName
+     * @param email 
+     * @param createIfNotExists
      */
     public Map<String, Object> createLectureWithLecturerOrCreate(
             String firstName, String lastName, String email, Boolean createIfNotExists) {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // אם לא סופקו פרטים, צור מרצה פייק חדש
+           
             if ((firstName == null || firstName.trim().isEmpty()) && 
                 (lastName == null || lastName.trim().isEmpty()) && 
                 (email == null || email.trim().isEmpty())) {
@@ -575,11 +549,10 @@ public class AdvancedLectureFakerService {
                 return result;
             }
 
-            // חיפוש מרצה קיים
             Lecturer existingLecturer = findLecturerByDetails(firstName, lastName, email);
             
             if (existingLecturer != null) {
-                // מרצה קיים - צור הרצאה עבורו
+      
                 System.out.println("✅ נמצא מרצה קיים: " + existingLecturer.getFirstName() + " " + existingLecturer.getLastName());
                 
                 var lectureResult = createLectureWithSpecificLecturer(existingLecturer);
@@ -593,7 +566,7 @@ public class AdvancedLectureFakerService {
                 result.put("was_lecturer_created", false);
                 
             } else if (createIfNotExists == null || createIfNotExists) {
-                // מרצה לא קיים - צור מרצה חדש
+   
                 System.out.println("🆕 מרצה לא קיים - יוצר מרצה חדש");
                 
                 Lecturer newLecturer = createLecturerFromDetails(firstName, lastName, email);
@@ -610,7 +583,7 @@ public class AdvancedLectureFakerService {
                 result.put("was_lecturer_created", true);
                 
             } else {
-                // מרצה לא קיים ולא רוצים ליצור
+            
                 result.put("success", false);
                 result.put("action", "lecturer_not_found");
                 result.put("message", "מרצה לא נמצא ולא הוגדר ליצור מרצה חדש");
@@ -630,14 +603,10 @@ public class AdvancedLectureFakerService {
         
         return result;
     }
-
-    /**
-     * מחפש מרצה קיים לפי פרטים (שם פרטי, שם משפחה, או אימייל)
-     */
     private Lecturer findLecturerByDetails(String firstName, String lastName, String email) {
         List<Lecturer> allLecturers = lecturerRepository.findAll();
         
-        // חיפוש מדויק לפי אימייל (אם סופק)
+
         if (email != null && !email.trim().isEmpty()) {
             Optional<Lecturer> byEmail = allLecturers.stream()
                 .filter(lecturer -> lecturer.getEmail() != null && 
@@ -650,7 +619,7 @@ public class AdvancedLectureFakerService {
             }
         }
         
-        // חיפוש לפי שם מלא (אם סופקו שני השמות)
+
         if (firstName != null && !firstName.trim().isEmpty() && 
             lastName != null && !lastName.trim().isEmpty()) {
             
@@ -667,7 +636,6 @@ public class AdvancedLectureFakerService {
             }
         }
         
-        // חיפוש חלקי לפי שם פרטי או משפחה
         if (firstName != null && !firstName.trim().isEmpty()) {
             Optional<Lecturer> byFirstName = allLecturers.stream()
                 .filter(lecturer -> lecturer.getFirstName() != null &&
@@ -696,30 +664,24 @@ public class AdvancedLectureFakerService {
         return null;
     }
 
-    /**
-     * יוצר מרצה חדש מפרטים שסופקו (משלים פרטים חסרים באופן אוטומטי)
-     */
     private Lecturer createLecturerFromDetails(String firstName, String lastName, String email) {
-        // אם לא סופק שם פרטי, צור אקראי
+
         if (firstName == null || firstName.trim().isEmpty()) {
             firstName = faker.name().firstName();
             System.out.println("🎲 נוצר שם פרטי אקראי: " + firstName);
         }
-        
-        // אם לא סופק שם משפחה, צור אקראי
+
         if (lastName == null || lastName.trim().isEmpty()) {
             lastName = faker.name().lastName();
             System.out.println("🎲 נוצר שם משפחה אקראי: " + lastName);
         }
-        
-        // אם לא סופק אימייל, צור מהשמות
+     
         if (email == null || email.trim().isEmpty()) {
             email = (firstName + "." + lastName + "." + System.currentTimeMillis() 
                     + "@" + faker.internet().domainName()).toLowerCase();
             System.out.println("📧 נוצר אימייל אוטומטי: " + email);
         }
         
-        // צור מרצה חדש עם הפרטים
         String specialty = faker.job().title();
         int experience = faker.number().numberBetween(3, 18);
         String bio = String.format(
@@ -750,10 +712,6 @@ public class AdvancedLectureFakerService {
         
         return lecturer;
     }
-
-    /**
-     * יוצר מספר טלפון ישראלי ייחודי
-     */
     private String generateUniqueIsraeliPhone() {
         String[] prefixes = {"050", "052", "053", "054", "055", "058"};
         String prefix = prefixes[faker.random().nextInt(prefixes.length)];
@@ -761,17 +719,11 @@ public class AdvancedLectureFakerService {
         return prefix + String.format("%07d", timestamp);
     }
 
-    /**
-     * בוחר תחום עבודה אקראי
-     */
     private Area getRandomWorkingArea() {
         Area[] areas = Area.values();
         return areas[faker.random().nextInt(areas.length)];
     }
 
-    /**
-     * יוצר מספר הרצאות עם מרצים - יוצר מרצים חדשים אם לא קיימים
-     */
     public Map<String, Object> createMultipleLecturesWithAutoCreateLecturers(
             int count, List<String[]> lecturerDetailsList) {
         Map<String, Object> result = new HashMap<>();
@@ -786,8 +738,7 @@ public class AdvancedLectureFakerService {
                 String firstName = null;
                 String lastName = null;
                 String email = null;
-                
-                // אם סופקה רשימת פרטי מרצים
+             
                 if (lecturerDetailsList != null && !lecturerDetailsList.isEmpty()) {
                     int lecturerIndex = i % lecturerDetailsList.size();
                     String[] details = lecturerDetailsList.get(lecturerIndex);
@@ -831,9 +782,7 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * חיפוש וניתוח מרצים לפי פרטים חלקיים
-     */
+
     public Map<String, Object> searchLecturersByDetails(String searchTerm) {
         Map<String, Object> result = new HashMap<>();
         
@@ -875,9 +824,7 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    /**
-     * מחזיר את הסיבה להתאמה בחיפוש
-     */
+   
     private String getMatchReason(Lecturer lecturer, String searchTerm) {
         if (lecturer.getFirstName().toLowerCase().contains(searchTerm)) {
             return "first_name_match";
@@ -1313,11 +1260,7 @@ public class AdvancedLectureFakerService {
         return result;
     }
 
-    // ========== NEW: Helper Methods for Enhanced Features ==========
 
-    /**
-     * יוצר מידע מפורט על הרצאה
-     */
     private Map<String, Object> createDetailedLectureInfo(Lecture lecture) {
         Map<String, Object> info = new HashMap<>();
         
@@ -1331,22 +1274,18 @@ public class AdvancedLectureFakerService {
         info.put("duration", lecture.getDuration());
         info.put("status", lecture.getStatus());
         
-        // מידע על המרצים
         List<Map<String, Object>> lecturersInfo = lecture.getLecturers().stream()
             .map(this::createBasicLecturerInfo)
             .collect(Collectors.toList());
         info.put("lecturers", lecturersInfo);
         info.put("lecturers_count", lecturersInfo.size());
-        
-        // מידע נוסף
+    
         info.put("duration_minutes", lecture.getDuration());
         
         return info;
     }
 
-    /**
-     * יוצר מידע בסיסי על מרצה
-     */
+   
     private Map<String, Object> createBasicLecturerInfo(Lecturer lecturer) {
         Map<String, Object> info = new HashMap<>();
         
@@ -1358,9 +1297,7 @@ public class AdvancedLectureFakerService {
         return info;
     }
 
-    /**
-     * יוצר מידע מפורט על מרצה
-     */
+   
     private Map<String, Object> createDetailedLecturerInfo(Lecturer lecturer) {
         Map<String, Object> info = createBasicLecturerInfo(lecturer);
         
@@ -1372,9 +1309,7 @@ public class AdvancedLectureFakerService {
         return info;
     }
 
-    /**
-     * מייצר כותרת הרצאה על בסיס תחום מומחיות
-     */
+
     private String generateTitleForExpertise(String expertise) {
         if (expertise == null || expertise.isEmpty()) {
             expertise = "Technology"; // default
@@ -1399,32 +1334,28 @@ public class AdvancedLectureFakerService {
         return "הרצאה ב" + expertise;
     }
 
-    /**
-     * מייצר סטטיסטיקות על ההרצאות
-     */
+
     private Map<String, Object> generateLectureStatistics() {
         List<Lecture> allLectures = lectureRepository.findAll();
         List<Lecturer> allLecturers = lecturerRepository.findAll();
         
         Map<String, Object> stats = new HashMap<>();
         
-        // סטטיסטיקות בסיסיות
+  
         stats.put("total_lectures", allLectures.size());
         stats.put("total_lecturers", allLecturers.size());
-        
-        // סטטיסטיקות הרצאות
+
         long onlineLectures = allLectures.stream().filter(Lecture::isOnline).count();
         stats.put("online_lectures", onlineLectures);
         stats.put("physical_lectures", allLectures.size() - onlineLectures);
         
-        // סטטיסטיקות זמן
+
         long recentLectures = allLectures.stream()
             .filter(lecture -> lecture.getCreatedAt().isAfter(LocalDateTime.now().minusDays(30)))
             .count();
         stats.put("recent_lectures", recentLectures);
         stats.put("older_lectures", allLectures.size() - recentLectures);
-        
-        // סטטיסטיקות מחיר
+    
         OptionalDouble avgPrice = allLectures.stream().mapToInt(Lecture::getPrice).average();
         stats.put("average_price", avgPrice.isPresent() ? Math.round(avgPrice.getAsDouble() * 100.0) / 100.0 : 0);
         
@@ -1434,7 +1365,7 @@ public class AdvancedLectureFakerService {
         stats.put("min_price", priceStats.getMin());
         stats.put("max_price", priceStats.getMax());
         
-        // סטטיסטיקות מרצים
+ 
         long lecturersWithLectures = allLecturers.stream()
             .filter(lecturer -> !lecturer.getLectures().isEmpty())
             .count();
@@ -1444,14 +1375,9 @@ public class AdvancedLectureFakerService {
         return stats;
     }
 
-    /**
-     * מחלץ תחום מומחיות מהמרצה
-     */
+
     private String getExpertiseFromLecturer(Lecturer lecturer) {
-        // זה יתלה במבנה שלך של Lecturer
-        // אם יש שדה expertise, השתמש בו
-        // אחרת, נסה לנחש לפי שם או אימייל
-        
+     
         if (lecturer.getEmail() != null) {
             String email = lecturer.getEmail().toLowerCase();
             if (email.contains("ai") || email.contains("ml")) return "AI";

@@ -45,10 +45,6 @@ public class AdvancedFakerController {
     private LecturerRepository lecturerRepository;
 
     // ========== NEW: Auto-Create Lecturer if Not Exists ==========
-
-    /**
-     * יוצר הרצאה עם מרצה - אם המרצה לא קיים, יוצר אותו אוטומטית
-     */
     @PostMapping("/lectures/create-with-auto-create-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createLectureWithAutoCreateLecturer(
@@ -84,16 +80,14 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאה פייק (ללא פרטי מרצה ספציפיים) - יוצר מרצה פייק חדש
-     */
+    
     @PostMapping("/lectures/create-fake-with-new-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createFakeLectureWithNewLecturer() {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            // קריאה ללא פרטים ספציפיים - יוצר מרצה פייק חדש
+            
             var result = advancedLectureFakerService.createLectureWithLecturerOrCreate(
                 null, null, null, true);
             
@@ -114,9 +108,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאות מרובות עם יצירה אוטומטית של מרצים
-     */
+   
     @PostMapping("/lectures/create-multiple-with-auto-create-lecturers")
     @Transactional
     public ResponseEntity<Map<String, Object>> createMultipleLecturesWithAutoCreateLecturers(
@@ -126,11 +118,10 @@ public class AdvancedFakerController {
         
         try {
             List<String[]> lecturerDetailsList = null;
-            
-            // אם סופק JSON עם פרטי מרצים
+     
             if (lecturerDetailsJson != null && !lecturerDetailsJson.trim().isEmpty()) {
                 try {
-                    // פרסינג פשוט של JSON (ניתן לשדרג לפרסר JSON מלא)
+                 
                     lecturerDetailsList = parseSimpleLecturerDetailsJson(lecturerDetailsJson);
                 } catch (Exception e) {
                     response.put("success", false);
@@ -163,9 +154,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * חיפוש מרצים לפי פרטים חלקיים
-     */
+  
     @GetMapping("/lecturers/search")
     public ResponseEntity<Map<String, Object>> searchLecturers(@RequestParam String searchTerm) {
         Map<String, Object> response = new HashMap<>();
@@ -200,9 +189,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאות לרשימת מרצים ספציפית (עם יצירה אוטומטית)
-     */
+
     @PostMapping("/lectures/create-for-specific-lecturers")
     @Transactional
     public ResponseEntity<Map<String, Object>> createLecturesForSpecificLecturers(
@@ -258,9 +245,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * בדיקה האם מרצה קיים (ללא יצירה)
-     */
+  
     @GetMapping("/lecturers/check-exists")
     public ResponseEntity<Map<String, Object>> checkLecturerExists(
             @RequestParam(required = false) String firstName,
@@ -359,9 +344,7 @@ public class AdvancedFakerController {
 
     // ========== Enhanced Lecture Creation with Existing Lecturers ==========
 
-    /**
-     * יוצר הרצאה חדשה ומצרף אליה מרצה קיים לפי ID
-     */
+   
     @PostMapping("/lectures/create-with-existing-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createLectureWithExistingLecturer(
@@ -396,9 +379,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאה פייק למרצה קיים לפי שם (חיפוש חלקי)
-     */
+   
     @PostMapping("/lectures/create-fake-for-lecturer-name")
     @Transactional
     public ResponseEntity<Map<String, Object>> createFakeLectureForLecturerName(
@@ -428,9 +409,6 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאה פייק עם בחירה אוטומטית של מרצה אקראי
-     */
     @PostMapping("/lectures/create-fake-random-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createFakeLectureWithRandomLecturer() {
@@ -461,9 +439,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר הרצאות מרובות עם מרצים קיימים (בחירה אקראית)
-     */
+  
     @PostMapping("/lectures/create-multiple-with-existing-lecturers")
     @Transactional
     public ResponseEntity<Map<String, Object>> createMultipleLecturesWithExistingLecturers(
@@ -496,9 +472,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * יוצר סדרת הרצאות עבור מרצה ספציפי
-     */
+  
     @PostMapping("/lectures/create-series-for-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createLectureSeriesForLecturer(
@@ -765,9 +739,7 @@ public class AdvancedFakerController {
 
     // ========== Enhanced Data Retrieval ==========
 
-    /**
-     * מחזיר רשימת כל ההרצאות עם פרטים מלאים על המרצים
-     */
+  
     @GetMapping("/lectures/all-detailed")
     public ResponseEntity<Map<String, Object>> getAllLecturesDetailed(
             @RequestParam(defaultValue = "0") int page,
@@ -792,9 +764,6 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * מחזיר רשימת כל המרצים הזמינים
-     */
     @GetMapping("/lecturers/available")
     public ResponseEntity<Map<String, Object>> getAvailableLecturers() {
         Map<String, Object> response = new HashMap<>();
@@ -814,9 +783,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * מחזיר רשימת כל ההרצאות הזמינות (פשוט)
-     */
+ 
     @GetMapping("/lectures/simple")
     public ResponseEntity<Map<String, Object>> getSimpleLectures() {
         Map<String, Object> response = new HashMap<>();
@@ -859,9 +826,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * מחזיר הרצאות של מרצה ספציפי לפי ID
-     */
+ 
     @GetMapping("/lectures/by-lecturer")
     public ResponseEntity<Map<String, Object>> getLecturesByLecturer(@RequestParam Long lecturerId) {
         Map<String, Object> response = new HashMap<>();
@@ -893,9 +858,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * מחזיר הרצאות של מרצה ספציפי לפי שם (חיפוש חלקי)
-     */
+  
     @GetMapping("/lectures/by-lecturer-name")
     public ResponseEntity<Map<String, Object>> getLecturesByLecturerName(@RequestParam String lecturerName) {
         Map<String, Object> response = new HashMap<>();
@@ -923,9 +886,7 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * מחזיר הרצאות של מרצה ספציפי - חיפוש גמיש (לפי ID או שם)
-     */
+   
     @GetMapping("/lectures/search-lecturer")
     public ResponseEntity<Map<String, Object>> searchLecturerLectures(
             @RequestParam(required = false) Long lecturerId,
@@ -942,7 +903,7 @@ public class AdvancedFakerController {
             Map<String, Object> result;
             
             if (lecturerId != null) {
-                // חיפוש לפי ID
+  
                 List<Lecturer> lecturers = lecturerRepository.findAll();
                 Optional<Lecturer> lecturer = lecturers.stream()
                     .filter(l -> l.getUserId().equals(lecturerId))
@@ -959,7 +920,7 @@ public class AdvancedFakerController {
                 response.put("lecturer", lecturer.get());
                 
             } else {
-                // חיפוש לפי שם
+    
                 result = advancedLectureFakerService.getLecturesByLecturerName(lecturerName);
                 response.put("search_type", "by_name");
                 response.put("search_term", lecturerName);
@@ -1093,16 +1054,10 @@ public class AdvancedFakerController {
 
     // ========== Helper Methods ==========
 
-    /**
-     * פרסינג פשוט של JSON עם פרטי מרצים
-     */
     private List<String[]> parseSimpleLecturerDetailsJson(String json) {
         List<String[]> result = new ArrayList<>();
         
-        // פרסינג פשוט מאוד - ניתן לשפר עם ספרייה מתאימה
-        // מצפה לפורמט: [{"firstName":"ישראל","lastName":"כהן","email":"israel@example.com"}]
-        
-        // הסרת סוגריים וחלוקה לפי אובייקטים
+ 
         json = json.trim();
         if (json.startsWith("[")) json = json.substring(1);
         if (json.endsWith("]")) json = json.substring(0, json.length() - 1);
@@ -1183,6 +1138,7 @@ public class AdvancedFakerController {
         
         endpoints.put("system", List.of(
             "POST /api/advanced-faker/create-complete-system?lecturerCount=10&lectureCount=20 - Create complete system"
+
             // "POST /api/advanced-faker/create-super-lecture - Create super lecture with all lecturers",
             // "POST /api/advanced-faker/fix-orphan-lectures - Fix orphan lectures",
             // "GET /api/advanced-faker/analyze-relations - Analyze many-to-many relations",
