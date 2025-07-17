@@ -859,4 +859,329 @@ public class AdvancedFakerController {
             "timestamp", LocalDateTime.now()
         ));
     }
+    // הוסף את ה-endpoints האלה ל-AdvancedFakerController
+
+// ========== מרצים עם ההרצאות שלהם ==========
+
+@GetMapping("/lecturers/with-lectures")
+public ResponseEntity<Map<String, Object>> getAllLecturersWithTheirLectures() {
+    Map<String, Object> response = new HashMap<>();
+    
+    try {
+        List<Lecturer> allLecturers = lecturerRepository.findAll();
+        
+        List<Map<String, Object>> lecturersWithLectures = allLecturers.stream()
+            .map(lecturer -> {
+                Map<String, Object> lecturerData = new HashMap<>();
+                
+                // פרטי המרצה
+                lecturerData.put("lecturer_id", lecturer.getUserId());
+                lecturerData.put("name", lecturer.getFirstName() + " " + lecturer.getLastName());
+                lecturerData.put("email", lecturer.getEmail());
+                lecturerData.put("phone", lecturer.getPhone());
+                lecturerData.put("bio", lecturer.getBio());
+                lecturerData.put("city", lecturer.getCity());
+                lecturerData.put("working_area", lecturer.getWorkingArea());
+                lecturerData.put("status", lecturer.getStatus().toString());
+                lecturerData.put("created_at", lecturer.getCreatedAt());
+                lecturerData.put("image_url", lecturer.getImageUrl());
+                
+                // ההרצאות של המרצה
+                List<Map<String, Object>> lecturesList = lecturer.getLectures().stream()
+                    .map(lecture -> {
+                        Map<String, Object> lectureInfo = new HashMap<>();
+                        lectureInfo.put("lecture_id", lecture.getLectureId());
+                        lectureInfo.put("title", lecture.getTitle());
+                        lectureInfo.put("description", lecture.getDescription());
+                        lectureInfo.put("duration", lecture.getDuration());
+                        lectureInfo.put("price", lecture.getPrice());
+                        lectureInfo.put("status", lecture.getStatus().toString());
+                        lectureInfo.put("online", lecture.isOnline());
+                        lectureInfo.put("image_url", lecture.getImageUrl());
+                        lectureInfo.put("created_at", lecture.getCreatedAt());
+                        lectureInfo.put("updated_at", lecture.getUpdatedAt());
+                        return lectureInfo;
+                    })
+                    .collect(Collectors.toList());
+                
+                lecturerData.put("lectures", lecturesList);
+                lecturerData.put("lectures_count", lecturesList.size());
+                
+                return lecturerData;
+            })
+            .collect(Collectors.toList());
+        
+        // סטטיסטיקות
+        long totalLectures = lecturersWithLectures.stream()
+            .mapToLong(lecturer -> (Integer) lecturer.get("lectures_count"))
+            .sum();
+        
+        long lecturersWithLecturesCount = lecturersWithLectures.stream()
+            .filter(lecturer -> (Integer) lecturer.get("lectures_count") > 0)
+            .count();
+        
+        response.put("success", true);
+        response.put("total_lecturers", allLecturers.size());
+        response.put("lecturers_with_lectures_count", lecturersWithLecturesCount);
+        response.put("lecturers_without_lectures_count", allLecturers.size() - lecturersWithLecturesCount);
+        response.put("total_lectures", totalLectures);
+        response.put("lecturers_data", lecturersWithLectures);
+        response.put("message", "Retrieved all lecturers with their lectures");
+        
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Error: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    return ResponseEntity.ok(response);
+}
+
+@GetMapping("/lecturers/with-lectures/approved-only")
+public ResponseEntity<Map<String, Object>> getApprovedLecturersWithTheirLectures() {
+    Map<String, Object> response = new HashMap<>();
+    
+    try {
+        List<Lecturer> approvedLecturers = lecturerRepository.findAll().stream()
+            .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
+            .collect(Collectors.toList());
+        
+        List<Map<String, Object>> lecturersWithLectures = approvedLecturers.stream()
+            .map(lecturer -> {
+                Map<String, Object> lecturerData = new HashMap<>();
+                
+                // פרטי המרצה
+                lecturerData.put("lecturer_id", lecturer.getUserId());
+                lecturerData.put("name", lecturer.getFirstName() + " " + lecturer.getLastName());
+                lecturerData.put("email", lecturer.getEmail());
+                lecturerData.put("phone", lecturer.getPhone());
+                lecturerData.put("bio", lecturer.getBio());
+                lecturerData.put("city", lecturer.getCity());
+                lecturerData.put("working_area", lecturer.getWorkingArea());
+                lecturerData.put("status", lecturer.getStatus().toString());
+                // lecturerData.put("expertise", lecturer.getExpertise());
+                
+                // ההרצאות של המרצה
+                List<Map<String, Object>> lecturesList = lecturer.getLectures().stream()
+                    .map(lecture -> {
+                        Map<String, Object> lectureInfo = new HashMap<>();
+                        lectureInfo.put("lecture_id", lecture.getLectureId());
+                        lectureInfo.put("title", lecture.getTitle());
+                        lectureInfo.put("description", lecture.getDescription());
+                        lectureInfo.put("duration", lecture.getDuration());
+                        lectureInfo.put("price", lecture.getPrice());
+                        lectureInfo.put("status", lecture.getStatus().toString());
+                        lectureInfo.put("online", lecture.isOnline());
+                        lectureInfo.put("image_url", lecture.getImageUrl());
+                        lectureInfo.put("created_at", lecture.getCreatedAt());
+                        lectureInfo.put("updated_at", lecture.getUpdatedAt());
+                        
+                        // רשימת כל המרצים בהרצאה הזו (לא רק הנוכחי)
+                        List<String> allLecturersInThisLecture = lecture.getLecturers().stream()
+                            .map(lec -> lec.getFirstName() + " " + lec.getLastName())
+                            .collect(Collectors.toList());
+                        lectureInfo.put("all_lecturers_in_lecture", allLecturersInThisLecture);
+                        lectureInfo.put("lecturers_count_in_lecture", allLecturersInThisLecture.size());
+                        
+                        return lectureInfo;
+                    })
+                    .collect(Collectors.toList());
+                
+                lecturerData.put("lectures", lecturesList);
+                lecturerData.put("lectures_count", lecturesList.size());
+                
+                return lecturerData;
+            })
+            .collect(Collectors.toList());
+        
+        response.put("success", true);
+        response.put("total_approved_lecturers", approvedLecturers.size());
+        response.put("lecturers_data", lecturersWithLectures);
+        response.put("flow_note", "Showing only APPROVED lecturers with their lectures");
+        response.put("message", "Retrieved approved lecturers with their lectures");
+        
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Error: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    return ResponseEntity.ok(response);
+}
+
+@GetMapping("/lecturers/with-lectures/summary")
+public ResponseEntity<Map<String, Object>> getLecturersWithLecturesSummary() {
+    Map<String, Object> response = new HashMap<>();
+    
+    try {
+        List<Lecturer> allLecturers = lecturerRepository.findAll();
+        
+        // סיכום מהיר - רק שמות ומספר הרצאות
+        List<Map<String, Object>> summary = allLecturers.stream()
+            .map(lecturer -> {
+                Map<String, Object> lecturerSummary = new HashMap<>();
+                lecturerSummary.put("lecturer_id", lecturer.getUserId());
+                lecturerSummary.put("name", lecturer.getFirstName() + " " + lecturer.getLastName());
+                lecturerSummary.put("status", lecturer.getStatus().toString());
+                lecturerSummary.put("lectures_count", lecturer.getLectures().size());
+                
+                List<String> lecturesTitles = lecturer.getLectures().stream()
+                    .map(lecture -> lecture.getTitle())
+                    .collect(Collectors.toList());
+                lecturerSummary.put("lectures_titles", lecturesTitles);
+                
+                // סיכום מחירים אם יש הרצאות
+                if (!lecturer.getLectures().isEmpty()) {
+                    int totalPrice = lecturer.getLectures().stream()
+                        .mapToInt(lecture -> lecture.getPrice())
+                        .sum();
+                    lecturerSummary.put("total_lectures_value", totalPrice);
+                    lecturerSummary.put("average_lecture_price", totalPrice / lecturer.getLectures().size());
+                } else {
+                    lecturerSummary.put("total_lectures_value", 0);
+                    lecturerSummary.put("average_lecture_price", 0);
+                }
+                
+                return lecturerSummary;
+            })
+            .sorted((a, b) -> Integer.compare(
+                (Integer) b.get("lectures_count"), 
+                (Integer) a.get("lectures_count")
+            )) // מיון לפי מספר הרצאות (יורד)
+            .collect(Collectors.toList());
+        
+        // סטטיסטיקות מהירות
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total_lecturers", (long) allLecturers.size());
+        stats.put("lecturers_with_lectures", allLecturers.stream()
+            .filter(lecturer -> !lecturer.getLectures().isEmpty())
+            .count());
+        stats.put("lecturers_without_lectures", allLecturers.stream()
+            .filter(lecturer -> lecturer.getLectures().isEmpty())
+            .count());
+        stats.put("total_lectures", allLecturers.stream()
+            .mapToLong(lecturer -> lecturer.getLectures().size())
+            .sum());
+        
+        // סטטיסטיקות מחירים
+        int totalValue = allLecturers.stream()
+            .flatMap(lecturer -> lecturer.getLectures().stream())
+            .mapToInt(lecture -> lecture.getPrice())
+            .sum();
+        stats.put("total_lectures_value", totalValue);
+        
+        response.put("success", true);
+        response.put("statistics", stats);
+        response.put("lecturers_summary", summary);
+        response.put("message", "Quick summary of lecturers and their lecture counts");
+        
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Error: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    return ResponseEntity.ok(response);
+}
+
+// ========== הרצאות עם המרצים שלהן ==========
+
+@GetMapping("/lectures/all")
+public ResponseEntity<Map<String, Object>> getAllLectures() {
+    Map<String, Object> response = new HashMap<>();
+    
+    try {
+        List<Lecture> allLectures = lectureRepository.findAll();
+        
+        List<Map<String, Object>> lecturesData = allLectures.stream()
+            .map(lecture -> {
+                Map<String, Object> lectureInfo = new HashMap<>();
+                lectureInfo.put("lecture_id", lecture.getLectureId());
+                lectureInfo.put("title", lecture.getTitle());
+                lectureInfo.put("description", lecture.getDescription());
+                lectureInfo.put("duration", lecture.getDuration());
+                lectureInfo.put("price", lecture.getPrice());
+                lectureInfo.put("status", lecture.getStatus().toString());
+                lectureInfo.put("online", lecture.isOnline());
+                lectureInfo.put("image_url", lecture.getImageUrl());
+                lectureInfo.put("created_at", lecture.getCreatedAt());
+                lectureInfo.put("updated_at", lecture.getUpdatedAt());
+                lectureInfo.put("lecturers_count", lecture.getLecturers().size());
+                return lectureInfo;
+            })
+            .collect(Collectors.toList());
+        
+        response.put("success", true);
+        response.put("total_lectures", allLectures.size());
+        response.put("lectures", lecturesData);
+        response.put("message", "Retrieved all lectures from database");
+        
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Error: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    return ResponseEntity.ok(response);
+}
+
+@GetMapping("/lectures/with-lecturers")
+public ResponseEntity<Map<String, Object>> getAllLecturesWithLecturers() {
+    Map<String, Object> response = new HashMap<>();
+    
+    try {
+        List<Lecture> allLectures = lectureRepository.findAll();
+        
+        // יצירת תצוגה מפורטת שכוללת גם את פרטי המרצים
+        List<Map<String, Object>> lecturesWithDetails = allLectures.stream()
+            .map(lecture -> {
+                Map<String, Object> lectureDetails = new HashMap<>();
+                lectureDetails.put("lecture_id", lecture.getLectureId());
+                lectureDetails.put("title", lecture.getTitle());
+                lectureDetails.put("description", lecture.getDescription());
+                lectureDetails.put("duration", lecture.getDuration());
+                lectureDetails.put("price", lecture.getPrice());
+                lectureDetails.put("status", lecture.getStatus().toString());
+                lectureDetails.put("online", lecture.isOnline());
+                lectureDetails.put("image_url", lecture.getImageUrl());
+                lectureDetails.put("created_at", lecture.getCreatedAt());
+                lectureDetails.put("updated_at", lecture.getUpdatedAt());
+                
+                // הוספת פרטי המרצים
+                List<Map<String, Object>> lecturersList = lecture.getLecturers().stream()
+                    .map(lecturer -> {
+                        Map<String, Object> lecturerInfo = new HashMap<>();
+                        lecturerInfo.put("lecturer_id", lecturer.getUserId());
+                        lecturerInfo.put("name", lecturer.getFirstName() + " " + lecturer.getLastName());
+                        lecturerInfo.put("email", lecturer.getEmail());
+                        lecturerInfo.put("status", lecturer.getStatus().toString());
+                        // lecturerInfo.put("expertise", lecturer.getExpertise());
+                        lecturerInfo.put("bio", lecturer.getBio());
+                        lecturerInfo.put("phone", lecturer.getPhone());
+                        lecturerInfo.put("city", lecturer.getCity());
+                        lecturerInfo.put("working_area", lecturer.getWorkingArea());
+                        return lecturerInfo;
+                    })
+                    .collect(Collectors.toList());
+                
+                lectureDetails.put("lecturers", lecturersList);
+                lectureDetails.put("lecturers_count", lecturersList.size());
+                
+                return lectureDetails;
+            })
+            .collect(Collectors.toList());
+        
+        response.put("success", true);
+        response.put("total_lectures", allLectures.size());
+        response.put("lectures_with_details", lecturesWithDetails);
+        response.put("message", "Retrieved all lectures with lecturer details");
+        
+    } catch (Exception e) {
+        response.put("success", false);
+        response.put("message", "Error: " + e.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+    
+    return ResponseEntity.ok(response);
+}
 }
