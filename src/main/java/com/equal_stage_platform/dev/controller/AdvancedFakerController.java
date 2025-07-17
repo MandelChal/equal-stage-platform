@@ -1,11 +1,11 @@
 package com.equal_stage_platform.dev.controller;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,13 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.service.AdvancedLectureFakerService;
@@ -32,7 +35,7 @@ public class AdvancedFakerController {
 
     @GetMapping("/ping")
     public String ping() {
-        return "pong";
+        return "pong - Flow-Aware Faker System 🚀";
     }
 
     @Autowired
@@ -44,7 +47,298 @@ public class AdvancedFakerController {
     @Autowired
     private LecturerRepository lecturerRepository;
 
-    // ========== NEW: Auto-Create Lecturer if Not Exists ==========
+    // ========== Flow-Aware Lecturer Management ==========
+
+    @PostMapping("/lecturers/create-single")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createSingleLecturer() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.createSingleLecturer();
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("lecturer", result.get("lecturer"));
+            response.put("status", result.get("status"));
+            response.put("total_lecturers", result.get("total_lecturers"));
+            response.put("flow_note", "Lecturer created in PENDING status. Requires admin approval to create lectures.");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lecturers/create-multiple")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createMultipleLecturers(
+            @RequestParam(defaultValue = "5") int count) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.createMultipleLecturers(count);
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("created_count", result.get("created_count"));
+            response.put("lecturers", result.get("lecturers"));
+            response.put("total_lecturers", result.get("total_lecturers"));
+            response.put("flow_note", "All lecturers created in PENDING status. They need admin approval to create lectures.");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/lecturers/pending")
+    public ResponseEntity<Map<String, Object>> getPendingLecturers() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.getPendingLecturers();
+            
+            response.put("success", result.get("success"));
+            response.put("pending_lecturers", result.get("pending_lecturers"));
+            response.put("pending_count", result.get("pending_count"));
+            response.put("total_lecturers", result.get("total_lecturers"));
+            response.put("flow_note", "These lecturers are waiting for admin approval.");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lecturers/approve-all")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> approveAllPendingLecturers() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.approveAllPendingLecturers();
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("approved_count", result.get("approved_count"));
+            response.put("approved_lecturers", result.get("approved_lecturers"));
+            response.put("flow_note", "Approved lecturers can now create lectures.");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lecturers/approve/{lecturerId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> approveLecturer(@PathVariable UUID lecturerId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<Lecturer> lecturers = lecturerRepository.findAll();
+            Optional<Lecturer> lecturer = lecturers.stream()
+                .filter(l -> l.getUserId().equals(lecturerId))
+                .findFirst();
+            
+            if (lecturer.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Lecturer with ID " + lecturerId + " not found");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            Lecturer lecturerToApprove = lecturer.get();
+            lecturerToApprove.setStatus(LecturerStatus.APPROVED);
+            lecturerToApprove.setLastUpdatedAt(LocalDateTime.now());
+            
+            Lecturer saved = lecturerRepository.save(lecturerToApprove);
+            
+            response.put("success", true);
+            response.put("message", "Lecturer approved successfully");
+            response.put("lecturer", saved);
+            response.put("old_status", "PENDING");
+            response.put("new_status", "APPROVED");
+            response.put("flow_note", "Lecturer can now create lectures.");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/lecturers/status/{lecturerId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> updateLecturerStatus(
+            @PathVariable UUID lecturerId,
+            @RequestParam LecturerStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<Lecturer> lecturers = lecturerRepository.findAll();
+            Optional<Lecturer> lecturer = lecturers.stream()
+                .filter(l -> l.getUserId().equals(lecturerId))
+                .findFirst();
+            
+            if (lecturer.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Lecturer with ID " + lecturerId + " not found");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            Lecturer lecturerToUpdate = lecturer.get();
+            LecturerStatus oldStatus = lecturerToUpdate.getStatus();
+            
+            lecturerToUpdate.setStatus(status);
+            lecturerToUpdate.setLastUpdatedAt(LocalDateTime.now());
+            
+            Lecturer saved = lecturerRepository.save(lecturerToUpdate);
+            
+            response.put("success", true);
+            response.put("message", "Lecturer status updated successfully");
+            response.put("lecturer", saved);
+            response.put("old_status", oldStatus);
+            response.put("new_status", status);
+            
+            // Add flow notes based on status
+            switch (status) {
+                case APPROVED:
+                    response.put("flow_note", "Lecturer can now create lectures and is visible in searches.");
+                    break;
+                case PENDING:
+                    response.put("flow_note", "Lecturer needs admin approval to create lectures.");
+                    break;
+                case FREEZE:
+                    response.put("flow_note", "Lecturer is frozen and not visible in searches.");
+                    break;
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    // ========== Flow-Aware Lecture Creation ==========
+
+    @PostMapping("/lectures/create-single")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createSingleLecture() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.createSingleLecture();
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("lecture", result.get("lecture"));
+            response.put("assigned_lecturers", result.get("assigned_lecturers"));
+            response.put("total_lectures", result.get("total_lectures"));
+            response.put("flow_note", "Lecture created with APPROVED lecturers only.");
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lectures/create-multiple")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createMultipleLectures(
+            @RequestParam(defaultValue = "5") int count) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.createMultipleLectures(count);
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("created_count", result.get("created_count"));
+            response.put("lectures", result.get("lectures"));
+            response.put("total_lectures", result.get("total_lectures"));
+            response.put("used_approved_lecturers", result.get("used_approved_lecturers"));
+            response.put("flow_note", "All lectures created with APPROVED lecturers only.");
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lectures/create-with-existing-lecturer")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createLectureWithExistingLecturer(
+            @RequestParam UUID lecturerId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            List<Lecturer> lecturers = lecturerRepository.findAll();
+            Optional<Lecturer> lecturer = lecturers.stream()
+                .filter(l -> l.getUserId().equals(lecturerId))
+                .findFirst();
+            
+            if (lecturer.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Lecturer with ID " + lecturerId + " not found");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            var result = advancedLectureFakerService.createLectureWithSpecificLecturer(lecturer.get());
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("lecture", result.get("lecture"));
+            response.put("lecturer", result.get("lecturer"));
+            response.put("lecturer_status", result.get("lecturer_status"));
+            response.put("total_lectures", lectureRepository.count());
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    // ========== Auto-Create Lecturer with Flow Support ==========
+
     @PostMapping("/lectures/create-with-auto-create-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createLectureWithAutoCreateLecturer(
@@ -64,6 +358,7 @@ public class AdvancedFakerController {
             response.put("lecture", result.get("lecture"));
             response.put("lecturer", result.get("lecturer"));
             response.put("was_lecturer_created", result.get("was_lecturer_created"));
+            response.put("lecturer_status", result.get("lecturer_status"));
             response.put("total_lectures", lectureRepository.count());
             response.put("total_lecturers", lecturerRepository.count());
             
@@ -80,24 +375,24 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    
     @PostMapping("/lectures/create-fake-with-new-lecturer")
     @Transactional
     public ResponseEntity<Map<String, Object>> createFakeLectureWithNewLecturer() {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            
             var result = advancedLectureFakerService.createLectureWithLecturerOrCreate(
                 null, null, null, true);
             
             response.put("success", true);
-            response.put("message", "נוצרה הרצאה פייק עם מרצה פייק חדש!");
+            response.put("message", "Created fake lecture with new fake lecturer!");
             response.put("lecture", result.get("lecture"));
             response.put("lecturer", result.get("lecturer"));
             response.put("action", "created_fake_lecturer_and_lecture");
+            response.put("lecturer_status", result.get("lecturer_status"));
             response.put("total_lectures", lectureRepository.count());
             response.put("total_lecturers", lecturerRepository.count());
+            response.put("flow_note", "New lecturer was auto-approved for demo purposes.");
             
         } catch (Exception e) {
             response.put("success", false);
@@ -108,53 +403,8 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-   
-    @PostMapping("/lectures/create-multiple-with-auto-create-lecturers")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createMultipleLecturesWithAutoCreateLecturers(
-            @RequestParam(defaultValue = "5") int count,
-            @RequestParam(required = false) String lecturerDetailsJson) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<String[]> lecturerDetailsList = null;
-     
-            if (lecturerDetailsJson != null && !lecturerDetailsJson.trim().isEmpty()) {
-                try {
-                 
-                    lecturerDetailsList = parseSimpleLecturerDetailsJson(lecturerDetailsJson);
-                } catch (Exception e) {
-                    response.put("success", false);
-                    response.put("message", "שגיאה בפרסינג פרטי המרצים: " + e.getMessage());
-                    response.put("json_example", "[{\"firstName\":\"ישראל\",\"lastName\":\"כהן\",\"email\":\"israel@example.com\"},{\"firstName\":\"שרה\",\"lastName\":\"לוי\"}]");
-                    return ResponseEntity.badRequest().body(response);
-                }
-            }
-            
-            var result = advancedLectureFakerService.createMultipleLecturesWithAutoCreateLecturers(
-                count, lecturerDetailsList);
-            
-            response.put("success", true);
-            response.put("message", result.get("message"));
-            response.put("lectures", result.get("lectures"));
-            response.put("lectures_count", result.get("lectures_count"));
-            response.put("new_lecturers", result.get("new_lecturers"));
-            response.put("new_lecturers_count", result.get("new_lecturers_count"));
-            response.put("existing_lecturers_used", result.get("existing_lecturers_used"));
-            response.put("existing_lecturers_count", result.get("existing_lecturers_count"));
-            response.put("total_lectures_in_db", result.get("total_lectures_in_db"));
-            response.put("total_lecturers_in_db", result.get("total_lecturers_in_db"));
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        return ResponseEntity.ok(response);
-    }
+    // ========== Flow-Aware Search ==========
 
-  
     @GetMapping("/lecturers/search")
     public ResponseEntity<Map<String, Object>> searchLecturers(@RequestParam String searchTerm) {
         Map<String, Object> response = new HashMap<>();
@@ -162,7 +412,7 @@ public class AdvancedFakerController {
         try {
             if (searchTerm == null || searchTerm.trim().isEmpty()) {
                 response.put("success", false);
-                response.put("message", "יש לספק מונח חיפוש (שם, אימייל וכד')");
+                response.put("message", "Search term is required");
                 return ResponseEntity.badRequest().body(response);
             }
             
@@ -172,12 +422,15 @@ public class AdvancedFakerController {
             response.put("search_term", result.get("search_term"));
             response.put("matches_found", result.get("matches_found"));
             response.put("matching_lecturers", result.get("matching_lecturers"));
+            response.put("total_approved_lecturers", result.get("total_approved_lecturers"));
             response.put("total_lecturers_in_db", result.get("total_lecturers_in_db"));
+            response.put("search_scope", result.get("search_scope"));
+            response.put("flow_note", "Search results include only APPROVED lecturers.");
             
             if ((Integer) result.get("matches_found") == 0) {
-                response.put("message", "לא נמצאו מרצים המתאימים למונח החיפוש: " + searchTerm);
+                response.put("message", "No approved lecturers found matching: " + searchTerm);
             } else {
-                response.put("message", "נמצאו " + result.get("matches_found") + " מרצים");
+                response.put("message", "Found " + result.get("matches_found") + " approved lecturers");
             }
             
         } catch (Exception e) {
@@ -189,63 +442,6 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-
-    @PostMapping("/lectures/create-for-specific-lecturers")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createLecturesForSpecificLecturers(
-            @RequestParam String lecturerNames) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            // פרסינג שמות המרצים (מופרדים בפסיקים)
-            String[] names = lecturerNames.split(",");
-            List<Lecture> createdLectures = new ArrayList<>();
-            List<Lecturer> newLecturers = new ArrayList<>();
-            List<Lecturer> existingLecturers = new ArrayList<>();
-            
-            for (String fullName : names) {
-                String trimmedName = fullName.trim();
-                if (trimmedName.isEmpty()) continue;
-                
-                String[] nameParts = trimmedName.split("\\s+");
-                String firstName = nameParts[0];
-                String lastName = nameParts.length > 1 ? nameParts[1] : "";
-                
-                var result = advancedLectureFakerService.createLectureWithLecturerOrCreate(
-                    firstName, lastName, null, true);
-                
-                if ((Boolean) result.get("success")) {
-                    createdLectures.add((Lecture) result.get("lecture"));
-                    
-                    Lecturer lecturer = (Lecturer) result.get("lecturer");
-                    if ((Boolean) result.get("was_lecturer_created")) {
-                        newLecturers.add(lecturer);
-                    } else {
-                        existingLecturers.add(lecturer);
-                    }
-                }
-            }
-            
-            response.put("success", true);
-            response.put("message", "נוצרו " + createdLectures.size() + " הרצאות עבור המרצים");
-            response.put("input_names", lecturerNames);
-            response.put("lectures", createdLectures);
-            response.put("lectures_count", createdLectures.size());
-            response.put("new_lecturers", newLecturers);
-            response.put("new_lecturers_count", newLecturers.size());
-            response.put("existing_lecturers", existingLecturers);
-            response.put("existing_lecturers_count", existingLecturers.size());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-  
     @GetMapping("/lecturers/check-exists")
     public ResponseEntity<Map<String, Object>> checkLecturerExists(
             @RequestParam(required = false) String firstName,
@@ -258,18 +454,27 @@ public class AdvancedFakerController {
                 (lastName == null || lastName.trim().isEmpty()) && 
                 (email == null || email.trim().isEmpty())) {
                 response.put("success", false);
-                response.put("message", "יש לספק לפחות פרט אחד (שם פרטי, שם משפחה, או אימייל)");
+                response.put("message", "At least one search parameter is required");
                 return ResponseEntity.badRequest().body(response);
             }
             
-            // קריאה פנימית לפונקציית החיפוש
-            var searchResult = advancedLectureFakerService.searchLecturersByDetails(
-                (firstName != null ? firstName : "") + " " + 
-                (lastName != null ? lastName : "") + " " + 
-                (email != null ? email : ""));
-            
-            List<Map<String, Object>> matches = 
-                (List<Map<String, Object>>) searchResult.get("matching_lecturers");
+            // Search among all lecturers (not just approved) for existence check
+            List<Lecturer> allLecturers = lecturerRepository.findAll();
+            List<Lecturer> matches = allLecturers.stream()
+                .filter(lecturer -> {
+                    boolean match = false;
+                    if (firstName != null && !firstName.trim().isEmpty()) {
+                        match = lecturer.getFirstName().toLowerCase().contains(firstName.toLowerCase());
+                    }
+                    if (lastName != null && !lastName.trim().isEmpty()) {
+                        match = match || lecturer.getLastName().toLowerCase().contains(lastName.toLowerCase());
+                    }
+                    if (email != null && !email.trim().isEmpty()) {
+                        match = match || (lecturer.getEmail() != null && lecturer.getEmail().toLowerCase().contains(email.toLowerCase()));
+                    }
+                    return match;
+                })
+                .collect(Collectors.toList());
             
             boolean exists = !matches.isEmpty();
             
@@ -282,11 +487,20 @@ public class AdvancedFakerController {
             ));
             
             if (exists) {
-                response.put("message", "נמצאו " + matches.size() + " מרצים מתאימים");
-                response.put("matching_lecturers", matches);
+                response.put("message", "Found " + matches.size() + " matching lecturers");
+                response.put("matching_lecturers", matches.stream()
+                    .map(lecturer -> Map.of(
+                        "id", lecturer.getUserId(),
+                        "name", lecturer.getFirstName() + " " + lecturer.getLastName(),
+                        "email", lecturer.getEmail(),
+                        "status", lecturer.getStatus()
+                    ))
+                    .collect(Collectors.toList()));
             } else {
-                response.put("message", "לא נמצא מרצה מתאים");
+                response.put("message", "No matching lecturers found");
             }
+            
+            response.put("flow_note", "This check searches all lecturers regardless of status.");
             
         } catch (Exception e) {
             response.put("success", false);
@@ -297,283 +511,47 @@ public class AdvancedFakerController {
         return ResponseEntity.ok(response);
     }
 
-    // ========== Basic Lecture Creation ==========
+    // ========== System Status ==========
 
-    @PostMapping("/lectures/create-single")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createSingleLecture() {
+    @GetMapping("/system/status")
+    public ResponseEntity<Map<String, Object>> getSystemStatus() {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            var result = advancedLectureFakerService.createSingleLecture();
+            List<Lecturer> allLecturers = lecturerRepository.findAll();
+            List<Lecture> allLectures = lectureRepository.findAll();
+            
+            // Count by status
+            Map<LecturerStatus, Long> statusCounts = allLecturers.stream()
+                .collect(Collectors.groupingBy(
+                    Lecturer::getStatus,
+                    Collectors.counting()
+                ));
             
             response.put("success", true);
-            response.put("message", "Single lecture created successfully!");
-            response.put("lecture", result.get("lecture"));
-            response.put("total_lectures", lectureRepository.count());
+            response.put("total_lecturers", allLecturers.size());
+            response.put("total_lectures", allLectures.size());
+            response.put("lecturers_by_status", statusCounts);
+            response.put("approved_lecturers", statusCounts.getOrDefault(LecturerStatus.APPROVED, 0L));
+            response.put("pending_lecturers", statusCounts.getOrDefault(LecturerStatus.PENDING, 0L));
+            response.put("frozen_lecturers", statusCounts.getOrDefault(LecturerStatus.FREEZE, 0L));
+            
+            // Calculate lecture statistics
+            long lecturesWithApprovedLecturers = allLectures.stream()
+                .filter(lecture -> lecture.getLecturers().stream()
+                    .anyMatch(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED))
+                .count();
+            
+            response.put("lectures_with_approved_lecturers", lecturesWithApprovedLecturers);
+            response.put("flow_compliance", Map.of(
+                "all_lectures_have_approved_lecturers", lecturesWithApprovedLecturers == allLectures.size(),
+                "system_ready", statusCounts.getOrDefault(LecturerStatus.APPROVED, 0L) > 0
+            ));
             
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/lectures/create-multiple")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createMultipleLectures(@RequestParam(defaultValue = "5") int count) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.createMultipleLectures(count);
-            
-            response.put("success", true);
-            response.put("message", "Created " + count + " lectures successfully!");
-            response.put("count", count);
-            response.put("lectures", result.get("lectures"));
-            response.put("total_in_db", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    // ========== Enhanced Lecture Creation with Existing Lecturers ==========
-
-   
-    @PostMapping("/lectures/create-with-existing-lecturer")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createLectureWithExistingLecturer(
-            @RequestParam Long lecturerId) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecturer> lecturers = lecturerRepository.findAll();
-            Optional<Lecturer> lecturer = lecturers.stream()
-                .filter(l -> l.getUserId().equals(lecturerId))
-                .findFirst();
-            
-            if (lecturer.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "מרצה עם ID " + lecturerId + " לא נמצא במערכת");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            var result = advancedLectureFakerService.createLectureWithSpecificLecturer(lecturer.get());
-            
-            response.put("success", true);
-            response.put("message", "הרצאה נוצרה בהצלחה עם המרצה: " + lecturer.get().getFirstName() + " " + lecturer.get().getLastName());
-            response.put("lecture", result.get("lecture"));
-            response.put("lecturer", lecturer.get());
-            response.put("total_lectures", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-   
-    @PostMapping("/lectures/create-fake-for-lecturer-name")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createFakeLectureForLecturerName(
-            @RequestParam String lecturerName) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.createFakeLectureForLecturerName(lecturerName);
-            
-            if (!(Boolean) result.get("success")) {
-                response.put("success", false);
-                response.put("message", result.get("message"));
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            response.put("success", true);
-            response.put("message", result.get("message"));
-            response.put("lecture", result.get("lecture"));
-            response.put("lecturer", result.get("lecturer"));
-            response.put("total_lectures", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/lectures/create-fake-random-lecturer")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createFakeLectureWithRandomLecturer() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecturer> availableLecturers = lecturerRepository.findAll();
-            
-            if (availableLecturers.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "אין מרצים זמינים במערכת. צור מרצים תחילה.");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            var result = advancedLectureFakerService.createFakeLectureWithRandomLecturer(availableLecturers);
-            
-            response.put("success", true);
-            response.put("message", "הרצאה פייק נוצרה בהצלחה עם מרצה אקראי!");
-            response.put("lecture", result.get("lecture"));
-            response.put("lecturer", result.get("lecturer"));
-            response.put("total_lectures", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-  
-    @PostMapping("/lectures/create-multiple-with-existing-lecturers")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createMultipleLecturesWithExistingLecturers(
-            @RequestParam(defaultValue = "5") int count) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecturer> availableLecturers = lecturerRepository.findAll();
-            
-            if (availableLecturers.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "אין מרצים זמינים במערכת. צור מרצים תחילה.");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            var result = advancedLectureFakerService.createMultipleLecturesWithExistingLecturers(count, availableLecturers);
-            
-            response.put("success", true);
-            response.put("message", "נוצרו " + count + " הרצאות בהצלחה עם מרצים קיימים!");
-            response.put("count", count);
-            response.put("lectures", result.get("lectures"));
-            response.put("available_lecturers_count", availableLecturers.size());
-            response.put("total_in_db", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-  
-    @PostMapping("/lectures/create-series-for-lecturer")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createLectureSeriesForLecturer(
-            @RequestParam Long lecturerId,
-            @RequestParam(defaultValue = "3") int seriesCount,
-            @RequestParam(defaultValue = "false") boolean isWorkshopSeries) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecturer> lecturers = lecturerRepository.findAll();
-            Optional<Lecturer> lecturer = lecturers.stream()
-                .filter(l -> l.getUserId().equals(lecturerId))
-                .findFirst();
-            
-            if (lecturer.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "מרצה עם ID " + lecturerId + " לא נמצא במערכת");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            var result = advancedLectureFakerService.createLectureSeriesForLecturer(
-                lecturer.get(), seriesCount, isWorkshopSeries);
-            
-            response.put("success", true);
-            response.put("message", "נוצרה סדרת " + seriesCount + " הרצאות עבור " + 
-                lecturer.get().getFirstName() + " " + lecturer.get().getLastName());
-            response.put("lecturer", lecturer.get());
-            response.put("series_count", seriesCount);
-            response.put("lectures", result.get("lectures"));
-            response.put("is_workshop_series", isWorkshopSeries);
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    // ========== Existing Lecture Creation Methods ==========
-
-    @PostMapping("/lectures/create-israeli")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createIsraeliTechLectures(@RequestParam(defaultValue = "8") int count) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.createIsraeliTechLectures(count);
-            
-            response.put("success", true);
-            response.put("message", "Created " + count + " Israeli tech lectures!");
-            response.put("count", count);
-            response.put("lectures", result.get("lectures"));
-            response.put("total_in_db", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/lectures/create-upcoming")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createUpcomingLectures(@RequestParam(defaultValue = "6") int count) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.generateUpcomingLectures(count);
-            
-            response.put("success", true);
-            response.put("message", "Created " + count + " upcoming lectures!");
-            response.put("count", count);
-            response.put("lectures", result.get("lectures"));
-            response.put("total_in_db", lectureRepository.count());
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/lectures/create-with-lecturers")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createLectureWithLecturers() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.generateSingleLectureWithLecturers();
-            
-            response.put("success", true);
-            response.put("message", "Lecture created with lecturers!");
-            response.put("lecture", result.get("lecture"));
-            response.put("attached_lecturers", result.get("attached_lecturers"));
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
         return ResponseEntity.ok(response);
@@ -588,15 +566,18 @@ public class AdvancedFakerController {
             @RequestParam(defaultValue = "20") int lectureCount) {
         
         try {
-            System.out.println("Creating complete system with " + lecturerCount + " lecturers and " + lectureCount + " lectures...");
+            System.out.println("Creating complete system with proper flow...");
             
             Map<String, Object> result = advancedLectureFakerService.createCompleteSystemWithRelations(lecturerCount, lectureCount);
             
             if ((Boolean) result.get("success")) {
-                System.out.println("Successfully created complete system!");
+                System.out.println("Successfully created complete system following proper flow!");
                 System.out.println("- Lecturers: " + result.get("lecturers_created"));
                 System.out.println("- Lectures: " + result.get("lectures_created"));
+                System.out.println("- Approved Lecturers: " + result.get("approved_lecturers"));
                 System.out.println("- Total Relations: " + result.get("total_relations"));
+                
+                result.put("flow_note", "System created following proper flow: lecturers created → approved → lectures created");
             }
             
             return ResponseEntity.ok(result);
@@ -610,420 +591,147 @@ public class AdvancedFakerController {
         }
     }
 
-    @PostMapping("/create-new-relations")
+    // ========== Existing Lecture Creation Methods (Updated) ==========
+
+    @PostMapping("/lectures/create-israeli")
     @Transactional
-    public ResponseEntity<Map<String, Object>> createNewRelations(@RequestParam(defaultValue = "5") int newRelations) {
-        try {
-            System.out.println("Creating " + newRelations + " new relations...");
-            
-            var result = advancedLectureFakerService.createNewManyToManyRelations(newRelations);
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            System.err.println("Error creating new relations: " + e.getMessage());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error creating new relations: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @PostMapping("/create-super-lecture")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> createSuperLecture() {
-        try {
-            var result = advancedLectureFakerService.createSuperLecture();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            System.err.println("Error creating super lecture: " + e.getMessage());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error creating super lecture: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @PostMapping("/fix-orphan-lectures")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> fixOrphanLectures() {
-        try {
-            var result = advancedLectureFakerService.fixOrphanLectures();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            System.err.println("Error fixing orphan lectures: " + e.getMessage());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error fixing orphan lectures: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    // ========== Analysis & Information ==========
-
-    @GetMapping("/analyze-relations")
-    public ResponseEntity<Map<String, Object>> analyzeManyToManyRelations() {
-        try {
-            System.out.println("Analyzing many-to-many relations...");
-            
-            Map<String, Object> analysis = advancedLectureFakerService.analyzeManyToManyRelations();
-            
-            return ResponseEntity.ok(analysis);
-            
-        } catch (Exception e) {
-            System.err.println("Error analyzing relations: " + e.getMessage());
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error analyzing relations: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @GetMapping("/lonely-lecturers")
-    public ResponseEntity<Map<String, Object>> findLonelyLecturers() {
-        try {
-            var result = advancedLectureFakerService.findLonelyLecturers();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error finding lonely lecturers: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @GetMapping("/orphan-lectures")
-    public ResponseEntity<Map<String, Object>> findOrphanLectures() {
-        try {
-            var result = advancedLectureFakerService.findOrphanLectures();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error finding orphan lectures: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @GetMapping("/relations-matrix")
-    public ResponseEntity<Map<String, Object>> getRelationsMatrix() {
-        try {
-            var result = advancedLectureFakerService.getRelationsMatrix();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error generating relations matrix: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    @PostMapping("/clean-duplicate-relations")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> cleanDuplicateRelations() {
-        try {
-            var result = advancedLectureFakerService.cleanDuplicateRelations();
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Error cleaning duplicate relations: " + e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
-    }
-
-    // ========== Enhanced Data Retrieval ==========
-
-  
-    @GetMapping("/lectures/all-detailed")
-    public ResponseEntity<Map<String, Object>> getAllLecturesDetailed(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
+    public ResponseEntity<Map<String, Object>> createIsraeliTechLectures(
+            @RequestParam(defaultValue = "8") int count) {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            var result = advancedLectureFakerService.getAllLecturesWithDetails(page, size, sortBy, sortDirection);
+            var result = advancedLectureFakerService.createIsraeliTechLectures(count);
             
-            response.put("success", true);
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("count", count);
             response.put("lectures", result.get("lectures"));
-            response.put("pagination", result.get("pagination"));
-            response.put("statistics", result.get("statistics"));
+            response.put("total_in_db", result.get("total_lectures"));
+            response.put("approved_lecturers_used", result.get("approved_lecturers_used"));
+            response.put("flow_note", "Israeli tech lectures created with APPROVED lecturers only.");
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
             
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/lectures/create-upcoming")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createUpcomingLectures(
+            @RequestParam(defaultValue = "6") int count) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.generateUpcomingLectures(count);
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("count", count);
+            response.put("lectures", result.get("lectures"));
+            response.put("total_in_db", result.get("total_lectures"));
+            response.put("approved_lecturers_used", result.get("approved_lecturers_used"));
+            response.put("flow_note", "Upcoming lectures created with APPROVED lecturers only.");
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/lectures/create-with-lecturers")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> createLectureWithLecturers() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            var result = advancedLectureFakerService.generateSingleLectureWithLecturers();
+            
+            response.put("success", result.get("success"));
+            response.put("message", result.get("message"));
+            response.put("lecture", result.get("lecture"));
+            response.put("attached_lecturers", result.get("attached_lecturers"));
+            response.put("approved_lecturers_available", result.get("approved_lecturers_available"));
+            response.put("flow_note", "Lecture created with APPROVED lecturers only.");
+            
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    // ========== Data Retrieval ==========
 
     @GetMapping("/lecturers/available")
     public ResponseEntity<Map<String, Object>> getAvailableLecturers() {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            List<Lecturer> lecturers = lecturerRepository.findAll();
-            
-            response.put("success", true);
-            response.put("count", lecturers.size());
-            response.put("lecturers", lecturers);
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
- 
-    @GetMapping("/lectures/simple")
-    public ResponseEntity<Map<String, Object>> getSimpleLectures() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecture> lectures = lectureRepository.findAll();
-            
-            // יצירת רשימה פשוטה עם מידע בסיסי
-            List<Map<String, Object>> simpleLectures = lectures.stream()
-                .map(lecture -> {
-                    Map<String, Object> info = new HashMap<>();
-                    info.put("id", lecture.getLectureId());
-                    info.put("title", lecture.getTitle());
-                    info.put("price", lecture.getPrice());
-                    info.put("duration", lecture.getDuration());
-                    info.put("is_online", lecture.isOnline());
-                    info.put("status", lecture.getStatus());
-                    info.put("created_at", lecture.getCreatedAt());
-                    
-                    // מידע מרצים פשוט
-                    List<String> lecturerNames = lecture.getLecturers().stream()
-                        .map(lecturer -> lecturer.getFirstName() + " " + lecturer.getLastName())
-                        .collect(Collectors.toList());
-                    info.put("lecturers", lecturerNames);
-                    info.put("lecturers_count", lecturerNames.size());
-                    
-                    return info;
-                })
+            List<Lecturer> allLecturers = lecturerRepository.findAll();
+            List<Lecturer> approvedLecturers = allLecturers.stream()
+                .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
                 .collect(Collectors.toList());
             
             response.put("success", true);
-            response.put("count", lectures.size());
-            response.put("lectures", simpleLectures);
+            response.put("total_lecturers", allLecturers.size());
+            response.put("approved_count", approvedLecturers.size());
+            response.put("approved_lecturers", approvedLecturers);
+            response.put("flow_note", "Only showing APPROVED lecturers who can create lectures.");
             
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
         return ResponseEntity.ok(response);
     }
 
- 
-    @GetMapping("/lectures/by-lecturer")
-    public ResponseEntity<Map<String, Object>> getLecturesByLecturer(@RequestParam Long lecturerId) {
+    @GetMapping("/lecturers/all-statuses")
+    public ResponseEntity<Map<String, Object>> getAllLecturersWithStatuses() {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            List<Lecturer> lecturers = lecturerRepository.findAll();
-            Optional<Lecturer> lecturer = lecturers.stream()
-                .filter(l -> l.getUserId().equals(lecturerId))
-                .findFirst();
+            List<Lecturer> allLecturers = lecturerRepository.findAll();
             
-            if (lecturer.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "מרצה עם ID " + lecturerId + " לא נמצא במערכת");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            var result = advancedLectureFakerService.getLecturesByLecturer(lecturer.get());
+            Map<LecturerStatus, List<Lecturer>> lecturersByStatus = allLecturers.stream()
+                .collect(Collectors.groupingBy(Lecturer::getStatus));
             
             response.put("success", true);
-            response.put("lecturer", lecturer.get());
-            response.put("lectures", result.get("lectures"));
-            response.put("count", result.get("count"));
+            response.put("total_lecturers", allLecturers.size());
+            response.put("lecturers_by_status", lecturersByStatus);
+            response.put("status_counts", lecturersByStatus.entrySet().stream()
+                .collect(Collectors.toMap(
+                    entry -> entry.getKey().toString(),
+                    entry -> entry.getValue().size()
+                )));
+            response.put("flow_note", "Showing all lecturers grouped by status.");
             
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-  
-    @GetMapping("/lectures/by-lecturer-name")
-    public ResponseEntity<Map<String, Object>> getLecturesByLecturerName(@RequestParam String lecturerName) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            var result = advancedLectureFakerService.getLecturesByLecturerName(lecturerName);
-            
-            if (!(Boolean) result.get("success")) {
-                response.put("success", false);
-                response.put("message", result.get("message"));
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            response.put("success", true);
-            response.put("search_term", lecturerName);
-            response.put("matching_lecturers", result.get("matching_lecturers"));
-            response.put("total_lectures", result.get("total_lectures"));
-            response.put("lectures_by_lecturer", result.get("lectures_by_lecturer"));
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-   
-    @GetMapping("/lectures/search-lecturer")
-    public ResponseEntity<Map<String, Object>> searchLecturerLectures(
-            @RequestParam(required = false) Long lecturerId,
-            @RequestParam(required = false) String lecturerName) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            if (lecturerId == null && (lecturerName == null || lecturerName.trim().isEmpty())) {
-                response.put("success", false);
-                response.put("message", "יש לספק ID מרצה או שם מרצה");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            Map<String, Object> result;
-            
-            if (lecturerId != null) {
-  
-                List<Lecturer> lecturers = lecturerRepository.findAll();
-                Optional<Lecturer> lecturer = lecturers.stream()
-                    .filter(l -> l.getUserId().equals(lecturerId))
-                    .findFirst();
-                
-                if (lecturer.isEmpty()) {
-                    response.put("success", false);
-                    response.put("message", "מרצה עם ID " + lecturerId + " לא נמצא במערכת");
-                    return ResponseEntity.badRequest().body(response);
-                }
-                
-                result = advancedLectureFakerService.getLecturesByLecturer(lecturer.get());
-                response.put("search_type", "by_id");
-                response.put("lecturer", lecturer.get());
-                
-            } else {
-    
-                result = advancedLectureFakerService.getLecturesByLecturerName(lecturerName);
-                response.put("search_type", "by_name");
-                response.put("search_term", lecturerName);
-                
-                if (!(Boolean) result.get("success")) {
-                    response.put("success", false);
-                    response.put("message", result.get("message"));
-                    return ResponseEntity.badRequest().body(response);
-                }
-                
-                response.put("matching_lecturers", result.get("matching_lecturers"));
-                response.put("lectures_by_lecturer", result.get("lectures_by_lecturer"));
-            }
-            
-            response.put("success", true);
-            response.put("lectures", result.get("lectures"));
-            response.put("count", result.get("count"));
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    // ========== Existing Data Retrieval Methods ==========
-
-    @GetMapping("/lectures/all")
-    public ResponseEntity<Map<String, Object>> getAllLectures() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecture> lectures = lectureRepository.findAll();
-            
-            response.put("success", true);
-            response.put("count", lectures.size());
-            response.put("lectures", lectures);
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/lectures/upcoming")
-    public ResponseEntity<Map<String, Object>> getUpcomingLectures() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecture> allLectures = lectureRepository.findAll();
-            List<Lecture> upcomingLectures = allLectures.stream()
-                // .filter(lecture -> lecture.getStartTime().isAfter(LocalDateTime.now()))
-                // .filter(Lecture::getIsAvailable)
-                // .sorted((l1, l2) -> l1.getStartTime().compareTo(l2.getStartTime()))
-                .toList();
-            
-            response.put("success", true);
-            response.put("count", upcomingLectures.size());
-            response.put("upcoming_lectures", upcomingLectures);
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
-        }
-        
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/lectures/stats")
-    public ResponseEntity<Map<String, Object>> getLectureStats() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            List<Lecture> lectures = lectureRepository.findAll();
-            
-            long onlineLectures = lectures.stream()
-                .filter(Lecture::isOnline)
-                .count();
-            
-            // long availableLectures = lectures.stream().filter(Lecture::getIsAvailable).count();
-            long upcomingLectures = lectures.stream()
-                // .filter(lecture -> lecture.getStartTime().isAfter(LocalDateTime.now()))
-                .count();
-            
-            double avgPrice = lectures.stream()
-                .mapToInt(Lecture::getPrice)
-                .average()
-                .orElse(0.0);
-            
-            response.put("success", true);
-            response.put("total_lectures", lectures.size());
-            response.put("online_lectures", onlineLectures);
-            response.put("physical_lectures", lectures.size() - onlineLectures);
-            // response.put("available_lectures", availableLectures);
-            response.put("upcoming_lectures", upcomingLectures);
-            response.put("average_price", Math.round(avgPrice * 100.0) / 100.0);
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
         return ResponseEntity.ok(response);
@@ -1043,140 +751,110 @@ public class AdvancedFakerController {
             response.put("success", true);
             response.put("message", "All lectures deleted successfully");
             response.put("deleted_count", countBefore);
+            response.put("flow_note", "Lecturers remain in the system with their current statuses.");
             
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
         return ResponseEntity.ok(response);
     }
 
-    // ========== Helper Methods ==========
-
-    private List<String[]> parseSimpleLecturerDetailsJson(String json) {
-        List<String[]> result = new ArrayList<>();
+    @DeleteMapping("/lecturers/clear")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> clearAllLecturers() {
+        Map<String, Object> response = new HashMap<>();
         
- 
-        json = json.trim();
-        if (json.startsWith("[")) json = json.substring(1);
-        if (json.endsWith("]")) json = json.substring(0, json.length() - 1);
-        
-        String[] objects = json.split("\\},\\s*\\{");
-        
-        for (String obj : objects) {
-            obj = obj.trim();
-            if (obj.startsWith("{")) obj = obj.substring(1);
-            if (obj.endsWith("}")) obj = obj.substring(0, obj.length() - 1);
+        try {
+            long lectureCountBefore = lectureRepository.count();
+            long lecturerCountBefore = lecturerRepository.count();
             
-            String firstName = "";
-            String lastName = "";
-            String email = "";
+            // Clear lectures first (due to foreign key constraints)
+            lectureRepository.deleteAll();
+            lecturerRepository.deleteAll();
             
-            String[] fields = obj.split(",");
-            for (String field : fields) {
-                String[] keyValue = field.split(":");
-                if (keyValue.length == 2) {
-                    String key = keyValue[0].trim().replaceAll("\"", "");
-                    String value = keyValue[1].trim().replaceAll("\"", "");
-                    
-                    switch (key) {
-                        case "firstName": firstName = value; break;
-                        case "lastName": lastName = value; break;
-                        case "email": email = value; break;
-                    }
-                }
-            }
+            response.put("success", true);
+            response.put("message", "All lecturers and their lectures deleted successfully");
+            response.put("deleted_lecturers", lecturerCountBefore);
+            response.put("deleted_lectures", lectureCountBefore);
+            response.put("flow_note", "System reset - ready for new data creation following proper flow.");
             
-            result.add(new String[]{firstName, lastName, email});
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
         
-        return result;
+        return ResponseEntity.ok(response);
     }
 
-    // ========== Enhanced Utility Endpoints ==========
+    // ========== Utility Endpoints ==========
 
     @GetMapping("/endpoints")
     public ResponseEntity<Map<String, Object>> getAvailableEndpoints() {
         Map<String, Object> endpoints = new HashMap<>();
         
-        endpoints.put("basic_lectures", List.of(
-            "POST /api/advanced-faker/lectures/create-single - Create single lecture",
-            "POST /api/advanced-faker/lectures/create-multiple?count=5 - Create multiple lectures",
+        endpoints.put("lecturer_management", List.of(
+            "POST /api/advanced-faker/lecturers/create-single - Create single lecturer (PENDING status)",
+            "POST /api/advanced-faker/lecturers/create-multiple?count=5 - Create multiple lecturers (PENDING status)",
+            "GET /api/advanced-faker/lecturers/pending - Get pending lecturers",
+            "POST /api/advanced-faker/lecturers/approve-all - Approve all pending lecturers",
+            "POST /api/advanced-faker/lecturers/approve/{lecturerId} - Approve specific lecturer",
+            "PUT /api/advanced-faker/lecturers/status/{lecturerId}?status=APPROVED - Update lecturer status"
+        ));
+
+        endpoints.put("lecture_creation", List.of(
+            "POST /api/advanced-faker/lectures/create-single - Create single lecture (requires approved lecturers)",
+            "POST /api/advanced-faker/lectures/create-multiple?count=5 - Create multiple lectures (requires approved lecturers)",
+            "POST /api/advanced-faker/lectures/create-with-existing-lecturer?lecturerId=... - Create lecture with specific lecturer",
             "POST /api/advanced-faker/lectures/create-israeli?count=8 - Create Israeli tech lectures",
-            "POST /api/advanced-faker/lectures/create-upcoming?count=6 - Create upcoming lectures",
-            "POST /api/advanced-faker/lectures/create-with-lecturers - Create lecture with lecturers"
+            "POST /api/advanced-faker/lectures/create-upcoming?count=6 - Create upcoming lectures"
         ));
 
-        endpoints.put("enhanced_lectures", List.of(
-            "POST /api/advanced-faker/lectures/create-with-existing-lecturer?lecturerId=1 - Create lecture with existing lecturer (by ID)",
-            "POST /api/advanced-faker/lectures/create-fake-for-lecturer-name?lecturerName=ישראל - Create fake lecture for lecturer (by name)",
-            "POST /api/advanced-faker/lectures/create-fake-random-lecturer - Create fake lecture with random lecturer",
-            "POST /api/advanced-faker/lectures/create-multiple-with-existing-lecturers?count=5 - Create multiple lectures with existing lecturers"
+        endpoints.put("auto_create", List.of(
+            "POST /api/advanced-faker/lectures/create-with-auto-create-lecturer?firstName=...&lastName=...&email=... - Create lecture with auto-created lecturer",
+            "POST /api/advanced-faker/lectures/create-fake-with-new-lecturer - Create fake lecture with new fake lecturer"
+        ));
+        
+        endpoints.put("search", List.of(
+            "GET /api/advanced-faker/lecturers/search?searchTerm=... - Search approved lecturers",
+            "GET /api/advanced-faker/lecturers/check-exists?firstName=...&lastName=...&email=... - Check if lecturer exists (all statuses)"
         ));
 
-        // ✅ NEW: Auto-Create Lecturer Endpoints
-        endpoints.put("auto_create_lecturer", List.of(
-            "POST /api/advanced-faker/lectures/create-with-auto-create-lecturer?firstName=ישראל&lastName=כהן&email=israel@example.com&createIfNotExists=true - Create lecture with lecturer (auto-create if not exists)",
-            "POST /api/advanced-faker/lectures/create-fake-with-new-lecturer - Create fake lecture with new fake lecturer",
-            "POST /api/advanced-faker/lectures/create-for-specific-lecturers?lecturerNames=ישראל כהן,שרה לוי,דוד אברהם - Create lectures for specific lecturers (comma-separated names)",
-            "GET /api/advanced-faker/lecturers/search?searchTerm=ישראל - Search lecturers by details (name, email, etc.)",
-            "GET /api/advanced-faker/lecturers/check-exists?firstName=ישראל&lastName=כהן&email=israel@example.com - Check if lecturer exists"
-        ));
-        
-        endpoints.put("data_retrieval", List.of(
-            "GET /api/advanced-faker/lectures/all - Get all lectures (basic)",
-            "GET /api/advanced-faker/lectures/simple - Get all lectures (simple format like lecturers)",
-            "GET /api/advanced-faker/lectures/all-detailed?page=0&size=50&sortBy=createdAt&sortDirection=DESC - Get all lectures with full details",
-            "GET /api/advanced-faker/lectures/upcoming - Get upcoming lectures",
-            "GET /api/advanced-faker/lectures/stats - Get lecture statistics",
-            "GET /api/advanced-faker/lecturers/available - Get all available lecturers",
-            "GET /api/advanced-faker/lectures/by-lecturer?lecturerId=1 - Get lectures by specific lecturer ID",
-            "GET /api/advanced-faker/lectures/by-lecturer-name?lecturerName=ישראל - Get lectures by lecturer name (partial search)"
-        
-        ));
-        
         endpoints.put("system", List.of(
-            "POST /api/advanced-faker/create-complete-system?lecturerCount=10&lectureCount=20 - Create complete system"
+            "GET /api/advanced-faker/system/status - Get system status and flow compliance",
+            "POST /api/advanced-faker/create-complete-system?lecturerCount=10&lectureCount=20 - Create complete system with proper flow"
+        ));
 
-            // "POST /api/advanced-faker/create-super-lecture - Create super lecture with all lecturers",
-            // "POST /api/advanced-faker/fix-orphan-lectures - Fix orphan lectures",
-            // "GET /api/advanced-faker/analyze-relations - Analyze many-to-many relations",
-            // "GET /api/advanced-faker/lonely-lecturers - Find lonely lecturers",
-            // "GET /api/advanced-faker/orphan-lectures - Find orphan lectures",
-            // "GET /api/advanced-faker/relations-matrix - Get relations matrix",
-            // "POST /api/advanced-faker/clean-duplicate-relations - Clean duplicate relations"
+        endpoints.put("data_retrieval", List.of(
+            "GET /api/advanced-faker/lecturers/available - Get approved lecturers only",
+            "GET /api/advanced-faker/lecturers/all-statuses - Get all lecturers grouped by status"
         ));
 
         endpoints.put("cleanup", List.of(
-            "DELETE /api/advanced-faker/lectures/clear - Clear all lectures"
-        ));
-
-        endpoints.put("utility", List.of(
-            "GET /api/advanced-faker/endpoints - This endpoint list",
-            "GET /api/advanced-faker/ping - Health check"
+            "DELETE /api/advanced-faker/lectures/clear - Clear all lectures",
+            "DELETE /api/advanced-faker/lecturers/clear - Clear all lecturers and lectures"
         ));
 
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "Enhanced Faker Controller - עם יצירה אוטומטית של מרצים! 🚀",
+            "message", "Flow-Aware Faker Controller - Following Proper Authentication Flow! 🚀",
             "endpoints", endpoints,
-            "new_features", List.of(
-                "✅ יצירת הרצאה עם מרצה - יוצר מרצה אם לא קיים",
-                "✅ יצירת הרצאות מרובות עם יצירה אוטומטית של מרצים",
-                "✅ חיפוש מרצים לפי פרטים (שם, אימייל וכד')",
-                "✅ בדיקה האם מרצה קיים",
-                "✅ יצירת הרצאות לרשימת שמות מרצים",
-                "✅ תמיכה ב-JSON לפרטי מרצים",
-                "✅ יצירת הרצאה פייק עם מרצה פייק חדש",
-                "✅ גמישות מלאה - מחפש קודם, יוצר אם לא קיים"
+            "flow_requirements", List.of(
+                "1. Lecturers are created in PENDING status",
+                "2. Admin must approve lecturers before they can create lectures",
+                "3. Only APPROVED lecturers can create lectures",
+                "4. Only APPROVED lecturers are visible in searches",
+                "5. FREEZE status makes lecturers invisible in searches",
+                "6. System respects the authentication and authorization flow"
             ),
-            "examples", Map.of(
-                "create_with_existing_or_new", "POST /api/advanced-faker/lectures/create-with-auto-create-lecturer?firstName=ישראל&lastName=כהן",
-                "create_fake_new_lecturer", "POST /api/advanced-faker/lectures/create-fake-with-new-lecturer",
-                "search_lecturers", "GET /api/advanced-faker/lecturers/search?searchTerm=כהן",
-                "check_exists", "GET /api/advanced-faker/lecturers/check-exists?email=israel@example.com",
-                "multiple_with_names", "POST /api/advanced-faker/lectures/create-for-specific-lecturers?lecturerNames=ישראל כהן,שרה לוי"
+            "flow_example", List.of(
+                "1. POST /lecturers/create-single (creates lecturer in PENDING)",
+                "2. POST /lecturers/approve-all (admin approves lecturers)",
+                "3. POST /lectures/create-single (creates lecture with approved lecturers)",
+                "4. GET /lecturers/search?searchTerm=... (searches only approved lecturers)"
             ),
             "timestamp", LocalDateTime.now()
         ));
