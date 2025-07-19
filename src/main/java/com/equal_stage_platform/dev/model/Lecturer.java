@@ -12,13 +12,17 @@ import java.util.stream.Collectors;
 
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Entity
 @Table(name = "0!58$_lecturers")
+
 public class Lecturer {
     @Id
     @Column(name = "user_id", nullable = false, unique = true,columnDefinition = "UUID")

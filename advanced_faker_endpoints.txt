@@ -1,0 +1,113 @@
+# AdvancedFakerController Endpoints
+
+---
+
+## Lecturer Management
+
+POST   /api/advanced-faker/lecturers/create-single
+    - Create a single lecturer in PENDING status.
+
+POST   /api/advanced-faker/lecturers/create-multiple?count=5
+    - Create multiple lecturers in PENDING status.
+
+GET    /api/advanced-faker/lecturers/pending
+    - Get all lecturers waiting for admin approval (PENDING status).
+
+POST   /api/advanced-faker/lecturers/approve-all
+    - Approve all pending lecturers (set status to APPROVED).
+
+POST   /api/advanced-faker/lecturers/approve/{lecturerId}
+    - Approve a specific lecturer by ID.
+
+PUT    /api/advanced-faker/lecturers/status/{lecturerId}?status=APPROVED
+    - Update a lecturer's status (APPROVED, PENDING, or FREEZE).
+
+---
+
+## Lecture Creation
+
+POST   /api/advanced-faker/lectures/create-single
+    - Create a single lecture (only with approved lecturers).
+
+POST   /api/advanced-faker/lectures/create-multiple?count=5
+    - Create multiple lectures (only with approved lecturers).
+
+POST   /api/advanced-faker/lectures/create-with-existing-lecturer?lecturerId=...
+    - Create a lecture for a specific lecturer.
+
+POST   /api/advanced-faker/lectures/create-with-auto-create-lecturer?firstName=...&lastName=...&email=...
+    - Create a lecture, auto-creating a lecturer if needed.
+
+POST   /api/advanced-faker/lectures/create-fake-with-new-lecturer
+    - Create a fake lecture with a new fake lecturer (for demo purposes).
+
+POST   /api/advanced-faker/lectures/create-israeli?count=8
+    - Create Israeli tech lectures (with approved lecturers).
+
+POST   /api/advanced-faker/lectures/create-upcoming?count=6
+    - Create upcoming lectures (with approved lecturers).
+
+POST   /api/advanced-faker/lectures/create-with-lecturers
+    - Create a lecture and attach lecturers (approved only).
+
+---
+
+## Search and Existence Checks
+
+GET    /api/advanced-faker/lecturers/search?searchTerm=...
+    - Search for approved lecturers by details.
+
+GET    /api/advanced-faker/lecturers/check-exists?firstName=...&lastName=...&email=...
+    - Check if a lecturer exists by name or email (any status).
+
+---
+
+## System Status and Utilities
+
+GET    /api/advanced-faker/system/status
+    - Get system statistics and flow compliance info.
+
+POST   /api/advanced-faker/create-complete-system?lecturerCount=10&lectureCount=20
+    - Create a full system with a given number of lecturers and lectures, following the flow.
+
+GET    /api/advanced-faker/endpoints
+    - List all available endpoints and flow requirements.
+
+---
+
+## Data Retrieval
+
+GET    /api/advanced-faker/lecturers/available
+    - Get all approved lecturers.
+
+GET    /api/advanced-faker/lecturers/all-statuses
+    - Get all lecturers, grouped by status.
+
+---
+
+## Data Cleanup
+
+DELETE /api/advanced-faker/lectures/clear
+    - Delete all lectures.
+
+DELETE /api/advanced-faker/lecturers/clear
+    - Delete all lecturers and lectures.
+
+---
+
+## Advanced Data Views
+
+GET    /api/advanced-faker/lecturers/with-lectures
+    - Get all lecturers and their lectures.
+
+GET    /api/advanced-faker/lecturers/with-lectures/approved-only
+    - Get only approved lecturers and their lectures.
+
+GET    /api/advanced-faker/lecturers/with-lectures/summary
+    - Get a summary (name, status, lecture count, etc.) for all lecturers.
+
+GET    /api/advanced-faker/lectures/all
+    - Get all lectures (basic info).
+
+GET    /api/advanced-faker/lectures/with-lecturers
+    - Get all lectures with detailed lecturer info. 
