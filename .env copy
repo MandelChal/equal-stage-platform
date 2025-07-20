@@ -1,0 +1,3 @@
+# credentials for Spring Boot’s default Basic Auth
+SPRING_SECURITY_USER_NAME=
+SPRING_SECURITY_USER_PASSWORD=
