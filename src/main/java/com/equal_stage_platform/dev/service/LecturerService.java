@@ -3,6 +3,8 @@ package com.equal_stage_platform.dev.service;
 // ---- necessary packages ----
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -14,6 +16,8 @@ import java.util.UUID;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
+import com.equal_stage_platform.dev.dto.SearchResultDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecture;
@@ -212,6 +216,26 @@ public class LecturerService {
     }
 
     /**
+     * Returns paginated lecturers by status
+     */
+    @Transactional(readOnly = true)
+    public PaginatedResponseDTO<ResponseLecturerDTO> getPaginatedLecturers(LecturerStatus status, int pageNum, int pageSize) {
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        Page<Lecturer> page = lecturerRepository.findByStatus(status, pageRequest);
+        List<ResponseLecturerDTO> content = page.getContent().stream()
+            .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
+            .toList();
+        return PaginatedResponseDTO.<ResponseLecturerDTO>builder()
+            .content(content)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .last(page.isLast())
+            .build();
+    }
+
+    /**
      * Deletes a lecturer from the system.
      *
      * @param userId The ID of the lecturer to delete.
@@ -244,5 +268,24 @@ public class LecturerService {
         Lecturer lecturer = lecturerRepository.findByEmail(email)
             .orElseThrow(() -> new LecturerException("Lecturer not found with email: " + email));
         return new ResponseLecturerDTO(lecturer);
+    }
+
+    /**
+     * Retrieves a lecturer that name starts with the given prefix.
+     * 
+     * @param name The prefix of the lecturer's name to search for.
+     * @return A list of ResponseLecturerDTO containing details of lecturers whose names start with the given prefix.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> searchLecturersByNamePrefix(String name) {
+        if (name == null) {
+            throw new LecturerException("Name prefix cannot be null");
+        }
+        String prefix = name.toLowerCase();
+        return lecturerRepository.findByNameStartingWith(prefix)
+            .stream()
+            .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
+            .map(ResponseLecturerDTO::new)
+            .toList();
     }
 }

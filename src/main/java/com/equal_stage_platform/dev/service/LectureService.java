@@ -3,8 +3,12 @@ package com.equal_stage_platform.dev.service;
 // ---- necessary packages ----
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataAccessException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +16,7 @@ import java.util.UUID;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.repository.UserRepository;
@@ -223,5 +228,85 @@ public class LectureService {
         lecture.removeAllLecturers();
         lectureRepository.delete(lecture);
         return "Lecture deleted successfully";
+    }
+
+    /**
+     * Retrieves all lectures in the system that are approved and their Lecturers are approved under the given status.
+     * 
+     * @param status The status to filter lectures by.
+     * @return A list of ResponseLectureDTO containing details of all lectures with the specified status.
+     * 
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getLecturesByStatus(LectureStatus status) {
+        List<Lecture> lectures = lectureRepository.findByStatus(status); //TODO : create another findByStatus in repository that will return lectures that are approved by admin
+        return lectures.stream()
+                .filter(this::hasApprovedLecturers)
+                .map(lecture -> new ResponseLectureDTO(lecture))
+                .toList();
+    }
+
+    /**
+     * Retrieves shuffle and limited version of lectures in the system that are approved and their Lecturers are approved under the given status.
+     * 
+     * @param status The status to filter lectures by.
+     * @param limit The maximum number of lectures to return.
+     * @return A list of ResponseLectureDTO containing details of all lectures with the specified status.
+     * 
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getRandomLecturesByStatus(LectureStatus status, int limit) {
+        List<Lecture> lectures = lectureRepository.findByStatus(status); //TODO : create another findByStatus in repository that will return lectures that are approved by admin
+        Collections.shuffle(lectures);
+        lectures = lectures.stream()
+                .filter(this::hasApprovedLecturers)
+                .toList();
+        if (lectures.size() > limit) {
+            lectures = lectures.subList(0, limit);
+        }
+        return lectures.stream()
+                .map(lecture -> new ResponseLectureDTO(lecture))
+                .toList();
+    }        
+
+    /**
+     * Returns paginated lectures (ON_AIR and approved lecturers only)
+     */
+    @Transactional(readOnly = true)
+    public PaginatedResponseDTO<ResponseLectureDTO> getPaginatedLectures(int pageNum, int pageSize) {
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        Page<Lecture> page = lectureRepository.findByStatus(LectureStatus.ON_AIR, pageRequest); //TODO - add lecture approved check
+        List<ResponseLectureDTO> content = page.getContent().stream()
+            .filter(this::hasApprovedLecturers)
+            .map(ResponseLectureDTO::new)
+            .toList();
+        return PaginatedResponseDTO.<ResponseLectureDTO>builder()
+            .content(content)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .last(page.isLast())
+            .build();
+    }
+
+    /*
+     * Searches for lectures by title prefix.
+     * This method filters lectures that are ON_AIR and have approved lecturers.
+     * 
+     * @param name The prefix of the lecture title to search for.
+     * @return A list of ResponseLectureDTO containing details of lectures that match the search criteria.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> searchLecturesByNamePrefix(String name) {
+        if (name == null) {
+            throw new LectureException("Search prefix cannot be null");
+        }
+        String prefix = name.toLowerCase();
+        return lectureRepository.findByTitleStartingWith(prefix)
+            .stream()
+            .filter(lecture -> lecture.getStatus() == LectureStatus.ON_AIR && hasApprovedLecturers(lecture)) //TODO - add lecture approved check
+            .map(ResponseLectureDTO::new)
+            .toList();
     }
 }

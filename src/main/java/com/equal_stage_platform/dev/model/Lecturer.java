@@ -28,6 +28,9 @@ public class Lecturer {
     @Column(name = "user_id", nullable = false, unique = true,columnDefinition = "UUID")
     private UUID userId;
 
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -76,6 +79,7 @@ public class Lecturer {
         this.userId = lecturerData.getUserId();
         this.firstName = lecturerData.getFirstName();
         this.lastName = lecturerData.getLastName();
+        this.fullName = lecturerData.getFirstName() + " " + lecturerData.getLastName();
         this.bio = lecturerData.getBio();
         this.city = lecturerData.getCity();
         this.email = lecturerData.getEmail();

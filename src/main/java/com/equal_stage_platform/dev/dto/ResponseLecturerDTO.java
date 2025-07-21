@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class ResponseLecturerDTO {
     private UUID userId;
+    private String fullName;
     private String firstName;
     private String lastName;
     private String bio;
@@ -28,6 +29,7 @@ public class ResponseLecturerDTO {
     private Set<ResponseLectureDTO> lectures;
     public ResponseLecturerDTO(Lecturer lecturer) {
         this.userId = lecturer.getUserId();
+        this.fullName = lecturer.getFullName();
         this.firstName = lecturer.getFirstName();
         this.lastName = lecturer.getLastName();
         this.bio = lecturer.getBio();
@@ -45,6 +47,7 @@ public class ResponseLecturerDTO {
     
     public ResponseLecturerDTO(Lecturer lecturer, Set<Lecture> lectures) {
         this.userId = lecturer.getUserId();
+        this.fullName = lecturer.getFullName();
         this.firstName = lecturer.getFirstName();
         this.lastName = lecturer.getLastName();
         this.bio = lecturer.getBio();

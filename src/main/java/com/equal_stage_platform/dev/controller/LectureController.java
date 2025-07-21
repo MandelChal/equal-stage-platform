@@ -25,6 +25,10 @@ import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.service.JwtService;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.exception.AuthException;
+import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
+// import com.equal_stage_platform.dev.dto.ApiResponseDTO;
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
+import com.equal_stage_platform.dev.dto.PaginationRequest;
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
 
@@ -143,6 +147,19 @@ public class LectureController {
         }
     }
 
+    @GetMapping("/topLectures/{count}")
+    public ResponseEntity<?> getTopLectures(@PathVariable int count) {
+        try {
+            return ResponseEntity.ok(lectureService.getRandomLecturesByStatus(LectureStatus.ON_AIR, count));
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching top lectures", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching top lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
     @GetMapping("/search/{lectureTitle}")
     public ResponseEntity<?> searchLectureByTitle(@PathVariable String lectureTitle) {
         return searchLectureByTitle(lectureTitle, false);
@@ -174,6 +191,16 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while fetching lecture by ID", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/paginated")
+    public ResponseEntity<?> getPaginatedLectures(@RequestBody PaginationRequest paginationRequest) {
+        try {
+            PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.getPaginatedLectures(paginationRequest.getPageNum(), paginationRequest.getPageSize());
+            return ResponseEntity.ok(paginated);
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }

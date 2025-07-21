@@ -17,14 +17,19 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.HttpStatus;
 
+import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
+// import com.equal_stage_platform.dev.dto.ApiResponseDTO;
+import com.equal_stage_platform.dev.dto.PaginationRequest;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.service.AuthService;
 import com.equal_stage_platform.dev.service.JwtService;
+import com.equal_stage_platform.dev.service.LectureService;
 import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.exception.AuthException;
 import jakarta.validation.Valid;
+import com.equal_stage_platform.dev.dto.SearchResultDTO;
 
 @RestController
 @RequestMapping("/lecturers")
@@ -33,10 +38,12 @@ public class LecturerController {
     // private static final Logger logger = LoggerFactory.getLogger(LecturerController.class);
 
     private final LecturerService lecturerService;
+    private final LectureService lectureService;
     private final JwtService jwtService;
     private final AuthService authService;
-    public LecturerController(LecturerService lecturerService, JwtService jwtService, AuthService authService) {
+    public LecturerController(LecturerService lecturerService, LectureService lectureService, JwtService jwtService, AuthService authService) {
         this.lecturerService = lecturerService;
+        this.lectureService = lectureService;
         this.jwtService = jwtService;
         this.authService = authService;
     }
@@ -265,6 +272,33 @@ public class LecturerController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while deleting lecturer", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/paginated")
+    public ResponseEntity<?> getPaginatedLecturersByStatus(@RequestBody PaginationRequest request) {
+        try {
+            PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.getPaginatedLecturers(LecturerStatus.APPROVED ,request.getPageNum(), request.getPageSize());
+            return ResponseEntity.ok(paginated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/search/{name}")
+    public ResponseEntity<?> searchLecturesAndLecturers(@PathVariable String name) {
+        try {
+            SearchResultDTO result = SearchResultDTO.builder()
+                .lecturers(lecturerService.searchLecturersByNamePrefix(name))
+                .lectures(lectureService.searchLecturesByNamePrefix(name))
+                .build();
+            return ResponseEntity.ok(result);
+        } catch (LecturerException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (LectureException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
