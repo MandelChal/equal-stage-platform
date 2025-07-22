@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.dao.DataAccessException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -300,7 +299,7 @@ public class LectureService {
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> searchLecturesByNamePrefix(String name) {
         if (name == null) {
-            throw new LectureException("Search prefix cannot be null");
+            throw new IllegalArgumentException("Search prefix cannot be null");
         }
         String prefix = name.toLowerCase();
         return lectureRepository.findByTitleStartingWith(prefix)

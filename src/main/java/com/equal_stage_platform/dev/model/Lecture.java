@@ -103,4 +103,10 @@ public class Lecture {
                 .map(Lecturer::getUserId)
                 .toList();
     }
+    
+    public List<String> getLecturersNames() {
+        return this.lecturers.stream()
+                .map(Lecturer::getFullName)
+                .toList();
+    }
 }

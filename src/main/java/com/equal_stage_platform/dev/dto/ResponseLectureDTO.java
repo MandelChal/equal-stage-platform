@@ -9,6 +9,7 @@ import com.equal_stage_platform.dev.model.Lecture;
 public class ResponseLectureDTO {
     private List<UUID> userIds;
     private Long lectureId;
+    private List<String> lecturerName;
     private String title;
     private String description;
     private Integer duration; // Duration in minutes
@@ -24,6 +25,7 @@ public class ResponseLectureDTO {
     public ResponseLectureDTO(Lecture lecture) {
         this.userIds = lecture.getLecturersIds();
         this.lectureId = lecture.getLectureId();
+        this.lecturerName = lecture.getLecturersNames();
         this.title = lecture.getTitle();
         this.description = lecture.getDescription();
         this.duration = lecture.getDuration();

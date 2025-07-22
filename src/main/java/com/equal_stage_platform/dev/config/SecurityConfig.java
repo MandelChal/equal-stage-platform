@@ -37,12 +37,12 @@ public class SecurityConfig {
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/search/**", "/lecturers/all/approved").permitAll()
+                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/search/**", "/lecturers/all/approved", "/lecturers/topLectures/**","/lecturers/paginated").permitAll()
                 .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
-                .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/all", "/lectures/search/**").permitAll()
+                .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/all", "/lectures/search/**", "/lectures/paginated").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
