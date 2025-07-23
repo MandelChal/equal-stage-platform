@@ -276,7 +276,7 @@ public class LecturerController {
         }
     }
 
-    @PostMapping("/paginated")
+    @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedLecturersByStatus(@RequestBody PaginationRequest request) {
         try {
             PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.getPaginatedLecturers(LecturerStatus.APPROVED ,request.getPageNum(), request.getPageSize());

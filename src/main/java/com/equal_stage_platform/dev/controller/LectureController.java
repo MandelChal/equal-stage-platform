@@ -195,7 +195,7 @@ public class LectureController {
         }
     }
 
-    @PostMapping("/paginated")
+    @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedLectures(@RequestBody PaginationRequest paginationRequest) {
         try {
             PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.getPaginatedLectures(paginationRequest.getPageNum(), paginationRequest.getPageSize());

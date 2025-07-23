@@ -17,7 +17,6 @@ import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
-import com.equal_stage_platform.dev.dto.SearchResultDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.model.Lecture;
@@ -217,6 +216,10 @@ public class LecturerService {
 
     /**
      * Returns paginated lecturers by status
+     * 
+     * @param status The status of the lecturers to retrieve.
+     * @param pageNum The page number to retrieve.
+     * @param pageSize The number of lecturers per page.
      */
     @Transactional(readOnly = true)
     public PaginatedResponseDTO<ResponseLecturerDTO> getPaginatedLecturers(LecturerStatus status, int pageNum, int pageSize) {

@@ -36,4 +36,18 @@ public class ResponseLectureDTO {
         this.online = lecture.isOnline();
         this.imageUrl = lecture.getImageUrl();
     }
+    @Override
+    public String toString(){
+        return "ResponseLectureDTO\n\t"+
+                "lectureId: " + lectureId + "\n\t" +
+                "title: " + title + "\n\t" +
+                "description: " + description + "\n\t" +
+                "duration: " + duration + "\n\t" +
+                "price: " + price + "\n\t" +
+                "createdAt: " + createdAt + "\n\t" +
+                "updatedAt: " + updatedAt + "\n\t" +
+                "status: " + status + "\n\t" +
+                "online: " + online + "\n\t" +
+                "imageUrl: " + imageUrl;
+    }
 }
