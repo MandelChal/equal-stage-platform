@@ -49,6 +49,7 @@ Thumbs.db
 src/main/java/com/equal_stage_platform/dev/config/fakerHebNames.java
 src/main/java/com/equal_stage_platform/dev/controller/FakerController.java
 src/test/java/com/equal_stage_platform/dev/controller/fakerTest.java
+src/main/java/com/equal_stage_platform/dev/dto/fakerUserDTO.java
 
 # === ApiResponse DTO ===
 src/main/java/com/equal_stage_platform/dev/dto/ApiResponseDTO.java

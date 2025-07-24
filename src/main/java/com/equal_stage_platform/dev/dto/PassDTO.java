@@ -1,10 +1,13 @@
 package com.equal_stage_platform.dev.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+@Schema(description = "DTO for password input")
 public class PassDTO {
+    @Schema(description = "Password value", example = "Password123!")
     @NotBlank(message = "Password is required")
     @Size(min = 12, message = "Password must be at least 12 characters long")
     @Pattern(

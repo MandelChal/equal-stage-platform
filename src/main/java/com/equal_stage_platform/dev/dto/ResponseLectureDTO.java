@@ -4,20 +4,45 @@ import java.util.UUID;
 
 import lombok.Data;
 import com.equal_stage_platform.dev.model.Lecture;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Lecture response DTO containing lecture details")
 @Data
 public class ResponseLectureDTO {
+    @Schema(description = "List of user UUIDs associated with the lecture", example = "['b3b6a8e2-8c3d-4e2a-9c3d-8e2a8c3d4e2a', 'c4d5e6f7-8g9h-0i1j-2k3l-4m5n6o7p8q9r']")
     private List<UUID> userIds;
+
+    @Schema(description = "Unique ID of the lecture", example = "123")
     private Long lectureId;
+
+    @Schema(description = "Names of the lecturers", example = "['John Doe', 'Jane Smith']")
     private List<String> lecturerName;
+
+    @Schema(description = "Title of the lecture", example = "Introduction to AI")
     private String title;
+
+    @Schema(description = "Description of the lecture", example = "A beginner's guide to Artificial Intelligence.")
     private String description;
-    private Integer duration; // Duration in minutes
+
+    @Schema(description = "Duration in minutes", example = "90")
+    private Integer duration;
+
+    @Schema(description = "Price of the lecture", example = "100")
     private Integer price;
-    private String createdAt; // ISO 8601 format
-    private String updatedAt; // ISO 8601 format
-    private String status; // LectureStatus as a string
+
+    @Schema(description = "Creation timestamp (ISO 8601)", example = "2024-06-01T12:00:00Z")
+    private String createdAt;
+
+    @Schema(description = "Last update timestamp (ISO 8601)", example = "2024-06-02T12:00:00Z")
+    private String updatedAt;
+
+    @Schema(description = "Status of the lecture", example = "ACTIVE")
+    private String status;
+
+    @Schema(description = "Is the lecture online?", example = "true")
     private boolean online;
+
+    @Schema(description = "URL of the lecture image", example = "https://example.com/image.png")
     private String imageUrl;
     public ResponseLectureDTO() {
         // Default constructor

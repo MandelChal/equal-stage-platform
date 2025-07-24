@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.service.LecturerService;
 import java.util.UUID;
 
@@ -30,6 +31,10 @@ import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.exception.AuthException;
 import jakarta.validation.Valid;
 import com.equal_stage_platform.dev.dto.SearchResultDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @RestController
 @RequestMapping("/lecturers")
@@ -48,6 +53,11 @@ public class LecturerController {
         this.authService = authService;
     }
 
+    @Operation(summary = "Create a new lecturer", description = "Creates a new lecturer profile. Access: Only users with roles USER or ADMIN.")
+    @ApiResponse(responseCode = "201", description = "Lecturer created successfully", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/create")
     public ResponseEntity<?> createLecturer(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLecturerDTO lecturerData) {
         try {
@@ -67,11 +77,22 @@ public class LecturerController {
     }
 
 
+    @Operation(summary = "Update lecturer status by admin", description = "Updates the status of a lecturer by admin. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer status updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PatchMapping("/admin/{lecturerId}/status/{status}")
     public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
         return updateLecturerStatus(userId, status, true);
     }
 
+    @Operation(summary = "Update lecturer status", description = "Updates the status of the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer status updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PatchMapping("/update/status/{status}")
     public ResponseEntity<?> updateLecturerStatus(@RequestHeader("Authorization") String token, @PathVariable LecturerStatus status) {
         try {
@@ -98,6 +119,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get all lecturers (admin)", description = "Retrieves all lecturers. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "List of lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/all")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> getAllLecturers() {
@@ -112,6 +137,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get all approved lecturers", description = "Retrieves all approved lecturers. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of approved lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/all/approved")
     public ResponseEntity<?> getAllApprovedLecturers() {
         try {
@@ -125,11 +154,19 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get lecturer by ID", description = "Retrieves a lecturer by user ID. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Lecturer found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecturer not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("search/id/{userId}")
     public ResponseEntity<?> getLecturerById(@PathVariable UUID userId) {
         return getLecturerById(userId, false);
     }
 
+    @Operation(summary = "Get lecturer by ID (admin)", description = "Retrieves a lecturer by user ID for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecturer not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/search/id/{userId}")
     public ResponseEntity<?> getLecturerByIdAdmin(@PathVariable UUID userId) {
         return getLecturerById(userId, true);
@@ -147,6 +184,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get all lectures by lecturer ID", description = "Retrieves all lectures for a given lecturer. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecturer or lectures not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/lectures/{lecturerId}/all")
     public ResponseEntity<?> getLecturesByLecturerId(@PathVariable UUID lecturerId) {
         try {
@@ -163,6 +204,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get lecture by lecturer and lecture ID", description = "Retrieves a lecture by lecturer and lecture ID. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Lecture found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/lectures/{lecturerId}/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable UUID lecturerId, @PathVariable Long lectureId) {
         try {
@@ -179,6 +224,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get all pending lecturers (admin)", description = "Retrieves all pending lecturers. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "List of pending lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/pending")
     public ResponseEntity<?> getPendingLecturers() {
         try {
@@ -192,6 +241,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Approve lecturer (admin)", description = "Approves a lecturer. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer approved", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/admin/approve/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId) {
@@ -210,6 +263,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Reject lecturer (admin)", description = "Rejects a lecturer. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer rejected", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/admin/reject/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId) {
@@ -224,11 +281,19 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Search lecturers by name", description = "Searches for lecturers by name. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Lecturer(s) found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecturer not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/search/name/{name}")
     public ResponseEntity<?> searchLecturersByName(@PathVariable String name) {
         return searchLecturersByName(name, false);
     }
 
+    @Operation(summary = "Search lecturers by name (admin)", description = "Searches for lecturers by name for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer(s) found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecturer not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/search/name/{name}")
     public ResponseEntity<?> searchLecturersByNameAdmin(@PathVariable String name) {
         return searchLecturersByName(name, true);
@@ -246,12 +311,20 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Delete lecturer (admin)", description = "Deletes a lecturer by admin. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @DeleteMapping("/admin/del/{userId}")
     // @PreAuthorize("hasRole('ADMIN')") // endpoint for admin to delete any lecturer
     public ResponseEntity<?> deleteLecturer(@PathVariable UUID userId) {
         return deleteLecturer(userId, true);
     }
 
+    @Operation(summary = "Delete own lecturer profile", description = "Deletes the authenticated lecturer's own profile. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @DeleteMapping("del/self")
     // @PreAuthorize("hasRole('LECTURER')") // endpoint for lecturer to delete their own profile
     public ResponseEntity<?> deleteLecturer(@RequestHeader("Authorization") String token) {
@@ -276,6 +349,9 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Get paginated lecturers by status", description = "Returns a paginated list of approved lecturers. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Paginated lecturers", content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedLecturersByStatus(@RequestBody PaginationRequest request) {
         try {
@@ -286,6 +362,10 @@ public class LecturerController {
         }
     }
 
+    @Operation(summary = "Search lectures and lecturers by name", description = "Searches for lectures and lecturers by name. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Search results", content = @Content(schema = @Schema(implementation = SearchResultDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/search/{name}")
     public ResponseEntity<?> searchLecturesAndLecturers(@PathVariable String name) {
         try {

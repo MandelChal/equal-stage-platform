@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.service.LectureService;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 
 import java.util.UUID;
@@ -31,6 +32,9 @@ import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.PaginationRequest;
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @RestController
 @RequestMapping("/lectures")
@@ -43,6 +47,11 @@ public class LectureController {
         this.jwtService = jwtService;
     }
 
+    @Operation(summary = "Create a new lecture", description = "Creates a new lecture for the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "201", description = "Lecture created successfully", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden: trying to create lecture with invalid data or lecturer not exist", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/create")
     // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can create lectures
     public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLectureDTO lectureData) {
@@ -65,6 +74,11 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Update lecture status", description = "Updates the status of a lecture by ID for the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture status updated", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PatchMapping("/update/{lectureId}/status/{status}")
     // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can create lectures
     public ResponseEntity<?> updateLectureStatus(@RequestHeader("Authorization") String token, @PathVariable Long lectureId, @PathVariable LectureStatus status) {
@@ -85,6 +99,10 @@ public class LectureController {
 
 
     // retrive lectures of approved lecturers and ON_AIR status
+    @Operation(summary = "Get all lectures", description = "Retrieves all lectures of approved lecturers with ON_AIR status. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/all")
     public ResponseEntity<?> getAllLectures() {
         try {
@@ -98,6 +116,10 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Get all lectures for admin", description = "Retrieves all lectures for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/all")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> getAllLecturesForAdmin() {
@@ -112,11 +134,19 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Get lecture by ID", description = "Retrieves a lecture by its ID. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Lecture found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) {
         return getLectureByIdAdmin(lectureId, false);
     }
 
+    @Operation(summary = "Get lecture by ID (admin)", description = "Retrieves a lecture by its ID for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/{lectureId}")
     public ResponseEntity<?> getLectureByIdAdmin(@PathVariable Long lectureId) {
         return getLectureByIdAdmin(lectureId, true);
@@ -134,6 +164,10 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Get online lectures", description = "Retrieves all online lectures. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of online lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "No online lectures found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/all/isOnline")
     public ResponseEntity<?> getOnlineLectures() {
         try {
@@ -147,6 +181,10 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Get top lectures", description = "Retrieves a list of top lectures by count. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of top lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "No top lectures found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/topLectures/{count}")
     public ResponseEntity<?> getTopLectures(@PathVariable int count) {
         try {
@@ -160,11 +198,19 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Search lecture by title", description = "Searches for lectures by title. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Lecture(s) found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/search/{lectureTitle}")
     public ResponseEntity<?> searchLectureByTitle(@PathVariable String lectureTitle) {
         return searchLectureByTitle(lectureTitle, false);
     }
 
+    @Operation(summary = "Search lecture by title (admin)", description = "Searches for lectures by title for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture(s) found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/search/{lectureTitle}")
     public ResponseEntity<?> searchLectureByTitleAdmin(@PathVariable String lectureTitle) {
         return searchLectureByTitle(lectureTitle, true);
@@ -182,6 +228,10 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Get physical lectures", description = "Retrieves all physical lectures. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "List of physical lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "No physical lectures found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/physical")
     public ResponseEntity<?> getPhysicalLectures() {
         try {
@@ -194,7 +244,10 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
-
+    
+    @Operation(summary = "Get paginated lectures", description = "Returns a paginated list of lectures based on the provided pagination parameters. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Paginated lectures",content = @Content(mediaType = "application/json",schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "500",description = "Internal Server Error",content = @Content(mediaType = "application/json",schema = @Schema(implementation = String.class)))
     @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedLectures(@RequestBody PaginationRequest paginationRequest) {
         try {
@@ -205,6 +258,11 @@ public class LectureController {
         }
     }
 
+    @Operation(summary = "Delete a lecture", description = "Deletes a lecture by ID for the authenticated lecturer or admin. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @DeleteMapping("/del/{lectureId}")
     // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can delete lectures
     public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Long lectureId) {
