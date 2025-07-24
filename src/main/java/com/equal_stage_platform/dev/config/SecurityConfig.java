@@ -45,6 +45,10 @@ public class SecurityConfig {
                 .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
                 .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/all", "/lectures/search/**", "/lectures/paginated", "/lectures/topLectures/**").permitAll()
+                //----Home Page Banner endpoints----
+                .requestMatchers("/HomePage/banner/urls").permitAll()
+                .requestMatchers("/HomePage/admin/banner/url", "/HomePage/admin/banner/delete/**").hasRole("ADMIN")
+
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
