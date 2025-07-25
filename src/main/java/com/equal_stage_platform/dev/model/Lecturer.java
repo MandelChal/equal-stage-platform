@@ -73,7 +73,7 @@ public class Lecturer {
         inverseJoinColumns = @JoinColumn(name = "lecture_id")
     )
     @EqualsAndHashCode.Exclude
-    private Set<Lecture> lectures = new HashSet<>();
+    private Set<Lecture> lectures;
     
     public Lecturer(CreateLecturerDTO lecturerData) {
         this.userId = lecturerData.getUserId();
@@ -91,6 +91,7 @@ public class Lecturer {
         this.createdAt = now;
         this.lastUpdatedAt = now;
         this.workingArea = lecturerData.getWorkingArea();
+        this.lectures = new HashSet<>();
     }
     
     public void enrollLecture(Lecture lecture) {
