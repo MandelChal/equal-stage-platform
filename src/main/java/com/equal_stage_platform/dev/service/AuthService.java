@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+// @Transactional
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -24,6 +24,7 @@ public class AuthService {
     private final MailService mailService;
     private final PasswordResetRedisService passwordResetRedisService;
 
+    @Transactional
     public String register(String email, String password) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new AuthException("Email is taken");
@@ -35,6 +36,7 @@ public class AuthService {
         return "User registered successfully";
     }
 
+    @Transactional(readOnly = true)
     public Map<String, String> login(String email, String password) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new AuthException("User not found"));
@@ -48,11 +50,13 @@ public class AuthService {
         return Map.of("token", accessToken, "refresh", refreshToken);
     }
 
+    @Transactional(readOnly = true)
     public Role getUserRole(UUID userId) {
         return userRepository.getRoleByUserId(userId)
             .orElseThrow(() -> new AuthException("User not found or role not assigned"));
     }
 
+    @Transactional(readOnly = true)
     public Map<String, String> refresh(String refreshToken) {
         if (!refreshTokenService.isValid(refreshToken)) {
             throw new AuthException("Invalid refresh token");
@@ -66,6 +70,7 @@ public class AuthService {
         return Map.of("token", newAccessToken);
     }
 
+    @Transactional(readOnly = true)
     public String logout(String accessToken, String refreshToken) {
         // Blacklist the access token
         String jti = jwtService.extractJti(accessToken);
@@ -76,6 +81,7 @@ public class AuthService {
         return "Logged out successfully";
     }
 
+    @Transactional
     public String setupFirstAdmin(String token) {
         if (userRepository.findByRole(Role.ADMIN).isPresent()) {
             throw new AuthException("Admin already exists");
@@ -94,6 +100,7 @@ public class AuthService {
         return "Admin user created successfully";
     }
 
+    @Transactional
     public String createAdmin(String token, String newAdminEmail) {
         UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
         User requestingUser = userRepository.findById(userId)
@@ -119,6 +126,7 @@ public class AuthService {
         return "New admin user created successfully";
     }
     
+    @Transactional(readOnly = true)
     public String forgotPass(String userEmail){
         if(!userRepository.existsByEmail(userEmail)){
             return "If your email exists, you will receive a reset token by email.";
@@ -137,6 +145,7 @@ public class AuthService {
         return "If your email exists, you will receive a reset token by email.";
     }
 
+    @Transactional
     public String resetPassToken(String token, String newPass){
         if(jwtService.isTokenExpired(token)){
             throw new AuthException("Token Expired");
@@ -155,6 +164,7 @@ public class AuthService {
         return "Password Changed Successfully";
     }
 
+    @Transactional
     public String resetPass(String token, String oldPass, String newPass) {
         UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
         User requestingUser = userRepository.findById(userId)
@@ -169,7 +179,7 @@ public class AuthService {
         return "Password Changes Succeesfuly";    
     }
     
-
+    @Transactional
     public String changeRole(UUID userId, Role newRole) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User not found"));
@@ -183,6 +193,7 @@ public class AuthService {
         return "User role changed successfully";
     }
 
+    @Transactional
     public String deleteUser(String token) {
         // Blacklist the access token
         String jti = jwtService.extractJti(token.replace("Bearer ", ""));
@@ -203,6 +214,7 @@ public class AuthService {
         return "User deleted successfully";
     }
 
+    @Transactional
     public String deleteUserByAdmin(UUID userId){
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User not found"));

@@ -45,6 +45,7 @@ public class LecturerService {
      * @param lecturerData The data for the new lecturer.
      * @return A ResponseLecturerDTO containing the created lecturer's details.
      */
+    @Transactional
     public ResponseLecturerDTO createLecturer(CreateLecturerDTO lecturerData){   
         // save the lecturer to the database
         Lecturer lecturer = lecturerRepository.save(new Lecturer(lecturerData));
