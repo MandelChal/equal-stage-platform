@@ -30,6 +30,7 @@ public class AuthController {
 
     @Operation(summary = "Register a new user", description = "Registers a new user. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "409", description = "Conflict - user already exists", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/register")
@@ -47,6 +48,7 @@ public class AuthController {
 
     @Operation(summary = "User login", description = "Authenticates a user and returns tokens. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/login")
@@ -116,26 +118,24 @@ public class AuthController {
 
     @Operation(summary = "Create admin (admin only)", description = "Creates a new admin user. Access: Only users with role ADMIN.")
     @ApiResponse(responseCode = "200", description = "Admin created", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/admin/create-admin")
-    // @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> createAdmin(
-            @RequestHeader("Authorization") String token,
-            @Valid @RequestBody CreateAdminRequest createAdminRequest) {
+    public ResponseEntity<?> createAdmin(@RequestHeader("Authorization") String token,@Valid @RequestBody CreateAdminRequest createAdminRequest) {
         try {
             String result = authService.createAdmin(token, createAdminRequest.getEmail());
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
 
     @Operation(summary = "Forgot password", description = "Initiates forgot password process. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "200", description = "Password reset email sent", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/forgot-pass")
@@ -153,6 +153,7 @@ public class AuthController {
 
     @Operation(summary = "Reset password with token", description = "Resets password using a token. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "200", description = "Password reset successful", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/reset-pass-token")
@@ -170,6 +171,7 @@ public class AuthController {
 
     @Operation(summary = "Reset password", description = "Resets password for authenticated user. Access: USER, ADMIN, or LECTURER.")
     @ApiResponse(responseCode = "200", description = "Password reset successful", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/reset-pass")

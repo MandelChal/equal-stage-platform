@@ -65,7 +65,7 @@ public class FlowIntegrationTest {
 
 	// Helper to make admin by admin
 	private void makeAdmin(String adminToken, String email, int expectedStatus) throws Exception {
-		mockMvc.perform(post("/api/auth//admin/create-admin")
+		mockMvc.perform(post("/api/auth/admin/create-admin")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + email + "\"}"))
@@ -199,6 +199,24 @@ public class FlowIntegrationTest {
 				.andExpect(status().is(expectedStatus));
 	}
 
+	private void approveLecture(String token, Long lectureId, int expectedStatus) throws Exception {
+		mockMvc.perform(patch("/lectures/admin/approve/" + lectureId)
+				.header("Authorization", "Bearer " + token))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	private Set<ResponseLectureDTO> getPendingLectures(String token) throws Exception {
+		String response = mockMvc.perform(get("/lectures/admin/pending")
+			.header("Authorization", "Bearer " + token))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		
+		return objectMapper.readValue(response, 
+			objectMapper.getTypeFactory().constructCollectionType(Set.class, ResponseLectureDTO.class));
+	}
+
 	@Test
 	public void testFullFlow() throws Exception {
 		// 1. user1 registers
@@ -247,6 +265,12 @@ public class FlowIntegrationTest {
 		// 10. user2 creates 3 lectures after approval
 		for (int i = 1; i <= 3; i++) {
 			createLecture(user2Token, "Lecture" + i + "_user2", "Description of Lecture" + i + "_user2", 60, 100, LectureStatus.ON_AIR, i%2==0, "https://example.com/image"+i*500+".jpg", 201);
+		}
+
+		// 11. Admin approves all lectures
+		Set<ResponseLectureDTO> pendingLectures = getPendingLectures(user1Token);
+		for (ResponseLectureDTO lecture : pendingLectures) {
+			approveLecture(user1Token, lecture.getLectureId(), 200);
 		}
 
 		searchLectureByTitle("Lecture2_user2");

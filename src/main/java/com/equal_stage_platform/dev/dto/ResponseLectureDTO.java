@@ -15,6 +15,9 @@ public class ResponseLectureDTO {
     @Schema(description = "Unique ID of the lecture", example = "123")
     private Long lectureId;
 
+    @Schema(description = "Is the lecture approved?", example = "\"true\" OR \"false\"")
+    private boolean approved;
+
     @Schema(description = "Names of the lecturers", example = "['John Doe', 'Jane Smith']")
     private List<String> lecturerName;
 
@@ -50,6 +53,7 @@ public class ResponseLectureDTO {
     public ResponseLectureDTO(Lecture lecture) {
         this.userIds = lecture.getLecturersIds();
         this.lectureId = lecture.getLectureId();
+        this.approved = lecture.isApproved();
         this.lecturerName = lecture.getLecturersNames();
         this.title = lecture.getTitle();
         this.description = lecture.getDescription();
@@ -65,6 +69,9 @@ public class ResponseLectureDTO {
     public String toString(){
         return "ResponseLectureDTO\n\t"+
                 "lectureId: " + lectureId + "\n\t" +
+                "userIds: " + userIds + "\n\t" +
+                "approved: " + approved + "\n\t" +
+                "lecturerName: " + lecturerName + "\n\t" +
                 "title: " + title + "\n\t" +
                 "description: " + description + "\n\t" +
                 "duration: " + duration + "\n\t" +
@@ -73,6 +80,6 @@ public class ResponseLectureDTO {
                 "updatedAt: " + updatedAt + "\n\t" +
                 "status: " + status + "\n\t" +
                 "online: " + online + "\n\t" +
-                "imageUrl: " + imageUrl;
+                "imageUrl: " + imageUrl + "\n";
     }
 }

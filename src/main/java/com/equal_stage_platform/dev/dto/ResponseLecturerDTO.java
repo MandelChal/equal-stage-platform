@@ -42,23 +42,23 @@ public class ResponseLecturerDTO {
     private LecturerStatus status;
     @Schema(description = "Set of lectures given by the lecturer")
     private Set<ResponseLectureDTO> lectures;
-    public ResponseLecturerDTO(Lecturer lecturer) {
-        this.userId = lecturer.getUserId();
-        this.fullName = lecturer.getFullName();
-        this.firstName = lecturer.getFirstName();
-        this.lastName = lecturer.getLastName();
-        this.bio = lecturer.getBio();
-        this.city = lecturer.getCity();
-        this.email = lecturer.getEmail();
-        this.phone = lecturer.getPhone();
-        this.imageUrl = lecturer.getImageUrl();
-        this.createdAt = lecturer.getCreatedAt().toString();
-        this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
-        this.status = lecturer.getStatus();
-        this.lectures = lecturer.getLectures().stream()
-            .map(lecture -> new ResponseLectureDTO(lecture))
-            .collect(Collectors.toSet());
-    }
+
+    //this constructor is commented out because i want to control lectures that will be send to user  
+    // public ResponseLecturerDTO(Lecturer lecturer) {
+    //     this.userId = lecturer.getUserId();
+    //     this.fullName = lecturer.getFullName();
+    //     this.firstName = lecturer.getFirstName();
+    //     this.lastName = lecturer.getLastName();
+    //     this.bio = lecturer.getBio();
+    //     this.city = lecturer.getCity();
+    //     this.email = lecturer.getEmail();
+    //     this.phone = lecturer.getPhone();
+    //     this.imageUrl = lecturer.getImageUrl();
+    //     this.createdAt = lecturer.getCreatedAt().toString();
+    //     this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
+    //     this.status = lecturer.getStatus();
+    //     this.lectures = new Set<ResponseLectureDTO>();
+    // }
     
     public ResponseLecturerDTO(Lecturer lecturer, Set<Lecture> lectures) {
         this.userId = lecturer.getUserId();

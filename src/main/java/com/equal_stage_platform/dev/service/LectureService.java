@@ -108,24 +108,7 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         return lecture.getLecturers().stream()
-                .map(lecturer -> new ResponseLecturerDTO(lecturer))
-                .toList();
-    }
-
-    /**
-     * Retrieves all lectures in the system that are OnAir and their Lecturers ia Approved.
-     *
-     * @return A list of ResponseLectureDTO containing details of all lectures.
-     */
-    @Transactional(readOnly = true)
-    public List<ResponseLectureDTO> getAllLectures() {
-        List<Lecture> lectures =  lectureRepository.findByStatus(LectureStatus.ON_AIR);
-        if (lectures.isEmpty()) {
-            throw new LectureException("No lectures found with status ON_AIR");
-        }
-        return lectures.stream()
-                .filter(this::hasApprovedLecturers)
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
                 .toList();
     }
 
@@ -149,7 +132,9 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getAllOnlineLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, true);
+        boolean approved = true;
+        boolean online = true;
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnlineAndApproved(LectureStatus.ON_AIR, online, approved);
         if (lectures.isEmpty()) {
             throw new LectureException("No online lectures found with status ON_AIR");
         }
@@ -167,13 +152,20 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public ResponseLectureDTO getLectureByTitle(String title, boolean isAdmin) {
-        Lecture lecture = lectureRepository.findByTitle(title)
-            .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
-        if (!isAdmin){
+        Lecture lecture = null;
+        if(isAdmin){
+            lecture = lectureRepository.findByTitle(title)
+                .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
+        }
+        else{
+            boolean approved = true;
+            lecture = lectureRepository.findByTitleAndApproved(title, approved)
+                .orElseThrow(() -> new LectureException("Lecture not found with title: " + title));
             if(!hasOnAirStatus(lecture) || !hasApprovedLecturers(lecture))
                 throw new LectureException("Lecture not found with title: " + title);
         }
         return new ResponseLectureDTO(lecture);
+
     }
 
     private boolean hasOnAirStatus(Lecture lecture){
@@ -193,7 +185,9 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getPhysicalLectures() {
-        List<Lecture> lectures = lectureRepository.findByStatusAndOnline(LectureStatus.ON_AIR, false);
+        boolean approved = true;
+        boolean online = false;
+        List<Lecture> lectures = lectureRepository.findByStatusAndOnlineAndApproved(LectureStatus.ON_AIR, online, approved);
         if (lectures.isEmpty()) {
             throw new LectureException("No Physical lectures found with status ON_AIR");
         }
@@ -238,7 +232,8 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getLecturesByStatus(LectureStatus status) {
-        List<Lecture> lectures = lectureRepository.findByStatus(status); //TODO : create another findByStatus in repository that will return lectures that are approved by admin
+        boolean approved = true;
+        List<Lecture> lectures = lectureRepository.findByStatusAndApproved(status, approved);
         return lectures.stream()
                 .filter(this::hasApprovedLecturers)
                 .map(lecture -> new ResponseLectureDTO(lecture))
@@ -255,7 +250,8 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public List<ResponseLectureDTO> getRandomLecturesByStatus(LectureStatus status, int limit) {
-        List<Lecture> lectures = lectureRepository.findByStatus(status); //TODO : create another findByStatus in repository that will return lectures that are approved by admin
+        boolean approved = true;
+        List<Lecture> lectures = lectureRepository.findByStatusAndApproved(status, approved);
         Collections.shuffle(lectures);
         lectures = lectures.stream()
                 .filter(this::hasApprovedLecturers)
@@ -272,13 +268,26 @@ public class LectureService {
      * Returns paginated lectures (ON_AIR and approved lecturers only)
      */
     @Transactional(readOnly = true)
-    public PaginatedResponseDTO<ResponseLectureDTO> getPaginatedLectures(int pageNum, int pageSize) {
+    public PaginatedResponseDTO<ResponseLectureDTO> getPaginatedLectures(int pageNum, int pageSize, boolean isAdmin) {
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
-        Page<Lecture> page = lectureRepository.findByStatus(LectureStatus.ON_AIR, pageRequest); //TODO - add lecture approved check
-        List<ResponseLectureDTO> content = page.getContent().stream()
-            .filter(this::hasApprovedLecturers)
-            .map(ResponseLectureDTO::new)
-            .toList();
+        Page<Lecture> page = null;
+        if(isAdmin){
+            page = lectureRepository.findAll(pageRequest);
+        }else{
+            boolean approved = true;
+            page = lectureRepository.findByStatusAndApproved(LectureStatus.ON_AIR, approved, pageRequest);
+        }
+        List<ResponseLectureDTO> content = null;
+        if(isAdmin){
+            content = page.getContent().stream()
+                .map(ResponseLectureDTO::new)
+                .toList();
+        }else{
+            content = page.getContent().stream()
+                .filter(this::hasApprovedLecturers)
+                .map(ResponseLectureDTO::new)
+                .toList();
+        }
         return PaginatedResponseDTO.<ResponseLectureDTO>builder()
             .content(content)
             .pageNumber(page.getNumber())
@@ -304,8 +313,44 @@ public class LectureService {
         String prefix = name.toLowerCase();
         return lectureRepository.findByTitleStartingWith(prefix)
             .stream()
-            .filter(lecture -> lecture.getStatus() == LectureStatus.ON_AIR && hasApprovedLecturers(lecture)) //TODO - add lecture approved check
+            .filter(lecture -> lecture.isApproved() && lecture.getStatus() == LectureStatus.ON_AIR && hasApprovedLecturers(lecture))
             .map(ResponseLectureDTO::new)
             .toList();
+    }
+
+    /*
+     * Retrieves all pending lectures that are not yet approved.
+     * 
+     * @return A list of ResponseLectureDTO containing details of all pending lectures.
+     * @throws LectureException if no pending lectures are found.
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> getPendingLectures(){
+        List<Lecture> lectures = lectureRepository.findByApproved(false);
+        if (lectures.isEmpty()) {
+            throw new LectureException("No pending lectures found");
+        }
+        return lectures.stream()
+                .map(ResponseLectureDTO::new)
+                .toList();
+    }
+
+    /*
+     * Sets the approval status of a lecture.
+     * 
+     * @param lectureId The ID of the lecture to approve or disapprove.
+     * @param approve The approval status to set (true for approved, false for disapproved).
+     * 
+     * @return A ResponseLectureDTO containing the updated lecture details.
+     * @throws LectureException if the lecture is not found.
+     */
+    @Transactional
+    public ResponseLectureDTO setApproveLecture(Long lectureId, boolean approve) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
+        lecture.setApproved(approve);
+        lecture.setUpdatedAt(LocalDateTime.now());
+        lectureRepository.save(lecture);
+        return new ResponseLectureDTO(lecture);
     }
 }

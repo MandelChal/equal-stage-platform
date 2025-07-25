@@ -49,6 +49,7 @@ public class LectureController {
 
     @Operation(summary = "Create a new lecture", description = "Creates a new lecture for the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
     @ApiResponse(responseCode = "201", description = "Lecture created successfully", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden: trying to create lecture with invalid data or lecturer not exist", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
@@ -93,43 +94,6 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while updating lecture status", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-    }
-
-
-    // retrive lectures of approved lecturers and ON_AIR status
-    @Operation(summary = "Get all lectures", description = "Retrieves all lectures of approved lecturers with ON_AIR status. Access: Public (no authentication required).")
-    @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
-    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
-    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @GetMapping("/all")
-    public ResponseEntity<?> getAllLectures() {
-        try {
-            return ResponseEntity.ok(lectureService.getAllLectures()); 
-        } catch (LectureException e) {
-            // logger.error("LectureException while fetching all lectures", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            // logger.error("Unexpected error while fetching all lectures", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-    }
-
-    @Operation(summary = "Get all lectures for admin", description = "Retrieves all lectures for admin users. Access: Only users with role ADMIN.")
-    @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
-    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
-    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @GetMapping("/admin/all")
-    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
-    public ResponseEntity<?> getAllLecturesForAdmin() {
-        try {
-            return ResponseEntity.ok(lectureService.getAllLecturesAdmin());
-        } catch (LectureException e) {
-            // logger.error("LectureException while fetching all lectures", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            // logger.error("Unexpected error while fetching all lectures", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
@@ -246,14 +210,34 @@ public class LectureController {
     }
     
     @Operation(summary = "Get paginated lectures", description = "Returns a paginated list of lectures based on the provided pagination parameters. Access: Public (no authentication required).")
-    @ApiResponse(responseCode = "200", description = "Paginated lectures",content = @Content(mediaType = "application/json",schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "200", description = "Paginated lectures - Only lectures that has approved lecturers and status ON_AIR",content = @Content(mediaType = "application/json",schema = @Schema(implementation = PaginatedResponseDTO.class)))
     @ApiResponse(responseCode = "500",description = "Internal Server Error",content = @Content(mediaType = "application/json",schema = @Schema(implementation = String.class)))
     @GetMapping("/paginated")
     public ResponseEntity<?> getPaginatedLectures(@RequestBody PaginationRequest paginationRequest) {
+        boolean isAdmin = false; // Default to false for public access
+        return getPaginatedLectures(paginationRequest, isAdmin);
+    }
+
+    @Operation(summary = "Get all lectures for admin", description = "Returns a paginated list of all lectures for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Paginated lectures - all lectures", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @GetMapping("/admin/paginated")
+    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
+    public ResponseEntity<?> getPaginatedLecturesForAdmin(@RequestBody PaginationRequest paginationRequest) {
+        boolean isAdmin = true;
+        return getPaginatedLectures(paginationRequest, isAdmin);
+    }
+
+    private ResponseEntity<?> getPaginatedLectures(PaginationRequest paginationRequest, boolean isAdmin) {
         try {
-            PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.getPaginatedLectures(paginationRequest.getPageNum(), paginationRequest.getPageSize());
+            PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.getPaginatedLectures(paginationRequest.getPageNum(), paginationRequest.getPageSize(), isAdmin);
             return ResponseEntity.ok(paginated);
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching paginated lectures", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
+            // logger.error("Unexpected error while fetching paginated lectures", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
@@ -277,6 +261,59 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             // logger.error("Unexpected error while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/admin/pending")
+    @Operation(summary = "Get pending lectures", description = "Retrieves all pending lectures for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "List of pending lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "No pending lectures found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> getPendingLectures() {
+        try {
+            return ResponseEntity.ok(lectureService.getPendingLectures());
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching pending lectures", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching pending lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/admin/approve/{lectureId}")
+    @Operation(summary = "Approve a lecture", description = "Approves a lecture by ID for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture approved", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> approveLecture(@PathVariable Long lectureId) {
+        try {
+            boolean isApproved = true;
+            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved));
+        } catch (LectureException e) {
+            // logger.error("LectureException while approving lecture", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while approving lecture", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/admin/reject/{lectureId}")
+    @Operation(summary = "Reject a lecture", description = "Rejects a lecture by ID for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture rejected", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> rejectLecture(@PathVariable Long lectureId) {
+        try {
+            boolean isApproved = false;
+            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved));
+        } catch (LectureException e) {
+            // logger.error("LectureException while rejecting lecture", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while rejecting lecture", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }

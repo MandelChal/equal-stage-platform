@@ -57,6 +57,9 @@ public class Lecture {
     @Column(name = "online", nullable = false)
     private boolean online;
 
+    @Column(name = "approved", nullable = false)
+    private boolean approved;
+
     public Lecture(CreateLectureDTO lectureData) {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
@@ -65,9 +68,10 @@ public class Lecture {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
-        // this.imageUrl = lectureData.get
+        this.imageUrl = lectureData.getImageUrl();
         this.status = lectureData.getLectureStatus();
         this.online = lectureData.isOnline();
+        this.approved = false; // Default to false, can be changed later
     }
 
     public void enrollLecturer(Lecturer lecturer) {

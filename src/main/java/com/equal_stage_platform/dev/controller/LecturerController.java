@@ -56,6 +56,7 @@ public class LecturerController {
     @Operation(summary = "Create a new lecturer", description = "Creates a new lecturer profile. Access: Only users with roles USER or ADMIN.")
     @ApiResponse(responseCode = "201", description = "Lecturer created successfully", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/create")
@@ -349,14 +350,33 @@ public class LecturerController {
         }
     }
 
-    @Operation(summary = "Get paginated lecturers by status", description = "Returns a paginated list of approved lecturers. Access: Public (no authentication required).")
+    @Operation(summary = "Get paginated lecturers", description = "Returns a paginated list of approved lecturers. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "200", description = "Paginated lecturers", content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/paginated")
-    public ResponseEntity<?> getPaginatedLecturersByStatus(@RequestBody PaginationRequest request) {
+    public ResponseEntity<?> getPaginatedLecturers(@RequestBody PaginationRequest request) {
+        boolean isAdmin = false; // Default to false for public access
+        return getPaginatedLecturers(request, isAdmin);
+    }
+
+
+    @Operation(summary = "Get paginated lecturers (admin)", description = "Returns a paginated list of lecturers for admin users. Access: Only users with role ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Paginated lecturers", content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @GetMapping("/admin/paginated")
+    public ResponseEntity<?> getPaginatedLecturersAdmin(@RequestBody PaginationRequest request) {
+        boolean isAdmin = true;
+        return getPaginatedLecturers(request, isAdmin);
+    } 
+
+    private ResponseEntity<?> getPaginatedLecturers(PaginationRequest request, boolean isAdmin) {
         try {
-            PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.getPaginatedLecturers(LecturerStatus.APPROVED ,request.getPageNum(), request.getPageSize());
+            PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.getPaginatedLecturers(request.getPageNum(), request.getPageSize(), isAdmin);
             return ResponseEntity.ok(paginated);
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while fetching paginated lecturers", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }

@@ -52,6 +52,6 @@ public class HomePageService {
         return "Banner URL deleted successfully";
     }
 
-    //TODO - support editing
+    //TODO - support editing banner URLs
     
 }

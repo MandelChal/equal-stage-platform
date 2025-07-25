@@ -49,7 +49,7 @@ public class LecturerService {
         // save the lecturer to the database
         Lecturer lecturer = lecturerRepository.save(new Lecturer(lecturerData));
         // return the saved lecturer as a ResponseLecturerDTO
-        return new ResponseLecturerDTO(lecturer);
+        return new ResponseLecturerDTO(lecturer, lecturer.getLectures());
     }
 
     /**
@@ -61,7 +61,7 @@ public class LecturerService {
     public List<ResponseLecturerDTO> getAllLecturers() {
         List<Lecturer> lecturers = lecturerRepository.findAll();
         return lecturers.stream()
-                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLectures()))
                 .toList();
     }
 
@@ -78,7 +78,7 @@ public class LecturerService {
         if(!isAdmin && lecturer.getStatus() != LecturerStatus.APPROVED) {
             throw new LecturerException("Lecturer not found with userId: " + userId);
         }
-        return new ResponseLecturerDTO(lecturer);
+        return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
     /**
@@ -169,7 +169,7 @@ public class LecturerService {
         lecturer.setStatus(status);
         lecturer.setLastUpdatedAt(LocalDateTime.now());
         lecturerRepository.save(lecturer);
-        return new ResponseLecturerDTO(lecturer);
+        return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
 
@@ -179,7 +179,7 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> searchLecturersByName(String name, boolean isAdmin) {
         List<ResponseLecturerDTO> lecturers = lecturerRepository.findByNameContaining(name).stream()
-            .map(lecturer -> new ResponseLecturerDTO(lecturer))
+            .map(lecturer -> new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
             .toList();
 
         if (!isAdmin) {
@@ -210,24 +210,27 @@ public class LecturerService {
             throw new LecturerException("There are no lecturers in the area: " + area);
         }
         return lecturers.stream()
-                .map(lecturer -> new ResponseLecturerDTO(lecturer))
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
                 .toList();
     }
 
     /**
-     * Returns paginated lecturers by status
+     * Returns paginated lecturers
      * 
-     * @param status The status of the lecturers to retrieve.
      * @param pageNum The page number to retrieve.
      * @param pageSize The number of lecturers per page.
      */
     @Transactional(readOnly = true)
-    public PaginatedResponseDTO<ResponseLecturerDTO> getPaginatedLecturers(LecturerStatus status, int pageNum, int pageSize) {
+    public PaginatedResponseDTO<ResponseLecturerDTO> getPaginatedLecturers(int pageNum, int pageSize, boolean isAdmin) {
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
-        Page<Lecturer> page = lecturerRepository.findByStatus(status, pageRequest);
-        List<ResponseLecturerDTO> content = page.getContent().stream()
-            .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
-            .toList();
+
+        Page<Lecturer> page = getPagedLecturers(pageRequest, isAdmin);
+        List<ResponseLecturerDTO> content = mapLecturersToResponse(page.getContent(), isAdmin);
+
+        if (content.isEmpty()) {
+            throw new LecturerException("No lecturers found on page " + pageNum);
+        }
+
         return PaginatedResponseDTO.<ResponseLecturerDTO>builder()
             .content(content)
             .pageNumber(page.getNumber())
@@ -236,6 +239,25 @@ public class LecturerService {
             .totalPages(page.getTotalPages())
             .last(page.isLast())
             .build();
+    }
+
+    private Page<Lecturer> getPagedLecturers(PageRequest pageRequest, boolean isAdmin) {
+        if (isAdmin) {
+            return lecturerRepository.findAll(pageRequest);
+        } else {
+            return lecturerRepository.findByStatus(LecturerStatus.APPROVED, pageRequest);
+        }
+    }
+    private List<ResponseLecturerDTO> mapLecturersToResponse(List<Lecturer> lecturers, boolean isAdmin) {
+        if (isAdmin) {
+            return lecturers.stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLectures()))
+                .toList();
+        } else {
+            return lecturers.stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
+                .toList();
+        }
     }
 
     /**
@@ -270,7 +292,7 @@ public class LecturerService {
     public ResponseLecturerDTO getLecturerByEmail(String email) {
         Lecturer lecturer = lecturerRepository.findByEmail(email)
             .orElseThrow(() -> new LecturerException("Lecturer not found with email: " + email));
-        return new ResponseLecturerDTO(lecturer);
+        return new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
     /**
@@ -288,7 +310,7 @@ public class LecturerService {
         return lecturerRepository.findByNameStartingWith(prefix)
             .stream()
             .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
-            .map(ResponseLecturerDTO::new)
+            .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
             .toList();
     }
 }
