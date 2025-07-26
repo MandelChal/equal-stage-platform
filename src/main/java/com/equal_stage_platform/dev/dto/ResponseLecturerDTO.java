@@ -42,7 +42,11 @@ public class ResponseLecturerDTO {
     private LecturerStatus status;
     @Schema(description = "Set of lectures given by the lecturer")
     private Set<ResponseLectureDTO> lectures;
-
+    @Schema(description = "List of external links associated with the lecturer", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
+    private Set<ExternalLinkDTO> externalLinks;
+    @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    private Set<ExternalLinkDTO> videoLinks;
+    
     //this constructor is commented out because i want to control lectures that will be send to user  
     // public ResponseLecturerDTO(Lecturer lecturer) {
     //     this.userId = lecturer.getUserId();
@@ -75,6 +79,12 @@ public class ResponseLecturerDTO {
         this.status = lecturer.getStatus();
         this.lectures = lectures.stream()
             .map(lecture -> new ResponseLectureDTO(lecture))
+            .collect(Collectors.toSet());
+        this.externalLinks = lecturer.getExternalLinks().stream()
+            .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
+        this.videoLinks = lecturer.getVideoLinks().stream()
+            .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
             .collect(Collectors.toSet());
     }
 

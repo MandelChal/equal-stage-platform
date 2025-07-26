@@ -1,6 +1,8 @@
 package com.equal_stage_platform.dev.dto;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.Data;
 import com.equal_stage_platform.dev.model.Lecture;
@@ -47,6 +49,13 @@ public class ResponseLectureDTO {
 
     @Schema(description = "URL of the lecture image", example = "https://example.com/image.png")
     private String imageUrl;
+
+    @Schema(description = "Set of external links associated with the lecture", example = "[{\"url\": \"https://example.com\", \"description\": \"Lecture Article at N12\"}]")
+    private Set<ExternalLinkDTO> externalLinks;
+
+    @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    private Set<ExternalLinkDTO> videoLinks;
+    
     public ResponseLectureDTO() {
         // Default constructor
     }
@@ -64,6 +73,12 @@ public class ResponseLectureDTO {
         this.status = lecture.getStatus().name();
         this.online = lecture.isOnline();
         this.imageUrl = lecture.getImageUrl();
+        this.externalLinks = lecture.getExternalLinks().stream()
+            .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
+        this.videoLinks = lecture.getVideoLinks().stream()
+            .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
     }
     @Override
     public String toString(){
@@ -80,6 +95,7 @@ public class ResponseLectureDTO {
                 "updatedAt: " + updatedAt + "\n\t" +
                 "status: " + status + "\n\t" +
                 "online: " + online + "\n\t" +
-                "imageUrl: " + imageUrl + "\n";
+                "imageUrl: " + imageUrl + "\n\t" +
+                "externalLinks: " + externalLinks + "\n\t";
     }
 }

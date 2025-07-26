@@ -28,7 +28,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 //----Swagger endpoints----
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll() //http://localhost:8080/swagger-ui/index.html
                 //----Faker endpoints----
                 .requestMatchers("/faker/**").permitAll()
                 //----Auth endpoints----

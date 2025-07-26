@@ -11,13 +11,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Data
 @Entity
-@Table(name = "0!58$_lectures")
+@Table(name = "0!58$_lectures*")
 public class Lecture {
 
     @Id
@@ -60,6 +61,14 @@ public class Lecture {
     @Column(name = "approved", nullable = false)
     private boolean approved;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "0!58$_lecture*_external_links")
+    private Set<ExternalLink> externalLinks;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "0!58$_lecture*_video_links")
+    private Set<ExternalLink> videoLinks;
+
     public Lecture(CreateLectureDTO lectureData) {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
@@ -72,6 +81,12 @@ public class Lecture {
         this.status = lectureData.getLectureStatus();
         this.online = lectureData.isOnline();
         this.approved = false; // Default to false, can be changed later
+        this.externalLinks = lectureData.getExternalLinks().stream()
+            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
+        this.videoLinks = lectureData.getVideoLinks().stream()
+            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
     }
 
     public void enrollLecturer(Lecturer lecturer) {

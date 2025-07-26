@@ -1,4 +1,5 @@
 package com.equal_stage_platform.dev.dto;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.validator.constraints.URL;
@@ -8,8 +9,10 @@ import com.equal_stage_platform.dev.model.enums.Area;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -54,10 +57,21 @@ public class CreateLecturerDTO {
     @NotNull(message = "Working Area is required")
     private Area workingArea;
 
+    @Schema(description = "List of **MAX 5** external links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
+    @Size(max = 5, message = "Maximum of 5 external links allowed")
+    @Valid
+    private Set<ExternalLinkDTO> externalLinks;
+
+    @Schema(description = "List of **MAX 2** Video links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    @Size(max = 2, message = "Maximum of 2 video links allowed")
+    @Valid
+    private Set<ExternalLinkDTO> videoLinks;
+
+
     public CreateLecturerDTO() {
         // Default constructor
     }
-    public CreateLecturerDTO(String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea) {
+    public CreateLecturerDTO(String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea, Set<ExternalLinkDTO> externalLinks, Set<ExternalLinkDTO> videoLinks) {
         this.userId = null;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -67,5 +81,7 @@ public class CreateLecturerDTO {
         this.phone = phone;
         this.imageUrl = imageUrl;
         this.workingArea = workingArea;
+        this.externalLinks = externalLinks;
+        this.videoLinks = videoLinks;
     }
 }

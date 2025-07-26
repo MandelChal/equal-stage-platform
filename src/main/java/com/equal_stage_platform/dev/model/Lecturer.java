@@ -66,6 +66,14 @@ public class Lecturer {
     @Column(name = "workingArea", nullable = false)
     private Area workingArea;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "0!58$_lecturers_external_links")
+    private Set<ExternalLink> externalLinks;
+    
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "0!58$_lecturers_video_links")
+    private Set<ExternalLink> videoLinks;
+
     @ManyToMany
     @JoinTable(
         name = "0!58$_lectures_lecturers",
@@ -92,6 +100,12 @@ public class Lecturer {
         this.lastUpdatedAt = now;
         this.workingArea = lecturerData.getWorkingArea();
         this.lectures = new HashSet<>();
+        this.externalLinks = lecturerData.getExternalLinks().stream()
+            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet()); 
+        this.videoLinks = lecturerData.getVideoLinks().stream()
+            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+            .collect(Collectors.toSet());
     }
     
     public void enrollLecture(Lecture lecture) {
