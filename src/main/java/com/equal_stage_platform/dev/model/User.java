@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.model.enums.UserStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.equal_stage_platform.dev.util.TimeUtils;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -58,11 +59,11 @@ public class User {
     public User(String email, String password) {
         this.email = email;
         this.password = password;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = TimeUtils.nowInIsrael();
         this.lastUpdatedAt = this.createdAt;
         this.role = Role.USER;
         this.status = UserStatus.ACTIVE;
-        this.nextPasswordChange = LocalDateTime.now().plusDays(30*4);
+        this.nextPasswordChange = createdAt.plusMonths(4);
         this.pastPasswords = new HashSet<>();
     }
 
@@ -80,9 +81,9 @@ public class User {
         }
         this.pastPasswords.add(this.password); // Store the old password
         this.password = passwordEncoder.encode(newPass); // Encode the new password
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtils.nowInIsrael();
         this.lastUpdatedAt = now;
-        this.nextPasswordChange = now.plusMonths(3); // Set next password change to 3 months from now
+        this.nextPasswordChange = now.plusMonths(4); // Set next password change to 3 months from now
         return true; // Password updated successfully
     }
 

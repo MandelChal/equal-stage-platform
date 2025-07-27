@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 // import com.equal_stage_platform.dev.dto.ApiResponseDTO;
 import com.equal_stage_platform.dev.dto.PaginationRequest;
+import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.service.AuthService;
@@ -63,8 +64,7 @@ public class LecturerController {
     public ResponseEntity<?> createLecturer(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLecturerDTO lecturerData) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            lecturerData.setUserId(userId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(lecturerService.createLecturer(lecturerData));
+            return ResponseEntity.status(HttpStatus.CREATED).body(lecturerService.createLecturer(userId, lecturerData));
         } catch (LecturerException e) {
             // logger.error("LecturerException while creating lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -402,4 +402,28 @@ public class LecturerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
+
+    @PatchMapping("/update")
+    @Operation(summary = "Update lecturer profile", description = "Updates the authenticated lecturer's profile. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecturer profile updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> updateLecturer(@RequestHeader("Authorization") String token, @Valid @RequestBody UpdateLecturerDTO updateData) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return ResponseEntity.ok(lecturerService.updateLecturer(userId, updateData));
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while updating lecturer profile", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while updating lecturer profile", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecturer profile", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
 }

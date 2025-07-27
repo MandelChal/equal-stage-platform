@@ -29,6 +29,7 @@ import com.equal_stage_platform.dev.exception.AuthException;
 import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 // import com.equal_stage_platform.dev.dto.ApiResponseDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
+import com.equal_stage_platform.dev.dto.UpdateLectureDTO;
 import com.equal_stage_platform.dev.dto.PaginationRequest;
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
@@ -58,9 +59,8 @@ public class LectureController {
     public ResponseEntity<?> createLecture(@RequestHeader("Authorization") String token, @Valid @RequestBody CreateLectureDTO lectureData) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            lectureData.setUserId(userId);
             // logger.info("Attempting to create lecture for user ID: {}", userId);
-            ResponseEntity<?> response = ResponseEntity.status(HttpStatus.CREATED).body(lectureService.createLecture(lectureData));
+            ResponseEntity<?> response = ResponseEntity.status(HttpStatus.CREATED).body(lectureService.createLecture(userId, lectureData));
             // logger.info("Lecture created successfully for user ID: {}", userId);
             return response;
         } catch (LectureException e) {
@@ -317,6 +317,32 @@ public class LectureController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
+
+    @PatchMapping("/update/{lectureId}")
+    @Operation(summary = "Update lecture details", description = "Updates the details of a lecture by ID for the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture updated successfully", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "403", description = "Forbidden: trying to update lecture of another lecturer", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> updateLecture(@RequestHeader("Authorization") String token, @PathVariable Long lectureId, @Valid @RequestBody UpdateLectureDTO lectureData) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            // logger.info("Attempting to update lecture for user ID: {}", userId);
+            ResponseEntity<?> response = ResponseEntity.ok(lectureService.updateLecture(userId, lectureId, lectureData));
+            // logger.info("Lecture updated successfully for user ID: {}", userId);
+            return response;
+        } catch (LectureException e) {
+            // logger.error("LectureException while updating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while updating lecture for user ID: {}", jwtService.extractUserId(token.replace("Bearer ", "")), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecture", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }   
 }
 
 

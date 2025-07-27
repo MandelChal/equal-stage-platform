@@ -3,6 +3,7 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
+import com.equal_stage_platform.dev.util.TimeUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -83,8 +84,8 @@ public class Lecturer {
     @EqualsAndHashCode.Exclude
     private Set<Lecture> lectures;
     
-    public Lecturer(CreateLecturerDTO lecturerData) {
-        this.userId = lecturerData.getUserId();
+    public Lecturer(UUID userId, CreateLecturerDTO lecturerData) {
+        this.userId = userId;
         this.firstName = lecturerData.getFirstName();
         this.lastName = lecturerData.getLastName();
         this.fullName = lecturerData.getFirstName() + " " + lecturerData.getLastName();
@@ -95,7 +96,7 @@ public class Lecturer {
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
         // Set created and updated timestamps
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtils.nowInIsrael();
         this.createdAt = now;
         this.lastUpdatedAt = now;
         this.workingArea = lecturerData.getWorkingArea();
@@ -109,7 +110,7 @@ public class Lecturer {
     }
     
     public void enrollLecture(Lecture lecture) {
-        this.lastUpdatedAt = LocalDateTime.now();
+        this.lastUpdatedAt = TimeUtils.nowInIsrael();
         if(lecture!=null){
             this.lectures.add(lecture);
         }
@@ -122,7 +123,7 @@ public class Lecturer {
     }
         
     public void removeLecture(Lecture lecture) {
-        this.lastUpdatedAt = LocalDateTime.now();
+        this.lastUpdatedAt = TimeUtils.nowInIsrael();
         if (lecture != null) {
             this.lectures.remove(lecture);
         }

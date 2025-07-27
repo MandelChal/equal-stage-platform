@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +25,8 @@ import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.model.enums.Role;
-
+import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
+import com.equal_stage_platform.dev.util.TimeUtils;
 @Service
 public class LecturerService {
     private final LecturerRepository lecturerRepository;
@@ -46,9 +46,9 @@ public class LecturerService {
      * @return A ResponseLecturerDTO containing the created lecturer's details.
      */
     @Transactional
-    public ResponseLecturerDTO createLecturer(CreateLecturerDTO lecturerData){   
+    public ResponseLecturerDTO createLecturer(UUID userId, CreateLecturerDTO lecturerData){   
         // save the lecturer to the database
-        Lecturer lecturer = lecturerRepository.save(new Lecturer(lecturerData));
+        Lecturer lecturer = lecturerRepository.save(new Lecturer(userId,lecturerData));
         // return the saved lecturer as a ResponseLecturerDTO
         return new ResponseLecturerDTO(lecturer, lecturer.getLectures());
     }
@@ -168,11 +168,68 @@ public class LecturerService {
             throw new LecturerException("You are not authorized to update this lecturer's status");
         }
         lecturer.setStatus(status);
-        lecturer.setLastUpdatedAt(LocalDateTime.now());
+        lecturer.setLastUpdatedAt(TimeUtils.nowInIsrael());
         lecturerRepository.save(lecturer);
         return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
+    @Transactional
+    public ResponseLecturerDTO updateLecturer(UUID userId, UpdateLecturerDTO lecturerData) {
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
+        updateLecturer(lecturer, lecturerData);
+        lecturerRepository.save(lecturer);
+        return new ResponseLecturerDTO(lecturer, lecturer.getLectures());
+    }
+
+    private void updateLecturer(Lecturer lecturer, UpdateLecturerDTO lecturerData){
+
+        if (lecturerData.getStatus() != null)
+            if (lecturerData.getStatus() == LecturerStatus.PENDING) {
+                throw new LecturerException("Cannot update status to PENDING");
+            } else {
+                lecturer.setStatus(lecturerData.getStatus());
+        }
+
+        if (lecturerData.getFirstName() != null) {
+            lecturer.setFirstName(lecturerData.getFirstName());
+            lecturer.setFullName(lecturerData.getFirstName() + " " + lecturer.getLastName());
+        }
+        if (lecturerData.getLastName() != null) {
+            lecturer.setLastName(lecturerData.getLastName());
+            lecturer.setFullName(lecturer.getFirstName() + " " + lecturerData.getLastName());
+        }
+        if (lecturerData.getBio() != null) {
+            lecturer.setBio(lecturerData.getBio());
+        }
+        if (lecturerData.getCity() != null) {
+            lecturer.setCity(lecturerData.getCity());
+        }
+        if (lecturerData.getEmail() != null) {
+            lecturer.setEmail(lecturerData.getEmail());
+        }
+        if (lecturerData.getPhone() != null) {
+            lecturer.setPhone(lecturerData.getPhone());
+        }
+        if (lecturerData.getImageUrl() != null) {
+            lecturer.setImageUrl(lecturerData.getImageUrl());
+        }
+        if (lecturerData.getWorkingArea() != null) {
+            lecturer.setWorkingArea(lecturerData.getWorkingArea());
+        }
+        if (lecturerData.getExternalLinks() != null) {
+            lecturer.setExternalLinks(lecturerData.getExternalLinks().stream()
+                    .map(link -> new com.equal_stage_platform.dev.model.ExternalLink(link.getUrl(), link.getDescription()))
+                    .collect(java.util.stream.Collectors.toSet()));
+        }
+        if (lecturerData.getVideoLinks() != null) {
+            lecturer.setVideoLinks(lecturerData.getVideoLinks().stream()
+                    .map(link -> new com.equal_stage_platform.dev.model.ExternalLink(link.getUrl(), link.getDescription()))
+                    .collect(java.util.stream.Collectors.toSet()));
+        }
+
+        lecturer.setLastUpdatedAt(TimeUtils.nowInIsrael());
+    }
 
     /**
      * Search lecturers by name

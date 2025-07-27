@@ -5,41 +5,36 @@ import org.hibernate.validator.constraints.URL;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "DTO for creating a new lecture")
+@Schema(description = "DTO for updating an existing lecture")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateLectureDTO {
+public class UpdateLectureDTO {
     @Schema(description = "Title of the lecture", example = "Introduction to AI")
-    @NotBlank(message = "Title is required")
     private String title;
 
     @Schema(description = "Description of the lecture", example = "A beginner's guide to Artificial Intelligence.")
-    @NotBlank(message = "Description is required")
     private String description;
 
     @Schema(description = "Duration in minutes", example = "90")
-    @NotNull(message = "Duration is required")
     private Integer duration; // Duration in minutes
 
     @Schema(description = "Price of the lecture", example = "100")
-    @NotNull(message = "Price is required")
     private Integer price;
 
     @Schema(description = "Status of the lecture", example = "ACTIVE")
-    @NotNull(message = "Lecture status is required")
+    @Pattern(regexp = "^(ON_AIR|IN_PROGRESS|FREEZE)$", message = "Invalid lecture status") //TODO: Check if this is correct
     private LectureStatus lectureStatus;
 
     @Schema(description = "Is the lecture online?", example = "true")
-    private boolean online;
+    private Boolean online;
 
     @Schema(description = "URL of the lecture image", example = "https://example.com/image.png")
     @URL(message = "Invalid URL format")

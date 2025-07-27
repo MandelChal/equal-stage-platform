@@ -6,15 +6,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // ---- class imports ----
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.dto.UpdateLectureDTO;
 import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
@@ -25,7 +26,8 @@ import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.exception.LectureException;
-
+import com.equal_stage_platform.dev.model.ExternalLink;
+import com.equal_stage_platform.dev.util.TimeUtils;
 @Service
 public class LectureService {
     private final LectureRepository lectureRepository;
@@ -44,11 +46,10 @@ public class LectureService {
      * @return A LectureDTO containing the created lecture's details.
      */
     @Transactional
-    public ResponseLectureDTO createLecture(CreateLectureDTO lectureData) {
+    public ResponseLectureDTO createLecture(UUID userId , CreateLectureDTO lectureData) {
         // search for the lecturer by userId
-        UUID userID = lectureData.getUserId();
-        Lecturer lecturer = lecturerRepository.findById(userID)
-                .orElseThrow(() -> new LectureException("Lecturer not found with ID: " + userID));
+        Lecturer lecturer = lecturerRepository.findById(userId)
+                .orElseThrow(() -> new LectureException("Lecturer not found with ID: " + userId));
         if (lecturer.getStatus() != LecturerStatus.APPROVED) {
             throw new LectureException("Lecturer is not approved");
         }
@@ -92,7 +93,7 @@ public class LectureService {
             throw new LectureException("You are not authorized to update this lecture");
         }
         lecture.setStatus(status);
-        lecture.setUpdatedAt(LocalDateTime.now());
+        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -349,8 +350,55 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         lecture.setApproved(approve);
-        lecture.setUpdatedAt(LocalDateTime.now());
+        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
+    }
+
+    public ResponseLectureDTO updateLecture(UUID userId, Long lectureId, UpdateLectureDTO lectureData){
+        Lecture lecture = lectureRepository.findById(lectureId)
+            .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
+        if (!lecture.getLecturers().stream().anyMatch(lecturer -> lecturer.getUserId().equals(userId))) {
+            throw new LectureException("You are not authorized to update this lecture");
+        }
+        updateLecture(lecture, lectureData);
+        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
+        lectureRepository.save(lecture);
+        return new ResponseLectureDTO(lecture);
+    }
+
+    private void updateLecture(Lecture lecture, UpdateLectureDTO lectureData) {
+        if (lectureData.getTitle() != null) {
+            lecture.setTitle(lectureData.getTitle());
+        }
+        if (lectureData.getDescription() != null) {
+            lecture.setDescription(lectureData.getDescription());
+        }
+        if (lectureData.getImageUrl() != null) {
+            lecture.setImageUrl(lectureData.getImageUrl());
+        }
+        if (lectureData.getDuration() != null) {
+            lecture.setDuration(lectureData.getDuration());
+        }
+        if (lectureData.getPrice() != null) {
+            lecture.setPrice(lectureData.getPrice());
+        }
+        if (lectureData.getLectureStatus() != null) {
+            lecture.setStatus(lectureData.getLectureStatus());
+        }
+        if (lectureData.getOnline() != null) {
+            lecture.setOnline(lectureData.getOnline());
+        }
+        if (lectureData.getExternalLinks() != null) {
+            lecture.setExternalLinks(lectureData.getExternalLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet()));
+        }
+        if (lectureData.getVideoLinks() != null) {
+            lecture.setVideoLinks(lectureData.getVideoLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet()));
+        }
+        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
     }
 }

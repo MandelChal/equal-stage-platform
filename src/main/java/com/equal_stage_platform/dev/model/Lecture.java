@@ -3,6 +3,7 @@ package com.equal_stage_platform.dev.model;
 import java.time.LocalDateTime;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
+import com.equal_stage_platform.dev.util.TimeUtils;
 
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
@@ -74,7 +75,7 @@ public class Lecture {
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
         this.price = lectureData.getPrice();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = TimeUtils.nowInIsrael();
         this.createdAt = now;
         this.updatedAt = now;
         this.imageUrl = lectureData.getImageUrl();

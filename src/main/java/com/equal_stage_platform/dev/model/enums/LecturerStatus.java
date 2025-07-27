@@ -4,6 +4,5 @@ public enum LecturerStatus {
     APPROVED,
     PENDING,
     FREEZE,
-    REJECTED,
-    DELETED
+    REJECTED
 }
