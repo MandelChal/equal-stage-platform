@@ -101,12 +101,14 @@ public class Lecturer {
         this.lastUpdatedAt = now;
         this.workingArea = lecturerData.getWorkingArea();
         this.lectures = new HashSet<>();
-        this.externalLinks = lecturerData.getExternalLinks().stream()
-            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
-            .collect(Collectors.toSet()); 
-        this.videoLinks = lecturerData.getVideoLinks().stream()
-            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
-            .collect(Collectors.toSet());
+        this.externalLinks = lecturerData.getExternalLinks() == null ? new HashSet<>() :
+            lecturerData.getExternalLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet());
+        this.videoLinks = lecturerData.getVideoLinks() == null ? new HashSet<>() :
+            lecturerData.getVideoLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet());
     }
     
     public void enrollLecture(Lecture lecture) {

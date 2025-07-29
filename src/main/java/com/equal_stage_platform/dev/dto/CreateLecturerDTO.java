@@ -55,12 +55,12 @@ public class CreateLecturerDTO {
     @NotNull(message = "Working Area is required")
     private Area workingArea;
 
-    @Schema(description = "List of **MAX 5** external links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
+    @Schema(description = "List of **MAX 5** external links associated with the lecturer", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     @Size(max = 5, message = "Maximum of 5 external links allowed")
     @Valid
     private Set<ExternalLinkDTO> externalLinks;
 
-    @Schema(description = "List of **MAX 2** Video links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    @Schema(description = "List of **MAX 2** Video links associated with the lecturer", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;

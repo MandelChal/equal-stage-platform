@@ -82,12 +82,14 @@ public class Lecture {
         this.status = lectureData.getLectureStatus();
         this.online = lectureData.isOnline();
         this.approved = false; // Default to false, can be changed later
-        this.externalLinks = lectureData.getExternalLinks().stream()
-            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
-            .collect(Collectors.toSet());
-        this.videoLinks = lectureData.getVideoLinks().stream()
-            .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
-            .collect(Collectors.toSet());
+        this.externalLinks = lectureData.getExternalLinks() == null ? new HashSet<>() :
+            lectureData.getExternalLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet());
+        this.videoLinks = lectureData.getVideoLinks() == null ? new HashSet<>() :
+            lectureData.getVideoLinks().stream()
+                .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
+                .collect(Collectors.toSet());
     }
 
     public void enrollLecturer(Lecturer lecturer) {

@@ -45,12 +45,12 @@ public class CreateLectureDTO {
     @URL(message = "Invalid URL format")
     private String imageUrl;
 
-    @Schema(description = "List of **MAX 5** External links associated with the lecture - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com\", \"description\": \"Lecture Article at N12\"}]")
+    @Schema(description = "List of **MAX 5** External links associated with the lecture", example = "[{\"url\": \"https://example.com\", \"description\": \"Lecture Article at N12\"}]")
     @Size(max = 5, message = "Maximum of 5 external links allowed")
     @Valid
     private Set<ExternalLinkDTO> externalLinks;
 
-    @Schema(description = "List of **MAX 2** Video links associated with the lecture - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    @Schema(description = "List of **MAX 2** Video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;

@@ -20,44 +20,44 @@ import java.util.Set;
 @AllArgsConstructor
 public class UpdateLecturerDTO {
 
-    @Schema(description = "First name of the lecturer", example = "John")
+    @Schema(description = "First name of the lecturer **if not need to update - send null** ", example = "John")
     private String firstName;
 
-    @Schema(description = "Last name of the lecturer", example = "Doe")
+    @Schema(description = "Last name of the lecturer **if not need to update - send null** ", example = "Doe")
     private String lastName;
 
-    @Schema(description = "Biography of the lecturer", example = "Expert in AI and Data Science.")
+    @Schema(description = "Biography of the lecturer **if not need to update - send null** ", example = "Expert in AI and Data Science.")
     private String bio;
 
-    @Schema(description = "City where the lecturer is based", example = "Tel Aviv")
+    @Schema(description = "City where the lecturer is based **if not need to update - send null** ", example = "Tel Aviv")
     private String city;
 
-    @Schema(description = "Email address of the lecturer", example = "john.doe@example.com")
+    @Schema(description = "Email address of the lecturer **if not need to update - send null**", example = "john.doe@example.com")
     @Email(message = "Invalid email format")
     private String email;
 
-    @Schema(description = "Phone number of the lecturer", example = "0501234567")
+    @Schema(description = "Phone number of the lecturer **if not need to update - send null** ", example = "0501234567")
     @Pattern(regexp = "^05\\d{8}$", message = "Invalid phone number format")
     private String phone;
 
-    @Schema(description = "Profile image URL", example = "https://example.com/image.png")
+    @Schema(description = "Profile image URL **if not need to update - send null** ", example = "https://example.com/image.png")
     @URL(message = "Invalid URL format")
     private String imageUrl;
 
     // status cannot be PENDING
-    @Schema(description = "Status of the lecturer", example = "APPROVED, FREEZE, REJECTED")
-    @Pattern(regexp = "^(APPROVED|FREEZE|REJECTED)$", message = "Status must be APPROVED, FREEZE, or REJECTED") //TODO: check if this is correct
-    private LecturerStatus status;
+    @Schema(description = "Status of the lecturer **if not need to update - send null**", example = "APPROVED, FREEZE")
+    @Pattern(regexp = "^(APPROVED|FREEZE)$", message = "Status must be APPROVED or FREEZE")
+    private String status;
 
-    @Schema(description = "Working area of the lecturer", example = "CENTER, NORTH, SOUTH, ONLINE_ONLY")
+    @Schema(description = "Working area of the lecturer **if not need to update - send null**", example = "CENTER, NORTH, SOUTH, ONLINE_ONLY")
     private Area workingArea;
 
-    @Schema(description = "List of **MAX 5** external links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
+    @Schema(description = "List of **MAX 5** external links associated with the lecturer **if not need to update - send null**", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     @Size(max = 5, message = "Maximum of 5 external links allowed")
     @Valid
     private Set<ExternalLinkDTO> externalLinks;
 
-    @Schema(description = "List of **MAX 2** Video links associated with the lecturer - CAN BE EMPTY BUT NOT NULL", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
+    @Schema(description = "List of **MAX 2** Video links associated with the lecturer **if not need to update - send null**", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;

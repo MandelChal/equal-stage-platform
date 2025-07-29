@@ -173,6 +173,13 @@ public class LecturerService {
         return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
+    /**
+     * Updates an existing lecturer's details.
+     *
+     * @param userId The ID of the lecturer to update.
+     * @param lecturerData The data to update the lecturer with.
+     * @return A ResponseLecturerDTO containing the updated lecturer's details.
+     */
     @Transactional
     public ResponseLecturerDTO updateLecturer(UUID userId, UpdateLecturerDTO lecturerData) {
         Lecturer lecturer = lecturerRepository.findById(userId)
@@ -183,12 +190,18 @@ public class LecturerService {
     }
 
     private void updateLecturer(Lecturer lecturer, UpdateLecturerDTO lecturerData){
+        
+        if (lecturerData == null) {
+            throw new LecturerException("Update data cannot be null");
+        }
 
-        if (lecturerData.getStatus() != null)
-            if (lecturerData.getStatus() == LecturerStatus.PENDING) {
+        if (lecturerData.getStatus() != null){
+            LecturerStatus status = LecturerStatus.valueOf(lecturerData.getStatus());
+            if (status == LecturerStatus.PENDING) {
                 throw new LecturerException("Cannot update status to PENDING");
             } else {
-                lecturer.setStatus(lecturerData.getStatus());
+                lecturer.setStatus(status);
+            }
         }
 
         if (lecturerData.getFirstName() != null) {

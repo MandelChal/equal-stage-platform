@@ -354,7 +354,15 @@ public class LectureService {
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
-
+    /**
+     * Updates an existing lecture.
+     *
+     * @param userId The ID of the user requesting the update.
+     * @param lectureId The ID of the lecture to update.
+     * @param lectureData The data to update the lecture with.
+     * @return A ResponseLectureDTO containing the updated lecture's details.
+     */
+    @Transactional
     public ResponseLectureDTO updateLecture(UUID userId, Long lectureId, UpdateLectureDTO lectureData){
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
@@ -384,7 +392,8 @@ public class LectureService {
             lecture.setPrice(lectureData.getPrice());
         }
         if (lectureData.getLectureStatus() != null) {
-            lecture.setStatus(lectureData.getLectureStatus());
+            LectureStatus status = LectureStatus.valueOf(lectureData.getLectureStatus());
+            lecture.setStatus(status);
         }
         if (lectureData.getOnline() != null) {
             lecture.setOnline(lectureData.getOnline());

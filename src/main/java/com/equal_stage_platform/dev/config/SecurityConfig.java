@@ -39,7 +39,7 @@ public class SecurityConfig {
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/lectures/{lecturerId}/{lectureId}", "/lecturers/lectures/{lecturerId}/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated").permitAll()
+                .requestMatchers("/lecturers/{lecturerId}/lectures/{lectureId}", "/lecturers/{lecturerId}/lectures/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated").permitAll()
                 .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")

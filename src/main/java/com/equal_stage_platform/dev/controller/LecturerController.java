@@ -189,7 +189,7 @@ public class LecturerController {
     @ApiResponse(responseCode = "200", description = "List of lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
     @ApiResponse(responseCode = "404", description = "Lecturer or lectures not found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @GetMapping("/lectures/{lecturerId}/all")
+    @GetMapping("/{lecturerId}/lectures/all")
     public ResponseEntity<?> getLecturesByLecturerId(@PathVariable UUID lecturerId) {
         try {
             return ResponseEntity.ok(lecturerService.getLecturesByLecturerId(lecturerId));
@@ -209,7 +209,7 @@ public class LecturerController {
     @ApiResponse(responseCode = "200", description = "Lecture found", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
     @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @GetMapping("/lectures/{lecturerId}/{lectureId}")
+    @GetMapping("/{lecturerId}/lectures/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable UUID lecturerId, @PathVariable Long lectureId) {
         try {
             return ResponseEntity.ok(lecturerService.getLectureById(lecturerId, lectureId));
