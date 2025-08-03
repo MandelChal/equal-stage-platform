@@ -4,6 +4,8 @@ import com.equal_stage_platform.dev.model.Lecturer;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,5 +45,10 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     @Query("SELECT DISTINCT l FROM Lecturer l WHERE SIZE(l.lectures) > 0")
     List<Lecturer> findLecturersWithLectures();
 
-    List<Lecturer> findByWorkingAreaAndStatus(Area workingArea, LecturerStatus status);
+    // Find lecturers by working areas and status
+    @Query("SELECT DISTINCT l FROM Lecturer l JOIN l.workingAreas wa WHERE wa IN :workingAreas AND l.status = :status")
+    List<Lecturer> findByWorkingAreasContainingAndStatus(@Param("workingAreas") Set<Area> workingAreas, @Param("status") LecturerStatus status);    // Find lecturers by working areas
+    
+    @Query("SELECT DISTINCT l FROM Lecturer l JOIN l.workingAreas wa WHERE wa IN :workingAreas")
+    List<Lecturer> findByWorkingAreasContaining(@Param("workingAreas") Set<Area> workingAreas);
 }

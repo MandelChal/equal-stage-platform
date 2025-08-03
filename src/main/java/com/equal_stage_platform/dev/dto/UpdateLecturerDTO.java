@@ -1,7 +1,6 @@
 package com.equal_stage_platform.dev.dto;
 
 import com.equal_stage_platform.dev.model.enums.Area;
-import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -49,8 +48,9 @@ public class UpdateLecturerDTO {
     @Pattern(regexp = "^(APPROVED|FREEZE)$", message = "Status must be APPROVED or FREEZE")
     private String status;
 
-    @Schema(description = "Working area of the lecturer **if not need to update - send null**", example = "CENTER, NORTH, SOUTH, ONLINE_ONLY")
-    private Area workingArea;
+    @Schema(description = "List of Working areas of the lecturer **if not need to update - send null**", example = "[CENTER, NORTH, SOUTH] OR [ONLINE_ONLY]")
+    @ValidWorkingAreas
+    private Set<Area> workingAreas;
 
     @Schema(description = "List of **MAX 5** external links associated with the lecturer **if not need to update - send null**", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     @Size(max = 5, message = "Maximum of 5 external links allowed")

@@ -47,4 +47,10 @@ public class UpdateLectureDTO {
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;
+
+    @Schema(description = "Set of Topics ids associated with the lecture, **if not need to update - send null**", example = "[1,5,10]")
+    private Set<Long> topicsIds;
+
+    @Schema(description = "Set of Target Audience ids associated with the lecture, **if not need to update - send null**", example = "[1,3,7]")
+    private Set<Long> targetAudiencesIds;
 }

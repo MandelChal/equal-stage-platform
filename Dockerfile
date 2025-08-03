@@ -15,3 +15,5 @@ COPY src ./src
 
 CMD ["./mvnw", "spring-boot:run"]
 #./mvnw spring-boot:run
+#./mvnw test -Dset=fakerTest#testUpdateLecturer
+#./mvnw test -Dset=<filename>#<functionName>

@@ -48,7 +48,12 @@ public class SecurityConfig {
                 //----Home Page Banner endpoints----
                 .requestMatchers("/HomePage/banner/urls").permitAll()
                 .requestMatchers("/HomePage/admin/**").hasRole("ADMIN")
-
+                //---TargetAudience endpoints---
+                .requestMatchers("/target-audiences/all", "/target-audiences/{id}", "/target-audiences/search/{prefix}").permitAll()
+                .requestMatchers("/target-audiences/admin/**").hasAnyRole("ADMIN")
+                //---Topic endpoints---
+                .requestMatchers("/topics/all", "/topics/{id}", "topics/search/{prefix}").permitAll()
+                .requestMatchers("/topics/admin/**").hasAnyRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

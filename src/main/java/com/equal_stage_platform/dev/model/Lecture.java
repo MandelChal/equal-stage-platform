@@ -2,6 +2,7 @@ package com.equal_stage_platform.dev.model;
 
 import java.time.LocalDateTime;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.util.TimeUtils;
 
@@ -70,7 +71,29 @@ public class Lecture {
     @CollectionTable(name = "0!58$_lecture*_video_links")
     private Set<ExternalLink> videoLinks;
 
-    public Lecture(CreateLectureDTO lectureData) {
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "0!58$_lecture*working_areas")
+    private Set<Area> workingAreas;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "0!58$_lecture*target_audiences",
+        joinColumns = @JoinColumn(name = "lecture_id"),
+        inverseJoinColumns = @JoinColumn(name = "target_audience_id")
+    )
+    @EqualsAndHashCode.Exclude
+    private Set<TargetAudience> targetAudiences;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "0!58$_lecture*topics",
+        joinColumns = @JoinColumn(name = "lecture_id"),
+        inverseJoinColumns = @JoinColumn(name = "topic_id")
+    )
+    @EqualsAndHashCode.Exclude
+    private Set<Topic> topics;
+
+    public Lecture(CreateLectureDTO lectureData, Set<TargetAudience> targetAudiences, Set<Topic> topics) {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
@@ -90,11 +113,15 @@ public class Lecture {
             lectureData.getVideoLinks().stream()
                 .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
                 .collect(Collectors.toSet());
+        this.workingAreas = null; // Will be set later
+        this.targetAudiences = targetAudiences != null ? new HashSet<>(targetAudiences) : new HashSet<>();
+        this.topics = topics != null ? new HashSet<>(topics) : new HashSet<>();
     }
 
     public void enrollLecturer(Lecturer lecturer) {
         if (lecturer != null) {
             this.lecturers.add(lecturer);
+            this.workingAreas.addAll(lecturer.getWorkingAreas());
         }
     }
     
@@ -130,5 +157,47 @@ public class Lecture {
         return this.lecturers.stream()
                 .map(Lecturer::getFullName)
                 .toList();
+    }
+
+    public void initWorkingAreas(){
+        this.workingAreas = new HashSet<>();
+        for (Lecturer lecturer : this.lecturers) {
+            this.workingAreas.addAll(lecturer.getWorkingAreas());
+        }
+    }
+    
+    public void addWorkingAreas(Set<Area> areas) {
+        if (areas != null) {
+            if (this.workingAreas == null) {
+                this.workingAreas = new HashSet<>();
+            }
+            this.workingAreas.addAll(areas);
+        }
+    }
+
+    public void setTopics(Set<Topic> topics) {
+        if (topics != null) {
+            if (this.topics == null) {
+                this.topics = new HashSet<>();
+            }
+            this.topics.clear();
+            this.topics.addAll(topics);
+            for(Lecturer lecturer : this.lecturers) {
+                lecturer.initTopics();
+            }
+        }
+    }
+
+    public void setTargetAudiences(Set<TargetAudience> targetAudiences) {
+        if (targetAudiences != null) {
+            if (this.targetAudiences == null) {
+                this.targetAudiences = new HashSet<>();
+            }
+            this.targetAudiences.clear();
+            this.targetAudiences.addAll(targetAudiences);
+            for(Lecturer lecturer : this.lecturers) {
+                lecturer.initTargetAudiences();
+            }
+        }
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
+import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.TargetAudience;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 
@@ -33,6 +35,9 @@ public class FlowIntegrationTest {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	private Long testTopicId;
+	private Long testTargetAudienceId;
 
 	// Helper to register and login, returns JWT token
 	private String registerAndLogin(String email, String password) throws Exception {
@@ -73,7 +78,7 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to create lecturer
-	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Area workingArea, int expectedStatus) throws Exception {
+	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Set<Area> workingAreas, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lecturers/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +89,9 @@ public class FlowIntegrationTest {
 				"\"email\":\"" + email + "\", " +
 				"\"phone\":\"" + phone + "\", " +
 				"\"imageUrl\":\"" + imageUrl + "\", " +
-				"\"workingArea\":\"" + workingArea.name() + "\"}"))
+				"\"workingAreas\":[\"" + workingAreas.iterator().next().name() + "\"], " +
+				"\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}], " +
+				"\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}]}"))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -100,7 +107,11 @@ public class FlowIntegrationTest {
 						 "\"price\":" + price + ", " +
 						 "\"lectureStatus\":\"" + lectureStatus + "\", " +
 						 "\"online\":" + isOnline + ", " +
-						 "\"imageUrl\":\"" + imageUrl + "\"}"))
+						 "\"imageUrl\":\"" + imageUrl + "\", " +
+						 "\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}], " +
+						 "\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}], " +
+						 "\"topicsIds\":[" + testTopicId + "], " +
+						 "\"targetAudiencesIds\":[" + testTargetAudienceId + "]}"))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -159,14 +170,14 @@ public class FlowIntegrationTest {
 
 	// Add helper for getting a specific lecture by lecturer id
 	private void getLectureByLecturerId(String token, UUID lecturerId, int lectureNum, int expectedStatus) throws Exception {
-		mockMvc.perform(get("/lecturers/lectures/" + lecturerId + "/" + lectureNum)
+		mockMvc.perform(get("/lecturers/" + lecturerId + "/lectures/" + lectureNum)
 				.header("Authorization", "Bearer " + token))
 				.andExpect(status().is(expectedStatus));
 	}
 
 	// Add helper for getting all lectures by lecturer id
 	private void getLecturesByLecturerId(String token, UUID lecturerId, int expectedStatus) throws Exception {
-		mockMvc.perform(get("/lecturers/lectures/" + lecturerId + "/all")
+		mockMvc.perform(get("/lecturers/" + lecturerId + "/lectures/all")
 				.header("Authorization", "Bearer " + token))
 				.andExpect(status().is(expectedStatus));
 	}
@@ -217,6 +228,30 @@ public class FlowIntegrationTest {
 			objectMapper.getTypeFactory().constructCollectionType(Set.class, ResponseLectureDTO.class));
 	}
 
+	private void setupTopicsAndTargetAudiences(String adminToken) throws Exception {
+		// Create a test topic (requires admin authentication)
+		MvcResult topicResult = mockMvc.perform(post("/topics/admin/create")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"name\":\"Test Topic\", \"description\":\"A test topic for integration tests\"}"))
+				.andExpect(status().isCreated())
+				.andReturn();
+		
+		Topic topic = objectMapper.readValue(topicResult.getResponse().getContentAsString(), Topic.class);
+		testTopicId = topic.getTopicId();
+		
+		// Create a test target audience (requires admin authentication)
+		MvcResult targetAudienceResult = mockMvc.perform(post("/target-audiences/admin/create")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"type\":\"Test Audience\", \"description\":\"A test target audience for integration tests\"}"))
+				.andExpect(status().isCreated())
+				.andReturn();
+		
+		TargetAudience targetAudience = objectMapper.readValue(targetAudienceResult.getResponse().getContentAsString(), TargetAudience.class);
+		testTargetAudienceId = targetAudience.getTargetAudienceId();
+	}
+
 	@Test
 	public void testFullFlow() throws Exception {
 		// 1. user1 registers
@@ -224,6 +259,9 @@ public class FlowIntegrationTest {
 
 		// 2. user1 registers as admin
 		registerAdmin(user1Token, 200);
+		
+		// 0. Setup topics and target audiences first (requires admin)
+		setupTopicsAndTargetAudiences(user1Token);
 
 		// 3. user2 registers
 		String user2Token = registerAndLogin("user2@example.com", "Password!4321");
@@ -238,7 +276,7 @@ public class FlowIntegrationTest {
 		makeAdmin(user1Token, "user2@example.com", 200);
 
 		// 7. user1 creates a lecturer
-		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "0542354687", "https://example.com/image.jpg", Area.CENTER, 201);
+		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "0542354687", "https://example.com/image.jpg", Set.of(Area.CENTER), 201);
 
 		// 7.1 user1 creates a lecture before approval (should fail, assuming 403)
 		createLecture(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image3.jpg", 403);
@@ -253,7 +291,7 @@ public class FlowIntegrationTest {
 		}
 
 		// 9. user2 creates a lecturer
-		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0598654321", "https://example.com/image2.jpg", Area.NORTH, 201);
+		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0598654321", "https://example.com/image2.jpg", Set.of(Area.NORTH), 201);
 
 		// 9.1 user2 creates a lecture before approval (should fail, assuming 403)
 		createLecture(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image4.jpg", 403);
@@ -280,7 +318,7 @@ public class FlowIntegrationTest {
 		String user3Token = registerAndLogin("user3@example.com", "Password!5678");
 
 		// 2. user3 creates lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "0555123457", "https://example.com/image5.jpg", Area.SOUTH, 201);
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "0555123457", "https://example.com/image5.jpg", Set.of(Area.SOUTH), 201);
 
 		// 3. user1 approves pending lecturers (user3)
 		Set<ResponseLecturerDTO> lecturers3 = getPendingLecturers(user1Token);
@@ -329,7 +367,7 @@ public class FlowIntegrationTest {
 		deleteLecturerBySelf(user3Token, 200);
 
 		// 17. user3 creates a new lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "0555123457", "https://example.com/image6.jpg", Area.SOUTH, 201);
+		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "0555123457", "https://example.com/image6.jpg", Set.of(Area.SOUTH), 201);
 
 		// 18. user1 deletes user3 lecturer profile
 		// Get the new lecturer id

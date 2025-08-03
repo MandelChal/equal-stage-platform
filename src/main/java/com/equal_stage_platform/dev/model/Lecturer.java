@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 
 public class Lecturer {
     @Id
-    @Column(name = "user_id", nullable = false, unique = true,columnDefinition = "UUID")
+    @Column(name = "user_id", nullable = false, unique = true, columnDefinition = "UUID")
     private UUID userId;
 
     @Column(name = "full_name", nullable = false)
@@ -63,16 +63,17 @@ public class Lecturer {
     @Column(name = "status", nullable = false)
     private LecturerStatus status;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "a23v%_lecturer_working_areas", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "workingArea", nullable = false)
-    private Area workingArea;
+    private Set<Area> workingAreas;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "0!58$_lecturers_external_links")
+    @CollectionTable(name = "54{4fd%_lecturers_external_links")
     private Set<ExternalLink> externalLinks;
     
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "0!58$_lecturers_video_links")
+    @CollectionTable(name = "x'7a#_lecturers_video_links")
     private Set<ExternalLink> videoLinks;
 
     @ManyToMany
@@ -83,6 +84,24 @@ public class Lecturer {
     )
     @EqualsAndHashCode.Exclude
     private Set<Lecture> lectures;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "0!58$_lecturer_target_audiences",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "target_audience_id")
+    )
+    @EqualsAndHashCode.Exclude
+    private Set<TargetAudience> targetAudiences;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "0!58$_lecturer_topics",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "topic_id")
+    )
+    @EqualsAndHashCode.Exclude
+    private Set<Topic> topics;
     
     public Lecturer(UUID userId, CreateLecturerDTO lecturerData) {
         this.userId = userId;
@@ -99,8 +118,10 @@ public class Lecturer {
         LocalDateTime now = TimeUtils.nowInIsrael();
         this.createdAt = now;
         this.lastUpdatedAt = now;
-        this.workingArea = lecturerData.getWorkingArea();
+        this.workingAreas = lecturerData.getWorkingAreas() != null ? new HashSet<>(lecturerData.getWorkingAreas()) : new HashSet<>();
         this.lectures = new HashSet<>();
+        this.targetAudiences = new HashSet<>();
+        this.topics = new HashSet<>();
         this.externalLinks = lecturerData.getExternalLinks() == null ? new HashSet<>() :
             lecturerData.getExternalLinks().stream()
                 .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
@@ -115,6 +136,9 @@ public class Lecturer {
         this.lastUpdatedAt = TimeUtils.nowInIsrael();
         if(lecture!=null){
             this.lectures.add(lecture);
+            lecture.addWorkingAreas(workingAreas);
+            this.enrollTopics(lecture.getTopics());
+            this.enrollTargetAudiences(lecture.getTargetAudiences());
         }
     }
     
@@ -128,11 +152,70 @@ public class Lecturer {
         this.lastUpdatedAt = TimeUtils.nowInIsrael();
         if (lecture != null) {
             this.lectures.remove(lecture);
+            initTopicsAndTargetAudiences();
         }
     }
 
     // Full name helper method
     public String getFullName() {
         return firstName + " " + lastName;
+    }
+
+    private void enrollTopics(Set<Topic> topics) {
+        if (topics != null) {
+            if (this.topics == null) {
+                this.topics = new HashSet<>();
+            }
+            this.topics.addAll(topics);
+        }
+    }
+    
+    private void enrollTargetAudiences(Set<TargetAudience> targetAudiences) {
+        if (targetAudiences != null) {
+            if (this.targetAudiences == null) {
+                this.targetAudiences = new HashSet<>();
+            }
+            this.targetAudiences.addAll(targetAudiences);
+        }
+    }
+
+
+    public void initTopicsAndTargetAudiences(){
+        for (Lecture lecture : this.lectures) {
+            if (lecture.getTopics() != null) {
+                if (this.topics == null) {
+                    this.topics = new HashSet<>();
+                }
+                this.topics.addAll(lecture.getTopics());
+            }
+            if (lecture.getTargetAudiences() != null) {
+                if (this.targetAudiences == null) {
+                    this.targetAudiences = new HashSet<>();
+                }
+                this.targetAudiences.addAll(lecture.getTargetAudiences());
+            }
+        }
+    }
+
+    public void initTopics(){
+        for(Lecture lecture : this.lectures) {
+            if(lecture.getTopics() != null) {
+                if (this.topics == null) {
+                    this.topics = new HashSet<>();
+                }
+                this.topics.addAll(lecture.getTopics());
+            }
+        }
+    }
+
+    public void initTargetAudiences(){
+        for(Lecture lecture : this.lectures) {
+            if(lecture.getTargetAudiences() != null) {
+                if (this.targetAudiences == null) {
+                    this.targetAudiences = new HashSet<>();
+                }
+                this.targetAudiences.addAll(lecture.getTargetAudiences());
+            }
+        }
     }
 }

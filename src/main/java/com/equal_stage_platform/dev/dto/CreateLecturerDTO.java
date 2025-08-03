@@ -51,9 +51,10 @@ public class CreateLecturerDTO {
     @URL(message = "Invalid URL format")
     private String imageUrl;
 
-    @Schema(description = "Working area of the lecturer", example = "CENTER, NORTH, SOUTH, ONLINE_ONLY")
-    @NotNull(message = "Working Area is required")
-    private Area workingArea;
+    @Schema(description = "List of Working areas of a lecturer", example = "[CENTER, NORTH, SOUTH] OR [ONLINE_ONLY]")
+    @NotNull(message = "Working Areas are required")
+    @ValidWorkingAreas
+    private Set<Area> workingAreas;
 
     @Schema(description = "List of **MAX 5** external links associated with the lecturer", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     @Size(max = 5, message = "Maximum of 5 external links allowed")

@@ -4,10 +4,14 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import java.util.Set;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.TargetAudience;
+import com.equal_stage_platform.dev.model.Topic;
 import java.util.stream.Collectors;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -40,12 +44,18 @@ public class ResponseLecturerDTO {
     private String lastUpdatedAt;
     @Schema(description = "Status of the lecturer", example = "ACTIVE")
     private LecturerStatus status;
+    @Schema(description = "Set of working areas of the lecturer", example = "[CENTER, NORTH, SOUTH] OR [ONLINE_ONLY]")
+    private Set<String> workingAreas; // Assuming working areas are represented as strings for simplicity
     @Schema(description = "Set of lectures given by the lecturer")
     private Set<ResponseLectureDTO> lectures;
     @Schema(description = "List of external links associated with the lecturer", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     private Set<ExternalLinkDTO> externalLinks;
     @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     private Set<ExternalLinkDTO> videoLinks;
+    @Schema(description = "Set of Topics related to the lecturer", exampleClasses = Topic.class, implementation = Topic.class)
+    private Set<Topic> topics;
+    @Schema(description = "Set of Target Audiences related to the lecturer", exampleClasses = TargetAudience.class, implementation = TargetAudience.class)
+    private Set<TargetAudience> targetAudiences;
     
     //this constructor is commented out because i want to control lectures that will be send to user  
     // public ResponseLecturerDTO(Lecturer lecturer) {
@@ -77,6 +87,9 @@ public class ResponseLecturerDTO {
         this.createdAt = lecturer.getCreatedAt().toString();
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();
+        this.workingAreas = lecturer.getWorkingAreas().stream()
+            .map(Area::name)
+            .collect(Collectors.toSet());
         this.lectures = lectures.stream()
             .map(lecture -> new ResponseLectureDTO(lecture))
             .collect(Collectors.toSet());
@@ -86,6 +99,8 @@ public class ResponseLecturerDTO {
         this.videoLinks = lecturer.getVideoLinks().stream()
             .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
             .collect(Collectors.toSet());
+        this.topics = lecturer.getTopics();
+        this.targetAudiences = lecturer.getTargetAudiences();
     }
 
 }

@@ -2,7 +2,7 @@ package com.equal_stage_platform.dev.dto;
 import java.util.Set;
 import org.hibernate.validator.constraints.URL;
 
-import com.equal_stage_platform.dev.model.enums.LectureStatus;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;  
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -54,4 +54,12 @@ public class CreateLectureDTO {
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;
+
+    @Schema(description = "Set of Topics ids associated with the lecture", example = "[1,5,10]")
+    @NotNull(message = "Topics are required")
+    private Set<Long> topicsIds;
+
+    @Schema(description = "Set of Target Audience ids associated with the lecture", example = "[1,3,7]")
+    @NotNull(message = "Target Audiences are required")
+    private Set<Long> targetAudiencesIds;
 }

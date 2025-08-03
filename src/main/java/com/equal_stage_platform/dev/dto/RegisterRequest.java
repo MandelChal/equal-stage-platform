@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+// import jakarta.validation.constraints.Size;
 
 @Schema(description = "DTO for user registration")
 public class RegisterRequest {
@@ -16,10 +16,9 @@ public class RegisterRequest {
 
     @Schema(description = "Password for the user", example = "Password123!")
     @NotBlank(message = "Password is required")
-    @Size(min = 12, message = "Password must be at least 12 characters long")
     @Pattern(
-        regexp = "^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?\":{}|<>])(?=.*[a-z]).*$",
-        message = "Password must contain at least one lowercase letter, one uppercase letter, one special character, and be in English"
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>])[A-Za-z\\d!@#$%^&*(),.?\":{}|<>]{12,}$",
+        message = "Password must be at least 12 characters long, contain at least one lowercase letter, one uppercase letter, one digit, and one special character"
     )
     private String password;
 

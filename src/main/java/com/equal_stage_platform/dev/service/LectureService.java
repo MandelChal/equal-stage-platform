@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,8 @@ import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.TargetAudience;
+import com.equal_stage_platform.dev.model.Topic;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.model.ExternalLink;
@@ -33,10 +36,15 @@ public class LectureService {
     private final LectureRepository lectureRepository;
     private final LecturerRepository lecturerRepository;
     private final UserRepository userRepository;
-    public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository, UserRepository userRepository) {
+    private final TopicService topicService;
+    private final TargetAudienceService targetAudienceService;
+    public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository, UserRepository userRepository, 
+                          TopicService topicService, TargetAudienceService targetAudienceService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.userRepository = userRepository;
+        this.topicService = topicService;
+        this.targetAudienceService = targetAudienceService;
     }
     // ---------------------- create / update / retrieve methods ----------------------
     /**
@@ -53,7 +61,9 @@ public class LectureService {
         if (lecturer.getStatus() != LecturerStatus.APPROVED) {
             throw new LectureException("Lecturer is not approved");
         }
-        Lecture lecture = lectureRepository.save(new Lecture(lectureData));
+        Set<Topic> topics = getTopicsFromIds(lectureData.getTopicsIds());
+        Set<TargetAudience> targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
+        Lecture lecture = lectureRepository.save(new Lecture(lectureData, targetAudiences, topics));
         lecturer.enrollLecture(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -408,6 +418,32 @@ public class LectureService {
                 .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
                 .collect(Collectors.toSet()));
         }
+        if (lectureData.getTopicsIds() != null) {
+            lecture.setTopics(getTopicsFromIds(lectureData.getTopicsIds()));
+        }
+        if (lectureData.getTargetAudiencesIds() != null) {
+            lecture.setTargetAudiences(getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds()));
+        }
         lecture.setUpdatedAt(TimeUtils.nowInIsrael());
+    }
+
+    private Set<Topic> getTopicsFromIds(Set<Long> topicsIds) {
+        try{
+            return topicsIds.stream()
+                .map(topicService::getTopicById)
+                .collect(Collectors.toSet());
+        } catch (RuntimeException e) {
+            throw new LectureException(e.getMessage());
+        }
+    }
+
+    private Set<TargetAudience> getTargetAudiencesFromIds(Set<Long> targetAudiencesIds) {
+        try {
+            return targetAudiencesIds.stream()
+                    .map(targetAudienceService::getTargetAudienceById)
+                    .collect(Collectors.toSet());
+        } catch (RuntimeException e) {
+            throw new LectureException(e.getMessage());
+        }
     }
 }

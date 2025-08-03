@@ -227,8 +227,10 @@ public class LecturerService {
         if (lecturerData.getImageUrl() != null) {
             lecturer.setImageUrl(lecturerData.getImageUrl());
         }
-        if (lecturerData.getWorkingArea() != null) {
-            lecturer.setWorkingArea(lecturerData.getWorkingArea());
+        if (lecturerData.getWorkingAreas() != null) {
+            lecturer.setWorkingAreas(lecturerData.getWorkingAreas());
+            for (Lecture lecture : lecturer.getLectures()) 
+                lecture.initWorkingAreas();
         }
         if (lecturerData.getExternalLinks() != null) {
             lecturer.setExternalLinks(lecturerData.getExternalLinks().stream()
@@ -275,10 +277,10 @@ public class LecturerService {
      * @return A list of ResponseLecturerDTO containing details of lecturers in the specified area.
      */
     @Transactional(readOnly = true)
-    public List<ResponseLecturerDTO> getLecturersByArea(Area area) {
-        List<Lecturer> lecturers = lecturerRepository.findByWorkingAreaAndStatus(area, LecturerStatus.APPROVED);
+    public List<ResponseLecturerDTO> getLecturersByAreas(Set<Area> areas) {
+        List<Lecturer> lecturers = lecturerRepository.findByWorkingAreasContainingAndStatus(areas, LecturerStatus.APPROVED);
         if (lecturers.isEmpty()) {
-            throw new LecturerException("There are no lecturers in the area: " + area);
+            throw new LecturerException("There are no lecturers in the areas: " + areas);
         }
         return lecturers.stream()
                 .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
@@ -346,6 +348,9 @@ public class LecturerService {
             lecture.removeLecturer(lecturer);
             if(lecture.getLecturerCount() == 0) {
                 lectureRepository.delete(lecture);
+            } else{
+                lecture.initWorkingAreas();
+                lectureRepository.save(lecture);
             }
         }
         authService.changeRole(userId, Role.USER);

@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 import lombok.Data;
 import com.equal_stage_platform.dev.model.Lecture;
+import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.TargetAudience;
+import com.equal_stage_platform.dev.model.enums.Area;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Lecture response DTO containing lecture details")
@@ -55,7 +58,15 @@ public class ResponseLectureDTO {
 
     @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     private Set<ExternalLinkDTO> videoLinks;
+
+    @Schema(description = "Set of Areas where the lecture is available", example = "[CENTER, NORTH, SOUTH] OR [ONLINE_ONLY]")
+    private Set<Area> areas;
     
+    @Schema(description = "Set of Topic objects associated with the lecture")
+    private Set<Topic> topics;
+
+    @Schema(description = "Set of Target Audience objects associated with the lecture")
+    private Set<TargetAudience> targetAudiences;
     public ResponseLectureDTO() {
         // Default constructor
     }
@@ -79,6 +90,9 @@ public class ResponseLectureDTO {
         this.videoLinks = lecture.getVideoLinks().stream()
             .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
             .collect(Collectors.toSet());
+        this.areas = lecture.getWorkingAreas();
+        this.topics = lecture.getTopics();
+        this.targetAudiences = lecture.getTargetAudiences();
     }
     @Override
     public String toString(){
@@ -96,6 +110,10 @@ public class ResponseLectureDTO {
                 "status: " + status + "\n\t" +
                 "online: " + online + "\n\t" +
                 "imageUrl: " + imageUrl + "\n\t" +
-                "externalLinks: " + externalLinks + "\n\t";
+                "externalLinks: " + externalLinks + "\n\t" +
+                "videoLinks: " + videoLinks + "\n\t" +
+                "areas: " + areas + "\n\t" +
+                "topics: " + topics + "\n\t" +
+                "targetAudiences: " + targetAudiences;
     }
 }

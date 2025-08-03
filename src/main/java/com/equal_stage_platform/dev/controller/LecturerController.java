@@ -4,11 +4,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.service.LecturerService;
+
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -22,6 +25,7 @@ import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 // import com.equal_stage_platform.dev.dto.ApiResponseDTO;
 import com.equal_stage_platform.dev.dto.PaginationRequest;
 import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.service.AuthService;
@@ -426,4 +430,23 @@ public class LecturerController {
         }
     }
 
+    // @GetMapping("/filter") // how such URL should look like? /lecturers/filter?targetAudience=...&topic=...&workingArea=...&rank=...
+    // @Operation(summary = "Filter lecturers Target audience/Topic/Working area/Rank(future feature)", description = "Access: Public (no authentication required).",content = @Content(schema = @Schema(description = "Filter lecturers by target audience, topic, working area, and rank.", example = "lecturers/filter?targetAudiences=1,2&topics=3,4&workingAreas=ONLINE,NORTH")))
+    // @ApiResponse(responseCode = "200", description = "Filtered lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    // @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    // @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    // public ResponseEntity<?> filterLecturers(@RequestParam(required = false) List<Long> targetAudiences,
+    //                                          @RequestParam(required = false) List<Long> topics,
+    //                                          @RequestParam(required = false) List<Area> workingAreas){
+    //                                         //  @RequestParam(required = false) Double rank) {
+    //     try {
+    //         return ResponseEntity.ok(lecturerService.filterLecturers(targetAudiences, topics, workingAreas));
+    //     } catch (LecturerException e) {
+    //         // logger.error("LecturerException while filtering lecturers", e);
+    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    //     } catch (Exception e) {
+    //         // logger.error("Unexpected error while filtering lecturers", e);
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());    
+    //     }
+    // }
 }
