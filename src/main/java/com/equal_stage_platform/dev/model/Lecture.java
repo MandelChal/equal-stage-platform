@@ -1,17 +1,26 @@
 package com.equal_stage_platform.dev.model;
 
 import java.time.LocalDateTime;
-import com.equal_stage_platform.dev.dto.CreateLectureDTO;
-import com.equal_stage_platform.dev.model.enums.LectureStatus;
-
-import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Data;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import com.equal_stage_platform.dev.model.enums.LectureStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -65,6 +74,7 @@ public class Lecture {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        this.imageUrl = lectureData.getImageUrl();
         // this.imageUrl = lectureData.get
         this.status = lectureData.getLectureStatus();
         this.online = lectureData.isOnline();

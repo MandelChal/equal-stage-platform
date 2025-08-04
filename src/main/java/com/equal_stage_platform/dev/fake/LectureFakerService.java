@@ -1,116 +1,113 @@
 package com.equal_stage_platform.dev.fake;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.equal_stage_platform.dev.model.Lecture;
-import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
+import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
-import com.equal_stage_platform.dev.repository.LectureRepository;
-import com.equal_stage_platform.dev.repository.LecturerRepository;
+import com.equal_stage_platform.dev.service.LectureService;
+import com.equal_stage_platform.dev.service.LecturerService;
 import com.github.javafaker.Faker;
+
 
 @Service
 public class LectureFakerService {
 
     @Autowired
-    private LectureRepository lectureRepository;
+    private LectureService lectureService;
 
     @Autowired
-    private LecturerRepository lecturerRepository;
+    private LecturerService lecturerService;
+
+    @Autowired
+    private LecturerFakerService lecturerFakerService;
 
     private final Faker faker = new Faker();
     private final Random random = new Random();
 
-    public Lecture generateFakeLecture() {
-        Lecture lecture = new Lecture();
+    public CreateLectureDTO generateFakeLectureData() {
+        CreateLectureDTO lecture = new CreateLectureDTO();
         String title = generateTitle();
         lecture.setTitle(title);
         String description = generateDescription();
         lecture.setDescription(description);
-        lecture.setImageUrl("https://picsum.photos/800/600?random=" + faker.random().nextInt(10000));
+        // lecture.setImageUrl("https://picsum.photos/800/600?random=" + faker.random().nextInt(10000));
+        lecture.setImageUrl("https://thispersondoesnotexist.com");
         lecture.setDuration(generateDuration());
         lecture.setPrice(generatePrice());
-        lecture.setCreatedAt(LocalDateTime.now());
-        lecture.setUpdatedAt(LocalDateTime.now());
-        lecture.setStatus(getRandomStatus());
+        lecture.setLectureStatus(getRandomStatus());
         lecture.setOnline(faker.bool().bool());
         return lecture;
     }
 
     /**
-     * Generates a lecture with approved lecturers only
+     * Generates a lecture with approved lecturers only using existing services
      * Following the flow requirement that only approved lecturers can create lectures
      */
-    public Lecture generateLectureWithLecturers() {
-        List<Lecturer> approvedLecturers = getApprovedLecturers();
+    public ResponseLectureDTO generateLectureWithLecturers() {
+        List<ResponseLecturerDTO> approvedLecturers = getApprovedLecturers();
         if (approvedLecturers.isEmpty()) {
-            throw new IllegalStateException("❌ Cannot create lecture: No APPROVED lecturers found in system! Please approve some lecturers first.");
+            throw new IllegalStateException("Cannot create lecture: No APPROVED lecturers found in system! Please approve some lecturers first.");
         }
         
-        Lecture lecture = generateFakeLecture();
-        Set<Lecturer> selectedLecturers = selectRandomLecturers(approvedLecturers);
-        lecture.setLecturers(selectedLecturers);
+        // Select a random approved lecturer
+        ResponseLecturerDTO selectedLecturer = approvedLecturers.get(random.nextInt(approvedLecturers.size()));
         
-        for (Lecturer lecturer : selectedLecturers) {
-            lecturer.enrollLecture(lecture);
-        }
+        // Create lecture data
+        CreateLectureDTO lectureData = generateFakeLectureData();
+        lectureData.setUserId(selectedLecturer.getUserId());
         
-        return lectureRepository.save(lecture);
+        // Create lecture through LectureService
+        ResponseLectureDTO lecture = lectureService.createLecture(lectureData);
+        
+        System.out.println("🎓 Created lecture: " + lecture.getTitle() + " with approved lecturer: " + selectedLecturer.getFirstName() + " " + selectedLecturer.getLastName());
+        
+        return lecture;
     }
 
     /**
-     * Creates multiple lectures with approved lecturers only
+     * Creates multiple lectures with approved lecturers only using existing services
      */
-    public List<Lecture> createLecturesWithLecturers(int count) {
-        List<Lecturer> approvedLecturers = getApprovedLecturers();
+    public List<ResponseLectureDTO> createLecturesWithLecturers(int count) {
+        List<ResponseLecturerDTO> approvedLecturers = getApprovedLecturers();
         if (approvedLecturers.isEmpty()) {
-            throw new IllegalStateException("❌ Cannot create " + count + " lectures: No APPROVED lecturers found in system!");
+            throw new IllegalStateException("Cannot create " + count + " lectures: No APPROVED lecturers found in system!");
         }
         
-        List<Lecture> lectures = new ArrayList<>();
-        System.out.println("🎓 Creating " + count + " lectures with APPROVED lecturers only...");
+        List<ResponseLectureDTO> lectures = new ArrayList<>();
+        System.out.println("Creating " + count + " lectures with APPROVED lecturers only...");
         
         for (int i = 0; i < count; i++) {
             try {
-                Lecture lecture = generateFakeLecture();
-                Set<Lecturer> selectedLecturers = selectRandomLecturers(approvedLecturers);
-                lecture.setLecturers(selectedLecturers);
-                
-                for (Lecturer lecturer : selectedLecturers) {
-                    lecturer.enrollLecture(lecture);
-                }
-                
+                ResponseLectureDTO lecture = generateLectureWithLecturers();
                 lectures.add(lecture);
             } catch (Exception e) {
-                System.err.println("⚠️ Error creating lecture " + (i + 1) + ": " + e.getMessage());
+                System.err.println("Error creating lecture " + (i + 1) + ": " + e.getMessage());
             }
         }
         
-        List<Lecture> savedLectures = lectureRepository.saveAll(lectures);
-        System.out.println("✅ Successfully created " + savedLectures.size() + " lectures with approved lecturers");
-        return savedLectures;
+        System.out.println("Successfully created " + lectures.size() + " lectures with approved lecturers");
+        return lectures;
     }
 
     /**
-     * Creates Israeli tech lectures with approved lecturers only
+     * Creates Israeli tech lectures with approved lecturers only using existing services
      */
-    public List<Lecture> createIsraeliTechLectures(int count) {
-        List<Lecturer> approvedLecturers = getApprovedLecturers();
+    public List<ResponseLectureDTO> createIsraeliTechLectures(int count) {
+        List<ResponseLecturerDTO> approvedLecturers = getApprovedLecturers();
         if (approvedLecturers.isEmpty()) {
-            throw new IllegalStateException("❌ Cannot create Israeli tech lectures: No APPROVED lecturers found!");
+            throw new IllegalStateException("Cannot create Israeli tech lectures: No APPROVED lecturers found!");
         }
         
-        List<Lecture> lectures = new ArrayList<>();
+        List<ResponseLectureDTO> lectures = new ArrayList<>();
         String[][] israeliTechTopics = {
             {"React ו-Next.js למתחילים", "פיתוח אפליקציות מודרניות בReact"},
             {"Python לניתוח נתונים", "מדעי הנתונים עם Python ו-Pandas"},
@@ -133,108 +130,125 @@ public class LectureFakerService {
         
         for (int i = 0; i < count; i++) {
             try {
-                Lecture lecture = new Lecture();
+                // Select random approved lecturer
+                ResponseLecturerDTO selectedLecturer = approvedLecturers.get(random.nextInt(approvedLecturers.size()));
+                
+                // Create Israeli tech lecture data
                 String[] topic = israeliTechTopics[random.nextInt(israeliTechTopics.length)];
-                lecture.setTitle(topic[0]);
-                lecture.setDescription(generateIsraeliDescription(topic[0], topic[1]));
-                lecture.setPrice(faker.number().numberBetween(150, 600));
-                lecture.setDuration(faker.number().numberBetween(90, 240));
-                lecture.setCreatedAt(LocalDateTime.now());
-                lecture.setUpdatedAt(LocalDateTime.now());
-                lecture.setStatus(LectureStatus.ON_AIR);
-                lecture.setOnline(random.nextBoolean());
-                lecture.setImageUrl("https://picsum.photos/800/600?tech&random=" + faker.random().nextInt(1000));
+                CreateLectureDTO lectureData = new CreateLectureDTO();
+                lectureData.setUserId(selectedLecturer.getUserId());
+                lectureData.setTitle(topic[0]);
+                lectureData.setDescription(generateIsraeliDescription(topic[0], topic[1]));
+                lectureData.setPrice(faker.number().numberBetween(150, 600));
+                lectureData.setDuration(faker.number().numberBetween(90, 240));
+                lectureData.setLectureStatus(LectureStatus.ON_AIR);
+                lectureData.setOnline(random.nextBoolean());
+                lectureData.setImageUrl("https://thispersondoesnotexist.com");
                 
-                Set<Lecturer> selectedLecturers = selectRandomLecturers(approvedLecturers);
-                lecture.setLecturers(selectedLecturers);
-                
-                for (Lecturer lecturer : selectedLecturers) {
-                    lecturer.enrollLecture(lecture);
-                }
-                
+                // Create lecture through LectureService
+                ResponseLectureDTO lecture = lectureService.createLecture(lectureData);
                 lectures.add(lecture);
+                
             } catch (Exception e) {
-                System.err.println("⚠️ Error creating Israeli tech lecture " + (i + 1) + ": " + e.getMessage());
+                System.err.println("Error creating Israeli tech lecture " + (i + 1) + ": " + e.getMessage());
             }
         }
         
-        List<Lecture> savedLectures = lectureRepository.saveAll(lectures);
-        System.out.println("✅ Created " + savedLectures.size() + " Israeli tech lectures with approved lecturers");
-        return savedLectures;
+        System.out.println("Created " + lectures.size() + " Israeli tech lectures with approved lecturers");
+        return lectures;
     }
 
     /**
-     * Creates upcoming lectures with approved lecturers only
+     * Creates upcoming lectures with approved lecturers only using existing services
      */
-    public List<Lecture> generateUpcomingLectures(int count) {
-        List<Lecturer> approvedLecturers = getApprovedLecturers();
+    public List<ResponseLectureDTO> generateUpcomingLectures(int count) {
+        List<ResponseLecturerDTO> approvedLecturers = getApprovedLecturers();
         if (approvedLecturers.isEmpty()) {
-            throw new IllegalStateException("❌ Cannot create upcoming lectures: No APPROVED lecturers found!");
+            throw new IllegalStateException("Cannot create upcoming lectures: No APPROVED lecturers found!");
         }
         
-        List<Lecture> lectures = new ArrayList<>();
-        System.out.println("📅 Creating " + count + " upcoming lectures with approved lecturers...");
+        List<ResponseLectureDTO> lectures = new ArrayList<>();
+        System.out.println("Creating " + count + " upcoming lectures with approved lecturers...");
         
         for (int i = 0; i < count; i++) {
             try {
-                Lecture lecture = generateFakeLecture();
-                LocalDateTime futureDate = LocalDateTime.now().plusDays(faker.number().numberBetween(7, 90));
-                lecture.setCreatedAt(futureDate);
-                lecture.setUpdatedAt(futureDate);
-                lecture.setTitle("בקרוב: " + lecture.getTitle());
-                lecture.setStatus(LectureStatus.ON_AIR);
+                // Select random approved lecturer
+                ResponseLecturerDTO selectedLecturer = approvedLecturers.get(random.nextInt(approvedLecturers.size()));
                 
-                Set<Lecturer> selectedLecturers = selectRandomLecturers(approvedLecturers);
-                lecture.setLecturers(selectedLecturers);
+                // Create upcoming lecture data
+                CreateLectureDTO lectureData = generateFakeLectureData();
+                lectureData.setUserId(selectedLecturer.getUserId());
+                lectureData.setTitle("בקרוב: " + lectureData.getTitle());
+                lectureData.setLectureStatus(LectureStatus.ON_AIR);
                 
-                for (Lecturer lecturer : selectedLecturers) {
-                    lecturer.enrollLecture(lecture);
-                }
-                
+                // Create lecture through LectureService
+                ResponseLectureDTO lecture = lectureService.createLecture(lectureData);
                 lectures.add(lecture);
+                
             } catch (Exception e) {
-                System.err.println("⚠️ Error creating upcoming lecture " + (i + 1) + ": " + e.getMessage());
+                System.err.println("Error creating upcoming lecture " + (i + 1) + ": " + e.getMessage());
             }
         }
         
-        List<Lecture> savedLectures = lectureRepository.saveAll(lectures);
-        System.out.println("✅ Created " + savedLectures.size() + " upcoming lectures with approved lecturers");
-        return savedLectures;
+        System.out.println("Created " + lectures.size() + " upcoming lectures with approved lecturers");
+        return lectures;
     }
 
     /**
-     * Gets only approved lecturers (following the flow requirement)
+     * Gets only approved lecturers using LecturerService
      */
-    private List<Lecturer> getApprovedLecturers() {
-        return lecturerRepository.findAll().stream()
-            .filter(lecturer -> lecturer.getStatus() == LecturerStatus.APPROVED)
-            .collect(Collectors.toList());
+    private List<ResponseLecturerDTO> getApprovedLecturers() {
+        try {
+            return lecturerService.getLecturersByStatus(LecturerStatus.APPROVED);
+        } catch (Exception e) {
+            System.err.println("Error getting approved lecturers: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     /**
      * Gets lecturers that are visible for search (APPROVED status only)
      */
-    public List<Lecturer> getVisibleLecturers() {
+    public List<ResponseLecturerDTO> getVisibleLecturers() {
         return getApprovedLecturers();
     }
 
     /**
-     * Checks if a lecturer can create lectures
+     * Checks if a lecturer can create lectures by checking their status
      */
-    public boolean canLecturerCreateLectures(Lecturer lecturer) {
-        return lecturer.getStatus() == LecturerStatus.APPROVED;
+    public boolean canLecturerCreateLectures(UUID lecturerId) {
+        try {
+            ResponseLecturerDTO lecturer = lecturerService.getLecturerById(lecturerId, true); // isAdmin = true
+            return lecturer.getStatus() == LecturerStatus.APPROVED;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    private Set<Lecturer> selectRandomLecturers(List<Lecturer> availableLecturers) {
-        Set<Lecturer> selected = new HashSet<>();
-        int numberOfLecturers = faker.number().numberBetween(1, Math.min(4, availableLecturers.size() + 1));
-        
-        while (selected.size() < numberOfLecturers && selected.size() < availableLecturers.size()) {
-            Lecturer randomLecturer = availableLecturers.get(random.nextInt(availableLecturers.size()));
-            selected.add(randomLecturer);
+    /**
+     * Creates a lecture for a specific lecturer (if approved) using LectureService
+     */
+    public ResponseLectureDTO createLectureForSpecificLecturer(UUID lecturerId) {
+        try {
+            ResponseLecturerDTO lecturer = lecturerService.getLecturerById(lecturerId, true);
+            
+            if (lecturer.getStatus() != LecturerStatus.APPROVED) {
+                throw new IllegalStateException("Cannot create lecture: Lecturer is not approved. Status: " + lecturer.getStatus());
+            }
+            
+            CreateLectureDTO lectureData = generateFakeLectureData();
+            lectureData.setUserId(lecturerId);
+            
+            ResponseLectureDTO lecture = lectureService.createLecture(lectureData);
+            
+            System.out.println("Created lecture for specific lecturer: " + lecturer.getFirstName() + " " + lecturer.getLastName());
+            
+            return lecture;
+            
+        } catch (Exception e) {
+            System.err.println("Error creating lecture for lecturer " + lecturerId + ": " + e.getMessage());
+            throw new RuntimeException("Failed to create lecture for lecturer", e);
         }
-        
-        return selected;
     }
 
     private String generateTitle() {
@@ -279,8 +293,8 @@ public class LectureFakerService {
             "• טכניקות best practices מהתעשייה\n" +
             "• מקרי בוחן מחברות ישראליות מובילות\n" +
             "• כלים ופתרונות מעשיים\n\n" +
-            "💼 מתאים למפתחים בכל הרמות\n" +
-            "🚀 דגש על יישום מעשי ופרויקטים\n\n" +
+            "מתאים למפתחים בכל הרמות\n" +
+            "דגש על יישום מעשי ופרויקטים\n\n" +
             "ההרצאה מועברת בעברית עם מונחים טכניים באנגלית.",
             title, subtitle
         );
@@ -300,21 +314,21 @@ public class LectureFakerService {
             LectureStatus.ON_AIR,
             LectureStatus.ON_AIR,
             LectureStatus.ON_AIR,
-            LectureStatus.IN_PROGRESS,
-            LectureStatus.FREEZE
+            // LectureStatus.DRAFT,
+            // LectureStatus.PENDING_REVIEW
         };
         return statuses[random.nextInt(statuses.length)];
     }
 
     @Deprecated
-    public List<Lecture> createFakeLectures(int count) {
-        System.out.println("⚠️ WARNING: Using deprecated createFakeLectures - use createLecturesWithLecturers instead!");
+    public List<ResponseLectureDTO> createFakeLectures(int count) {
+        System.out.println("WARNING: Using deprecated createFakeLectures - use createLecturesWithLecturers instead!");
         return createLecturesWithLecturers(count);
     }
 
     @Deprecated
-    public Lecture generateSingleLectureWithLecturers() {
-        System.out.println("⚠️ WARNING: Using deprecated generateSingleLectureWithLecturers - use generateLectureWithLecturers instead!");
+    public ResponseLectureDTO generateSingleLectureWithLecturers() {
+        System.out.println("WARNING: Using deprecated generateSingleLectureWithLecturers - use generateLectureWithLecturers instead!");
         return generateLectureWithLecturers();
     }
 }
