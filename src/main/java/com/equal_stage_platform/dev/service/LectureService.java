@@ -22,6 +22,7 @@ import com.equal_stage_platform.dev.repository.LectureRepository;
 import com.equal_stage_platform.dev.repository.LecturerRepository;
 import com.equal_stage_platform.dev.repository.UserRepository;
 import com.equal_stage_platform.dev.model.Lecture;
+import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
@@ -65,6 +66,8 @@ public class LectureService {
         Set<TargetAudience> targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
         Lecture lecture = lectureRepository.save(new Lecture(lectureData, targetAudiences, topics));
         lecturer.enrollLecture(lecture);
+        lecturerRepository.save(lecturer);
+        // lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
 
@@ -445,5 +448,124 @@ public class LectureService {
         } catch (RuntimeException e) {
             throw new LectureException(e.getMessage());
         }
+    }
+
+    /**
+     * Filters lectures based on price range, target audiences, topics, and working areas.
+     * Only returns approved lectures with ON_AIR status and approved lecturers.
+     *
+     * @param priceMin Minimum price filter (optional)
+     * @param priceMax Maximum price filter (optional)
+     * @param targetAudiences List of target audience IDs to filter by (optional)
+     * @param topics List of topic IDs to filter by (optional)
+     * @param workingAreas List of working areas to filter by (optional)
+     * @return A list of ResponseLectureDTO containing filtered lectures
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLectureDTO> filterLectures(Integer priceMin, Integer priceMax, 
+                                                  List<Long> targetAudiences, 
+                                                  List<Long> topics, 
+                                                  List<Area> workingAreas) {
+        // Validate price range
+        if (priceMin != null && priceMax != null && priceMin > priceMax) {
+            throw new LectureException("Minimum price cannot be greater than maximum price");
+        }
+
+        // Convert empty lists to null for proper query handling
+        List<Long> targetAudienceIds = (targetAudiences != null && targetAudiences.isEmpty()) ? null : targetAudiences;
+        List<Long> topicIds = (topics != null && topics.isEmpty()) ? null : topics;
+        List<Area> areas = (workingAreas != null && workingAreas.isEmpty()) ? null : workingAreas;
+
+        List<Lecture> lectures = lectureRepository.filterLectures(
+            LectureStatus.ON_AIR, 
+            true, // approved
+            priceMin, 
+            priceMax, 
+            targetAudienceIds, 
+            topicIds, 
+            areas
+        );
+
+        System.out.println("DEBUG: Found " + lectures.size() + " lectures from repository query");
+
+        if (lectures.isEmpty()) {
+            throw new LectureException("No lectures found matching the specified criteria");
+        }
+
+        // Additional filter for approved lecturers
+        List<ResponseLectureDTO> filteredLectures = lectures.stream()
+                .filter(lecture -> {
+                    boolean hasApproved = hasApprovedLecturers(lecture);
+                    System.out.println("DEBUG: Lecture ID " + lecture.getLectureId() + 
+                                     " has approved lecturers: " + hasApproved + 
+                                     " (lecturers count: " + lecture.getLecturers().size() + ")");
+                    return hasApproved;
+                })
+                .map(ResponseLectureDTO::new)
+                .toList();
+        
+        System.out.println("DEBUG: Final filtered count: " + filteredLectures.size());
+        return filteredLectures;
+    }
+
+    /**
+     * Filters lectures based on price range, target audiences, topics, and working areas with pagination.
+     * Only returns approved lectures with ON_AIR status and approved lecturers.
+     *
+     * @param pageNum Page number for pagination
+     * @param pageSize Number of items per page
+     * @param priceMin Minimum price filter (optional)
+     * @param priceMax Maximum price filter (optional)
+     * @param targetAudiences List of target audience IDs to filter by (optional)
+     * @param topics List of topic IDs to filter by (optional)
+     * @param workingAreas List of working areas to filter by (optional)
+     * @return A PaginatedResponseDTO containing filtered lectures
+     */
+    @Transactional(readOnly = true)
+    public PaginatedResponseDTO<ResponseLectureDTO> filterLecturesPageable(int pageNum, int pageSize, 
+                                                                           Integer priceMin, Integer priceMax, 
+                                                                           List<Long> targetAudiences,
+                                                                            List<Long> topics,
+                                                                            List<Area> workingAreas) {
+        // Validate price range
+        if (priceMin != null && priceMax != null && priceMin > priceMax) {
+            throw new LectureException("Minimum price cannot be greater than maximum price");
+        }
+
+        // Convert empty lists to null for proper query handling
+        List<Long> targetAudienceIds = (targetAudiences != null && targetAudiences.isEmpty()) ? null : targetAudiences;
+        List<Long> topicIds = (topics != null && topics.isEmpty()) ? null : topics;
+        List<Area> areas = (workingAreas != null && workingAreas.isEmpty()) ? null : workingAreas;
+
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        Page<Lecture> page = lectureRepository.filterLecturesPageable(
+            LectureStatus.ON_AIR, 
+            true, // approved
+            priceMin, 
+            priceMax, 
+            targetAudienceIds, 
+            topicIds, 
+            areas, 
+            pageRequest
+        );
+
+        if (page.getContent().isEmpty()) {
+            throw new LectureException("No lectures found matching the specified criteria");
+        }
+
+        // Additional filter for approved lecturers
+        List<ResponseLectureDTO> content = page.getContent().stream()
+                .filter(this::hasApprovedLecturers)
+                .map(ResponseLectureDTO::new)
+                .toList();
+
+        return PaginatedResponseDTO.<ResponseLectureDTO>builder()
+            .content(content)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .last(page.isLast())
+            .build();
     }
 }

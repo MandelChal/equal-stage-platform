@@ -121,7 +121,7 @@ public class Lecture {
     public void enrollLecturer(Lecturer lecturer) {
         if (lecturer != null) {
             this.lecturers.add(lecturer);
-            this.workingAreas.addAll(lecturer.getWorkingAreas());
+            addWorkingAreas(lecturer.getWorkingAreas());
         }
     }
     

@@ -347,27 +347,67 @@ public class LectureController {
         }
     }
     
-    // @GetMapping("/filter") // how such URL should look like? /lecturers/filter?targetAudience=...&topic=...&workingArea=...&rank=...
-    // @Operation(summary = "Filter lectures by PriceRange, Target audiences/Topics/Working areas/Ranks(future feature)", description = "Access: Public (no authentication required).",content = @Content(schema = @Schema(description = "Filter lecturers by target audience, topic, working area, and rank.", example = "lecturers/filter?PriceMin=100&PriceMax=500&targetAudiences=1,2&topics=3,4&workingAreas=ONLINE,NORTH")))
-    // @ApiResponse(responseCode = "200", description = "Filtered lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
-    // @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
-    // @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    // public ResponseEntity<?> filterLectures(@RequestParam(required = false) int priceMin,
-    //                                         @RequestParam(required = false) int priceMax,
-    //                                         @RequestParam(required = false) List<Long> targetAudiences,
-    //                                         @RequestParam(required = false) List<Long> topics,
-    //                                         @RequestParam(required = false) List<Area> workingAreas){
-    //                                         //  @RequestParam(required = false) Double rank) {
-    //     try {
-    //         return ResponseEntity.ok(lectureService.filterLectures(priceMin, priceMax, targetAudiences, topics, workingAreas));
-    //     } catch (LectureException e) {
-    //         // logger.error("LectureException while filtering lectures", e);
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-    //     } catch (Exception e) {
-    //         // logger.error("Unexpected error while filtering lectures", e);
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-    //     }
-    // }
+    @GetMapping("/filter")
+    @Operation(summary = "Filter lectures by PriceRange, Target audiences/Topics/Working areas/Ranks(future feature)", 
+               description = "Access: Public (no authentication required). Example URL: /lectures/filter?priceMin=100&priceMax=500&targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER")
+    @ApiResponse(responseCode = "200", description = "Filtered lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> filterLectures(@RequestParam(required = false) int priceMin,
+                                            @RequestParam(required = false) int priceMax,
+                                            @RequestParam(required = false) List<Long> targetAudiences,
+                                            @RequestParam(required = false) List<Long> topics,
+                                            @RequestParam(required = false) List<Area> workingAreas){
+                                            //  @RequestParam(required = false) Double rank) {
+        try {
+            return ResponseEntity.ok(lectureService.filterLectures(priceMin, priceMax, targetAudiences, topics, workingAreas));
+        } catch (LectureException e) {
+            // logger.error("LectureException while filtering lectures", e);
+            if (e.getMessage().contains("price")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid price range: " + e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while filtering lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/paginated/filter") 
+    @Operation(summary = "Get paginated filtered lectures", description = "Returns a paginated list of filtered lectures based on the provided parameters. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Paginated filtered lectures", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> getPaginatedFilteredLectures(@RequestBody PaginationRequest paginationRequest,
+                                                          @RequestParam(required = false) int priceMin,
+                                                          @RequestParam(required = false) int priceMax,
+                                                          @RequestParam(required = false) List<Long> targetAudiences,
+                                                          @RequestParam(required = false) List<Long> topics,
+                                                          @RequestParam(required = false) List<Area> workingAreas) {
+        try {
+            PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.filterLecturesPageable(
+                paginationRequest.getPageNum(), 
+                paginationRequest.getPageSize(),
+                priceMin, 
+                priceMax,
+                targetAudiences, 
+                topics,
+                workingAreas
+            );
+            return ResponseEntity.ok(paginated);
+        } catch (LectureException e) {
+            // logger.error("LectureException while fetching paginated filtered lectures", e);
+            if (e.getMessage().contains("price")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid price range: " + e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while filtering lectures", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }
 
 

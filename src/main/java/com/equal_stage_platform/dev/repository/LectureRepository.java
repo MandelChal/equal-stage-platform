@@ -1,6 +1,7 @@
 package com.equal_stage_platform.dev.repository;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
+import com.equal_stage_platform.dev.model.enums.Area;
 
 import io.lettuce.core.dynamic.annotation.Param;
 
@@ -31,4 +32,39 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
     // get lectures by approved status
     List<Lecture> findByApproved(boolean approved);
+
+    // Filter lectures by multiple criteria
+    @Query("SELECT DISTINCT l FROM Lecture l " +
+           "WHERE l.status = :status " +
+           "AND l.approved = :approved " +
+           "AND (:priceMin IS NULL OR l.price >= :priceMin) " +
+           "AND (:priceMax IS NULL OR l.price <= :priceMax) " +
+           "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
+           "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.lecturers lec JOIN lec.workingAreas wa WHERE wa IN :workingAreas))")
+    List<Lecture> filterLectures(@Param("status") LectureStatus status,
+                                 @Param("approved") boolean approved,
+                                 @Param("priceMin") Integer priceMin,
+                                 @Param("priceMax") Integer priceMax,
+                                 @Param("targetAudiences") List<Long> targetAudiences,
+                                 @Param("topics") List<Long> topics,
+                                 @Param("workingAreas") List<Area> workingAreas);
+
+       // pageable lectures by multiple criteria
+           @Query("SELECT DISTINCT l FROM Lecture l " +
+           "WHERE l.status = :status " +
+           "AND l.approved = :approved " +
+           "AND (:priceMin IS NULL OR l.price >= :priceMin) " +
+           "AND (:priceMax IS NULL OR l.price <= :priceMax) " +
+           "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
+           "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.lecturers lec JOIN lec.workingAreas wa WHERE wa IN :workingAreas))")
+       Page<Lecture> filterLecturesPageable(@Param("status") LectureStatus status,
+                                   @Param("approved") boolean approved,
+                                   @Param("priceMin") Integer priceMin,
+                                   @Param("priceMax") Integer priceMax,
+                                   @Param("targetAudiences") List<Long> targetAudiences,
+                                   @Param("topics") List<Long> topics,
+                                   @Param("workingAreas") List<Area> workingAreas,
+                                   Pageable pageable);
 }

@@ -1,5 +1,6 @@
 package com.equal_stage_platform.dev.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -375,6 +377,82 @@ public class FlowIntegrationTest {
 		UUID newUser3LecturerId = newLecturers3.iterator().next().getUserId();
 		approveLecturer(user1Token, newUser3LecturerId, 200);
 		deleteLecturerByAdmin(user1Token, newUser3LecturerId, 200);
+	}
+
+	@Test
+	public void testFakerSystemAndFiltering() throws Exception {
+		// Initialize faker system with 10 lecturers and 3 lectures per lecturer
+		int lecturersCount = 10;
+		int lecturesPerLecturer = 3;
+		MvcResult fakerResult = mockMvc.perform(post("/faker/initSystem")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"lecturersCount\":\"" + lecturersCount + "\", \"lecturesPerLecturer\":" + lecturesPerLecturer + "}"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		// Verify faker system initialized successfully
+		String fakerResponse = fakerResult.getResponse().getContentAsString();
+		// The response should contain users and possibly failedUsers
+		assertEquals(true, fakerResponse.contains("users"));
+
+		MvcResult lecturesResult = mockMvc.perform(get("/lectures/topLectures/"+lecturersCount*lecturesPerLecturer))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String lecturesResponse = lecturesResult.getResponse().getContentAsString();
+		List<ResponseLectureDTO> lectures = objectMapper.readValue(lecturesResponse,
+			new TypeReference<List<ResponseLectureDTO>>() {});
+		
+
+		// Test paginated filter for lectures
+		testRegularFilterEndpoints(lectures);
+
+		// Test paginated filter for lecturers  
+		testRegularFilterLecturers(lectures);
+
+	}
+
+	private void testRegularFilterEndpoints(List<ResponseLectureDTO> allLectures) throws Exception {
+		// Instead test regular lectures filter
+		MvcResult res = mockMvc.perform(get("/lectures/filter")
+				.param("priceMin", "100")
+				.param("priceMax", "200"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		//convert result json to ResponseLectureDTO
+		String response = res.getResponse().getContentAsString();
+		List<ResponseLectureDTO> lectures = objectMapper.readValue(response,
+			new TypeReference<List<ResponseLectureDTO>>() {});
+
+		int expectedSize = (int) allLectures.stream()
+				.filter(lecture -> lecture.getPrice() >= 100 && lecture.getPrice() <= 200)
+				.count();
+
+		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
+
+	}
+
+	private void testRegularFilterLecturers(List<ResponseLectureDTO> allLectures) throws Exception {
+		MvcResult res = mockMvc.perform(get("/lectures/filter")
+				.param("priceMin", "100")
+				.param("priceMax", "200")
+				.param("workingAreas", "NORTH,CENTER"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		//convert result json to ResponseLectureDTO
+		String response = res.getResponse().getContentAsString();
+		List<ResponseLectureDTO> lectures = objectMapper.readValue(response,
+			new TypeReference<List<ResponseLectureDTO>>() {});
+
+		int expectedSize = (int) allLectures.stream()
+				.filter(lecture -> lecture.getPrice() >= 100 && lecture.getPrice() <= 200)
+				.filter(lecture -> lecture.getAreas().stream()
+						.anyMatch(area -> area == Area.NORTH || area == Area.CENTER))
+				.count();
+
+		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
 	}
 }
 // running test in terminal:

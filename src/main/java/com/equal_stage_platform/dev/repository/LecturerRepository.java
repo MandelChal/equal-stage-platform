@@ -51,4 +51,28 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     
     @Query("SELECT DISTINCT l FROM Lecturer l JOIN l.workingAreas wa WHERE wa IN :workingAreas")
     List<Lecturer> findByWorkingAreasContaining(@Param("workingAreas") Set<Area> workingAreas);
+
+    // Filter lecturers by multiple criteria
+    @Query("SELECT DISTINCT l FROM Lecturer l " +
+           "WHERE l.status = :status " +
+           "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
+           "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))")
+    List<Lecturer> filterLecturers(@Param("status") LecturerStatus status,
+                                   @Param("targetAudiences") List<Long> targetAudiences,
+                                   @Param("topics") List<Long> topics,
+                                   @Param("workingAreas") List<Area> workingAreas);
+
+       // pageable filter lecturers by multiple criteria
+    @Query("SELECT DISTINCT l FROM Lecturer l " +
+           "WHERE l.status = :status " +
+           "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
+           "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))")
+       Page<Lecturer> filterLecturersPageable(@Param("status") LecturerStatus status,
+                                   @Param("targetAudiences") List<Long> targetAudiences,
+                                   @Param("topics") List<Long> topics,
+                                   @Param("workingAreas") List<Area> workingAreas,
+                                   Pageable pageable);
+
 }

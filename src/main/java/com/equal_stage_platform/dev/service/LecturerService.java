@@ -389,4 +389,82 @@ public class LecturerService {
             .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
             .toList();
     }
+
+    /**
+     * Filters lecturers based on target audiences, topics, and working areas.
+     * Only returns approved lecturers.
+     *
+     * @param targetAudiences List of target audience IDs to filter by (optional)
+     * @param topics List of topic IDs to filter by (optional)
+     * @param workingAreas List of working areas to filter by (optional)
+     * @return A list of ResponseLecturerDTO containing filtered lecturers
+     */
+    @Transactional(readOnly = true)
+    public List<ResponseLecturerDTO> filterLecturers(List<Long> targetAudiences, 
+                                                    List<Long> topics, 
+                                                    List<Area> workingAreas) {
+        // Convert empty lists to null for proper query handling
+        List<Long> targetAudienceIds = (targetAudiences != null && targetAudiences.isEmpty()) ? null : targetAudiences;
+        List<Long> topicIds = (topics != null && topics.isEmpty()) ? null : topics;
+        List<Area> areas = (workingAreas != null && workingAreas.isEmpty()) ? null : workingAreas;
+
+        List<Lecturer> lecturers = lecturerRepository.filterLecturers(
+            LecturerStatus.APPROVED, // Only approved lecturers
+            targetAudienceIds, 
+            topicIds, 
+            areas
+        );
+
+        if (lecturers.isEmpty()) {
+            throw new LecturerException("No lecturers found matching the specified criteria");
+        }
+
+        return lecturers.stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
+                .toList();
+    }
+
+    /**
+     * Filters lecturers based on target audiences, topics, and working areas with pagination.
+     * Only returns approved lecturers.
+     * @param pageNum The page number to retrieve.
+     * @param pageSize The number of lecturers per page.
+     * @param targetAudiences List of target audience IDs to filter by (optional)
+     * @param topics List of topic IDs to filter by (optional)
+     * @param workingAreas List of working areas to filter by (optional)
+     * @return A paginated response containing filtered lecturers
+     */
+    @Transactional(readOnly = true)
+    public PaginatedResponseDTO<ResponseLecturerDTO> filterLecturersPaginated(int pageNum, 
+                                                                              int pageSize,
+                                                                              List<Long> targetAudiences, 
+                                                                              List<Long> topics, 
+                                                                              List<Area> workingAreas) {
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        Page<Lecturer> page = lecturerRepository.filterLecturersPageable(
+            LecturerStatus.APPROVED, // Only approved lecturers
+            targetAudiences, 
+            topics, 
+            workingAreas, 
+            pageRequest
+        );
+
+        if (page.isEmpty()) {
+            throw new LecturerException("No lecturers found matching the specified criteria on page " + pageNum);
+        }
+
+        List<ResponseLecturerDTO> content = page.getContent()
+                .stream()
+                .map(lecturer -> new ResponseLecturerDTO(lecturer, lecturer.getLecturesByStatus(LectureStatus.ON_AIR)))
+                .toList();
+
+        return PaginatedResponseDTO.<ResponseLecturerDTO>builder()
+            .content(content)
+            .pageNumber(page.getNumber())
+            .pageSize(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .last(page.isLast())
+            .build();
+    }
 }

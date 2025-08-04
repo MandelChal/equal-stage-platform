@@ -136,7 +136,7 @@ public class Lecturer {
         this.lastUpdatedAt = TimeUtils.nowInIsrael();
         if(lecture!=null){
             this.lectures.add(lecture);
-            lecture.addWorkingAreas(workingAreas);
+            lecture.enrollLecturer(this);
             this.enrollTopics(lecture.getTopics());
             this.enrollTargetAudiences(lecture.getTargetAudiences());
         }

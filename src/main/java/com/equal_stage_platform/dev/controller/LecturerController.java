@@ -430,23 +430,46 @@ public class LecturerController {
         }
     }
 
-    // @GetMapping("/filter") // how such URL should look like? /lecturers/filter?targetAudience=...&topic=...&workingArea=...&rank=...
-    // @Operation(summary = "Filter lecturers Target audience/Topic/Working area/Rank(future feature)", description = "Access: Public (no authentication required).",content = @Content(schema = @Schema(description = "Filter lecturers by target audience, topic, working area, and rank.", example = "lecturers/filter?targetAudiences=1,2&topics=3,4&workingAreas=ONLINE,NORTH")))
-    // @ApiResponse(responseCode = "200", description = "Filtered lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
-    // @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
-    // @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    // public ResponseEntity<?> filterLecturers(@RequestParam(required = false) List<Long> targetAudiences,
-    //                                          @RequestParam(required = false) List<Long> topics,
-    //                                          @RequestParam(required = false) List<Area> workingAreas){
-    //                                         //  @RequestParam(required = false) Double rank) {
-    //     try {
-    //         return ResponseEntity.ok(lecturerService.filterLecturers(targetAudiences, topics, workingAreas));
-    //     } catch (LecturerException e) {
-    //         // logger.error("LecturerException while filtering lecturers", e);
-    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-    //     } catch (Exception e) {
-    //         // logger.error("Unexpected error while filtering lecturers", e);
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());    
-    //     }
-    // }
+    @GetMapping("/filter") // how such URL should look like? /lecturers/filter?targetAudience=...&topic=...&workingArea=...&rank=...
+    @Operation(summary = "Filter lecturers by Target audience/Topic/Working area/Rank(future feature)", 
+               description = "Access: Public (no authentication required). Example URL: /lecturers/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER")
+    @ApiResponse(responseCode = "200", description = "Filtered lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> filterLecturers(@RequestParam(required = false) List<Long> targetAudiences,
+                                             @RequestParam(required = false) List<Long> topics,
+                                             @RequestParam(required = false) List<Area> workingAreas){
+                                            //  @RequestParam(required = false) Double rank) {
+        try {
+            return ResponseEntity.ok(lecturerService.filterLecturers(targetAudiences, topics, workingAreas));
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while filtering lecturers", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while filtering lecturers", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());    
+        }
+    }
+
+    @GetMapping("paginated/filter")
+    @Operation(summary = "Get paginated filtered lecturers", description = "Returns a paginated list of filtered lecturers. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Paginated filtered lecturers", content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    public ResponseEntity<?> getPaginatedFilteredLecturers(@RequestBody PaginationRequest request,
+                                                           @RequestParam(required = false) List<Long> targetAudiences,
+                                                           @RequestParam(required = false) List<Long> topics,
+                                                           @RequestParam(required = false) List<Area> workingAreas) {
+        try {
+            PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.filterLecturersPaginated(
+                request.getPageNum(), request.getPageSize(), targetAudiences, topics, workingAreas);
+            return ResponseEntity.ok(paginated);
+        } catch (LecturerException e) {
+            // logger.error("LecturerException while fetching paginated filtered lecturers", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while fetching paginated filtered lecturers", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }

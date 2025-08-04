@@ -39,12 +39,12 @@ public class SecurityConfig {
                 //----Lecturer endpoints----
                 .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
                 .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lecturers/{lecturerId}/lectures/{lectureId}", "/lecturers/{lecturerId}/lectures/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated").permitAll()
+                .requestMatchers("/lecturers/{lecturerId}/lectures/{lectureId}", "/lecturers/{lecturerId}/lectures/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated", "/lecturers/filter/**", "/lecturers/paginated/filter/**", "/lecturers/filter/**").permitAll()
                 .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")
                 //----Lecture endpoints----
                 .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
-                .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/search/**", "/lectures/paginated", "/lectures/topLectures/**").permitAll()
+                .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/search/**", "/lectures/paginated", "/lectures/topLectures/**", "/lectures/filter/**", "/lectures/paginated/filter/**", "/lectures/filter/**" ).permitAll()
                 //----Home Page Banner endpoints----
                 .requestMatchers("/HomePage/banner/urls").permitAll()
                 .requestMatchers("/HomePage/admin/**").hasRole("ADMIN")
