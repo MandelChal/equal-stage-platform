@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
+import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.model.Topic;
@@ -405,14 +406,17 @@ public class FlowIntegrationTest {
 		
 
 		// Test paginated filter for lectures
-		testRegularFilterEndpoints(lectures);
+		testRegularFilterLectures1(lectures);
 
 		// Test paginated filter for lecturers  
-		testRegularFilterLecturers(lectures);
+		testRegularFilterLectures2(lectures);
+		
+		// Test paginated filter endpoint
+		testPaginatedFilterLectures(lectures);
 
 	}
 
-	private void testRegularFilterEndpoints(List<ResponseLectureDTO> allLectures) throws Exception {
+	private void testRegularFilterLectures1(List<ResponseLectureDTO> allLectures) throws Exception {
 		// Instead test regular lectures filter
 		MvcResult res = mockMvc.perform(get("/lectures/filter")
 				.param("priceMin", "100")
@@ -433,7 +437,7 @@ public class FlowIntegrationTest {
 
 	}
 
-	private void testRegularFilterLecturers(List<ResponseLectureDTO> allLectures) throws Exception {
+	private void testRegularFilterLectures2(List<ResponseLectureDTO> allLectures) throws Exception {
 		MvcResult res = mockMvc.perform(get("/lectures/filter")
 				.param("priceMin", "100")
 				.param("priceMax", "200")
@@ -453,6 +457,68 @@ public class FlowIntegrationTest {
 				.count();
 
 		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
+	}
+
+	private void testPaginatedFilterLectures(List<ResponseLectureDTO> allLectures) throws Exception {
+		// Test paginated filter endpoint with basic filters
+		MvcResult res = mockMvc.perform(get("/lectures/paginated/filter")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pageNum\":0,\"pageSize\":5}")
+				.param("priceMin", "100")
+				.param("priceMax", "200"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String response = res.getResponse().getContentAsString();
+		
+		// 1. Convert content to ResponseLectureDTO
+		PaginatedResponseDTO<ResponseLectureDTO> paginatedResponse = objectMapper.readValue(response, 
+			objectMapper.getTypeFactory().constructParametricType(
+				PaginatedResponseDTO.class,
+				ResponseLectureDTO.class));
+		
+		List<ResponseLectureDTO> paginatedLectures = paginatedResponse.getContent();
+		
+		// 2. Verify that returned lectures are according to the filter
+		for (ResponseLectureDTO lecture : paginatedLectures) {
+			assertEquals(true, lecture.getPrice() >= 100 && lecture.getPrice() <= 200, 
+				"Lecture price should be between 100 and 200, but was: " + lecture.getPrice());
+		}
+		
+		// Verify pagination structure
+		assertEquals(true, paginatedLectures.size() <= 5, "Page size should not exceed 5");
+		assertEquals(0, paginatedResponse.getPageNumber(), "Page number should be 0");
+		assertEquals(5, paginatedResponse.getPageSize(), "Page size should be 5");
+		
+		// 3. Test with extra fields in the filter
+		MvcResult res2 = mockMvc.perform(get("/lectures/paginated/filter")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pageNum\":0,\"pageSize\":3}")
+				.param("priceMin", "0")
+				.param("priceMax", "300")
+				.param("workingAreas", "NORTH,CENTER"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String response2 = res2.getResponse().getContentAsString();
+		PaginatedResponseDTO<ResponseLectureDTO> paginatedResponse2 = objectMapper.readValue(response2, 
+			objectMapper.getTypeFactory().constructParametricType(
+				PaginatedResponseDTO.class,
+				ResponseLectureDTO.class));
+		
+		List<ResponseLectureDTO> filteredLectures = paginatedResponse2.getContent();
+		
+		// Verify the extra filters are applied correctly
+		for (ResponseLectureDTO lecture : filteredLectures) {
+			assertEquals(true, lecture.getPrice() >= 0 && lecture.getPrice() <= 300, 
+				"Lecture price should be between 150 and 300, but was: " + lecture.getPrice());
+			assertEquals(true, lecture.getAreas().stream()
+				.anyMatch(area -> area == Area.NORTH || area == Area.CENTER),
+				"Lecture should have NORTH or CENTER area");
+		}
+		
+		assertEquals(true, filteredLectures.size() <= 3, "Page size should not exceed 3");
+		assertEquals(3, paginatedResponse2.getPageSize(), "Page size should be 3");
 	}
 }
 // running test in terminal:
