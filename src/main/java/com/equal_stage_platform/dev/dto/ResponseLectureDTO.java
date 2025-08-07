@@ -80,7 +80,7 @@ public class ResponseLectureDTO {
         this.duration = lecture.getDuration();
         this.price = lecture.getPrice();
         this.createdAt = lecture.getCreatedAt().toString();
-        this.updatedAt = lecture.getUpdatedAt().toString();
+        this.updatedAt = lecture.getLastUpdatedAt().toString();
         this.status = lecture.getStatus().name();
         this.online = lecture.isOnline();
         this.imageUrl = lecture.getImageUrl();

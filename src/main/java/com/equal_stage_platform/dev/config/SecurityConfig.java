@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/target-audiences/all", "/target-audiences/{id}", "/target-audiences/search/{prefix}").permitAll()
                 .requestMatchers("/target-audiences/admin/**").hasAnyRole("ADMIN")
                 //---Topic endpoints---
-                .requestMatchers("/topics/all", "/topics/{id}", "topics/search/{prefix}").permitAll()
+                .requestMatchers("/topics/all", "/topics/{id}", "/topics/search/{prefix}").permitAll()
                 .requestMatchers("/topics/admin/**").hasAnyRole("ADMIN")
                 .anyRequest().authenticated()
             )

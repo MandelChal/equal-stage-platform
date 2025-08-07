@@ -17,7 +17,7 @@ public class RegisterRequest {
     @Schema(description = "Password for the user", example = "Password123!")
     @NotBlank(message = "Password is required")
     @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>])[A-Za-z\\d!@#$%^&*(),.?\":{}|<>]{12,}$",
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?:{}|<>])[A-Za-z\\d!@#$%^&*(),.?:{}|<>]{12,}$",
         message = "Password must be at least 12 characters long, contain at least one lowercase letter, one uppercase letter, one digit, and one special character"
     )
     private String password;

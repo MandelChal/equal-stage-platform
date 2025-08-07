@@ -9,10 +9,14 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 @NoArgsConstructor
 @Data
 @Entity
 @Table(name = "45$^87(}_security_events")
+@EntityListeners(AuditingEntityListener.class)
 public class SecurityEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +27,7 @@ public class SecurityEvent {
     @Column(name = "event_type", nullable = false)
     private SecurityEventType eventType;
 
+    @CreatedDate
     @Column(name = "event_time", nullable = false)
     private LocalDateTime eventTime;
 
@@ -34,4 +39,11 @@ public class SecurityEvent {
 
     @Column(name = "event_data", nullable = false, columnDefinition = "TEXT")
     private String eventData;
+
+    public SecurityEvent(SecurityEventType eventType, Long userId, Role userRole, String eventData) {
+        this.eventType = eventType;
+        this.userId = userId;
+        this.userRole = userRole;
+        this.eventData = eventData;
+    }
 }

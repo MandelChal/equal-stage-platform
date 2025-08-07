@@ -14,15 +14,17 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "7$&*588$_users")
-public class User {
+public class User extends BaseAuditableEntity {
     @Id
     @GeneratedValue
     @Column(name = "user_id", columnDefinition = "UUID")
@@ -33,12 +35,6 @@ public class User {
 
     @Column(name = "password", nullable = false)
     private String password;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "last_updated_at", nullable = false)
-    private LocalDateTime lastUpdatedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
@@ -59,11 +55,10 @@ public class User {
     public User(String email, String password) {
         this.email = email;
         this.password = password;
-        this.createdAt = TimeUtils.nowInIsrael();
-        this.lastUpdatedAt = this.createdAt;
+        // Timestamps are now handled automatically by JPA auditing
         this.role = Role.USER;
         this.status = UserStatus.ACTIVE;
-        this.nextPasswordChange = createdAt.plusMonths(4);
+        this.nextPasswordChange = TimeUtils.nowInIsrael().plusMonths(4);
         this.pastPasswords = new HashSet<>();
     }
 
@@ -82,7 +77,7 @@ public class User {
         this.pastPasswords.add(this.password); // Store the old password
         this.password = passwordEncoder.encode(newPass); // Encode the new password
         LocalDateTime now = TimeUtils.nowInIsrael();
-        this.lastUpdatedAt = now;
+        // lastUpdatedAt is now handled automatically by JPA auditing
         this.nextPasswordChange = now.plusMonths(4); // Set next password change to 3 months from now
         return true; // Password updated successfully
     }

@@ -1,10 +1,8 @@
 package com.equal_stage_platform.dev.model;
 
-import java.time.LocalDateTime;
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
-import com.equal_stage_platform.dev.util.TimeUtils;
 
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
@@ -19,9 +17,10 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "0!58$_lectures*")
-public class Lecture {
+public class Lecture extends BaseAuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,12 +41,6 @@ public class Lecture {
 
     @Column(name = "price", nullable = false)
     private Integer price;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     @ManyToMany(mappedBy = "lectures", fetch = FetchType.LAZY)
     @EqualsAndHashCode.Exclude
@@ -98,9 +91,7 @@ public class Lecture {
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
         this.price = lectureData.getPrice();
-        LocalDateTime now = TimeUtils.nowInIsrael();
-        this.createdAt = now;
-        this.updatedAt = now;
+        // Timestamps are now handled automatically by JPA auditing
         this.imageUrl = lectureData.getImageUrl();
         this.status = lectureData.getLectureStatus();
         this.online = lectureData.isOnline();

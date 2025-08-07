@@ -31,7 +31,7 @@ import com.equal_stage_platform.dev.model.Topic;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.exception.LectureException;
 import com.equal_stage_platform.dev.model.ExternalLink;
-import com.equal_stage_platform.dev.util.TimeUtils;
+
 @Service
 public class LectureService {
     private final LectureRepository lectureRepository;
@@ -106,7 +106,6 @@ public class LectureService {
             throw new LectureException("You are not authorized to update this lecture");
         }
         lecture.setStatus(status);
-        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -363,7 +362,6 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         lecture.setApproved(approve);
-        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -383,7 +381,6 @@ public class LectureService {
             throw new LectureException("You are not authorized to update this lecture");
         }
         updateLecture(lecture, lectureData);
-        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
         lectureRepository.save(lecture);
         return new ResponseLectureDTO(lecture);
     }
@@ -427,7 +424,6 @@ public class LectureService {
         if (lectureData.getTargetAudiencesIds() != null) {
             lecture.setTargetAudiences(getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds()));
         }
-        lecture.setUpdatedAt(TimeUtils.nowInIsrael());
     }
 
     private Set<Topic> getTopicsFromIds(Set<Long> topicsIds) {

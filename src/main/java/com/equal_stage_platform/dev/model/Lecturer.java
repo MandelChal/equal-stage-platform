@@ -3,9 +3,6 @@ import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
-import com.equal_stage_platform.dev.util.TimeUtils;
-
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -21,10 +18,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "0!58$_lecturers")
 
-public class Lecturer {
+public class Lecturer extends BaseAuditableEntity {
     @Id
     @Column(name = "user_id", nullable = false, unique = true, columnDefinition = "UUID")
     private UUID userId;
@@ -52,12 +50,6 @@ public class Lecturer {
 
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "last_updated_at", nullable = false)
-    private LocalDateTime lastUpdatedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -114,10 +106,7 @@ public class Lecturer {
         this.phone = lecturerData.getPhone();
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
-        // Set created and updated timestamps
-        LocalDateTime now = TimeUtils.nowInIsrael();
-        this.createdAt = now;
-        this.lastUpdatedAt = now;
+        // Timestamps are now handled automatically by JPA auditing
         this.workingAreas = lecturerData.getWorkingAreas() != null ? new HashSet<>(lecturerData.getWorkingAreas()) : new HashSet<>();
         this.lectures = new HashSet<>();
         this.targetAudiences = new HashSet<>();
@@ -133,7 +122,7 @@ public class Lecturer {
     }
     
     public void enrollLecture(Lecture lecture) {
-        this.lastUpdatedAt = TimeUtils.nowInIsrael();
+        // lastUpdatedAt is now handled automatically by JPA auditing
         if(lecture!=null){
             this.lectures.add(lecture);
             lecture.enrollLecturer(this);
@@ -149,7 +138,7 @@ public class Lecturer {
     }
         
     public void removeLecture(Lecture lecture) {
-        this.lastUpdatedAt = TimeUtils.nowInIsrael();
+        // lastUpdatedAt is now handled automatically by JPA auditing
         if (lecture != null) {
             this.lectures.remove(lecture);
             initTopicsAndTargetAudiences();
