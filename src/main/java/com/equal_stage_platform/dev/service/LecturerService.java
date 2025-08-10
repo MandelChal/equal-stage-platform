@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // ---- class imports ----
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
@@ -24,18 +25,23 @@ import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.exception.LecturerException;
+import com.equal_stage_platform.dev.exception.TopicException;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
 import com.equal_stage_platform.dev.util.TimeUtils;
+import com.equal_stage_platform.dev.model.LecturerTopic;
+
 @Service
 public class LecturerService {
     private final LecturerRepository lecturerRepository;
     private final LectureRepository lectureRepository;
     private final AuthService authService;
-    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService) {
+    private final LecturerTopicService topicService;
+    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.authService = authService;
+        this.topicService = topicService;
     }
 
     // ---------------------- create / update / retrieve methods ----------------------
@@ -46,9 +52,10 @@ public class LecturerService {
      * @return A ResponseLecturerDTO containing the created lecturer's details.
      */
     @Transactional
-    public ResponseLecturerDTO createLecturer(UUID userId, CreateLecturerDTO lecturerData){   
+    public ResponseLecturerDTO createLecturer(UUID userId, CreateLecturerDTO lecturerData){
+        Set<LecturerTopic> topics = getTopicsFromIds(lecturerData.getLecturerTopicsIds());
         // save the lecturer to the database
-        Lecturer lecturer = lecturerRepository.save(new Lecturer(userId,lecturerData));
+        Lecturer lecturer = lecturerRepository.save(new Lecturer(userId,lecturerData, topics));
         // return the saved lecturer as a ResponseLecturerDTO
         return new ResponseLecturerDTO(lecturer, lecturer.getLectures());
     }
@@ -168,7 +175,6 @@ public class LecturerService {
             throw new LecturerException("You are not authorized to update this lecturer's status");
         }
         lecturer.setStatus(status);
-        lecturer.setLastUpdatedAt(TimeUtils.nowInIsrael());
         lecturerRepository.save(lecturer);
         return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
@@ -242,8 +248,10 @@ public class LecturerService {
                     .map(link -> new com.equal_stage_platform.dev.model.ExternalLink(link.getUrl(), link.getDescription()))
                     .collect(java.util.stream.Collectors.toSet()));
         }
-
-        lecturer.setLastUpdatedAt(TimeUtils.nowInIsrael());
+        if (lecturerData.getLecturerTopicsIds() != null) {
+            Set<LecturerTopic> topics = getTopicsFromIds(lecturerData.getLecturerTopicsIds());
+            lecturer.enrollLecturerTopics(topics);
+        }
     }
 
     /**
@@ -466,5 +474,17 @@ public class LecturerService {
             .totalPages(page.getTotalPages())
             .last(page.isLast())
             .build();
+    }
+
+    private Set<LecturerTopic> getTopicsFromIds(Set<Long> topicsIds) {
+        try{
+            return topicsIds.stream()
+                .map(topicService::getTopicById)
+                .collect(Collectors.toSet());
+        }catch(TopicException e){
+            throw new LecturerException(e.getMessage());
+        } catch (RuntimeException e) {
+            throw new LecturerException("Invalid topics");
+        }
     }
 }

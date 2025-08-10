@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
-@Table(name = "9@!5$_topics")
-public class Topic extends BaseAuditableEntity {
+@Table(name = "9@!5$_lecture*_topics")
+public class LectureTopic extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "topic_id", nullable = false, unique = true)
@@ -33,7 +33,7 @@ public class Topic extends BaseAuditableEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
     
-    public Topic(CreateTopicDTO new_topic){
+    public LectureTopic(CreateTopicDTO new_topic){
         this.name = new_topic.getName();
         this.description = new_topic.getDescription();
     }

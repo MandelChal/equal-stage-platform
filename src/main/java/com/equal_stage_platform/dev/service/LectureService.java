@@ -27,9 +27,11 @@ import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 import com.equal_stage_platform.dev.model.Lecturer;
 import com.equal_stage_platform.dev.model.TargetAudience;
-import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.LectureTopic;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.exception.LectureException;
+import com.equal_stage_platform.dev.exception.TargetAudienceException;
+import com.equal_stage_platform.dev.exception.TopicException;
 import com.equal_stage_platform.dev.model.ExternalLink;
 
 @Service
@@ -37,10 +39,10 @@ public class LectureService {
     private final LectureRepository lectureRepository;
     private final LecturerRepository lecturerRepository;
     private final UserRepository userRepository;
-    private final TopicService topicService;
+    private final LectureTopicService topicService;
     private final TargetAudienceService targetAudienceService;
     public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository, UserRepository userRepository, 
-                          TopicService topicService, TargetAudienceService targetAudienceService) {
+                          LectureTopicService topicService, TargetAudienceService targetAudienceService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.userRepository = userRepository;
@@ -62,12 +64,14 @@ public class LectureService {
         if (lecturer.getStatus() != LecturerStatus.APPROVED) {
             throw new LectureException("Lecturer is not approved");
         }
-        Set<Topic> topics = getTopicsFromIds(lectureData.getTopicsIds());
-        Set<TargetAudience> targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
+        Set<LectureTopic> topics = null;
+        Set<TargetAudience> targetAudiences = null;
+        topics = getTopicsFromIds(lectureData.getTopicsIds());
+        targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
         Lecture lecture = lectureRepository.save(new Lecture(lectureData, targetAudiences, topics));
         lecturer.enrollLecture(lecture);
         lecturerRepository.save(lecturer);
-        // lectureRepository.save(lecture);
+        // no need to save lecture, it will be saved by the lecturer (Spring Data JPA Optimization)
         return new ResponseLectureDTO(lecture);
     }
 
@@ -426,13 +430,15 @@ public class LectureService {
         }
     }
 
-    private Set<Topic> getTopicsFromIds(Set<Long> topicsIds) {
+    private Set<LectureTopic> getTopicsFromIds(Set<Long> topicsIds) {
         try{
             return topicsIds.stream()
                 .map(topicService::getTopicById)
                 .collect(Collectors.toSet());
-        } catch (RuntimeException e) {
+        } catch (TopicException e) {
             throw new LectureException(e.getMessage());
+        } catch (RuntimeException e) {
+            throw new LectureException("Invalid topics");
         }
     }
 
@@ -441,8 +447,10 @@ public class LectureService {
             return targetAudiencesIds.stream()
                     .map(targetAudienceService::getTargetAudienceById)
                     .collect(Collectors.toSet());
-        } catch (RuntimeException e) {
+        } catch (TargetAudienceException e) {
             throw new LectureException(e.getMessage());
+        } catch (RuntimeException e) {
+            throw new LectureException("Invalid target audiences");
         }
     }
 

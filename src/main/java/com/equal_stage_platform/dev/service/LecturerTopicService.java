@@ -6,44 +6,44 @@ import org.springframework.transaction.annotation.Transactional;
 import com.equal_stage_platform.dev.dto.CreateTopicDTO;
 import com.equal_stage_platform.dev.dto.UpdateTopicDTO;
 import com.equal_stage_platform.dev.exception.TopicException;
-import com.equal_stage_platform.dev.model.Topic;
-import com.equal_stage_platform.dev.repository.TopicRepository;
+import com.equal_stage_platform.dev.model.LecturerTopic;
+import com.equal_stage_platform.dev.repository.LecturerTopicRepository;
 
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 
 @Service
-public class TopicService {
-    private final TopicRepository topicRepository;
+public class LecturerTopicService {
+    private final LecturerTopicRepository lecturerTopicRepository;
 
-    public TopicService(TopicRepository topicRepository) {
-        this.topicRepository = topicRepository;
+    public LecturerTopicService(LecturerTopicRepository lecturerTopicRepository) {
+        this.lecturerTopicRepository = lecturerTopicRepository;
     }
 
     @Transactional(readOnly = true)
-    public List<Topic> getAllTopics() {
-        return topicRepository.findAll();
+    public List<LecturerTopic> getAllTopics() {
+        return lecturerTopicRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    public Topic getTopicById(Long id) {
-        return topicRepository.findById(id)
+    public LecturerTopic getTopicById(Long id) {
+        return lecturerTopicRepository.findById(id)
                 .orElseThrow(() -> new TopicException("Topic not found with ID: " + id));
     }
 
     @Transactional
-    public Topic createTopic(CreateTopicDTO topic) {
+    public LecturerTopic createTopic(CreateTopicDTO topic) {
         try {
-            return topicRepository.save(new Topic(topic));
+            return lecturerTopicRepository.save(new LecturerTopic(topic));
         } catch (DataIntegrityViolationException e) {
             throw new TopicException("Topic with name '" + topic.getName() + "' already exists", e);
         }
     }
 
     @Transactional
-    public Topic updateTopic(Long id, UpdateTopicDTO topicDetails) {
-        Topic topic = topicRepository.findById(id)
+    public LecturerTopic updateTopic(Long id, UpdateTopicDTO topicDetails) {
+        LecturerTopic topic = lecturerTopicRepository.findById(id)
                 .orElseThrow(() -> new TopicException("Topic not found with ID: " + id));
                 
         if(topicDetails.getName() != null)
@@ -51,18 +51,18 @@ public class TopicService {
         if(topicDetails.getDescription() != null)
             topic.setDescription(topicDetails.getDescription());
         
-        return topicRepository.save(topic);
+        return lecturerTopicRepository.save(topic);
     }
 
     @Transactional
     public void deleteTopic(Long id) {
-        Topic topic = topicRepository.findById(id)
+        LecturerTopic topic = lecturerTopicRepository.findById(id)
                 .orElseThrow(() -> new TopicException("Topic not found with ID: " + id));
-        topicRepository.delete(topic);
+        lecturerTopicRepository.delete(topic);
     }
 
     @Transactional(readOnly = true)
-    public List<Topic> findByPrefixName(String prefix) {
-        return topicRepository.findByNameStartingWithIgnoreCase(prefix);
+    public List<LecturerTopic> findByPrefixName(String prefix) {
+        return lecturerTopicRepository.findByNameStartingWithIgnoreCase(prefix);
     }
 }

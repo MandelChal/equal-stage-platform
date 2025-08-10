@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import lombok.Data;
 import com.equal_stage_platform.dev.model.Lecture;
-import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.LectureTopic;
 import com.equal_stage_platform.dev.model.TargetAudience;
 import com.equal_stage_platform.dev.model.enums.Area;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -63,7 +63,7 @@ public class ResponseLectureDTO {
     private Set<Area> areas;
     
     @Schema(description = "Set of Topic objects associated with the lecture")
-    private Set<Topic> topics;
+    private Set<LectureTopic> topics;
 
     @Schema(description = "Set of Target Audience objects associated with the lecture")
     private Set<TargetAudience> targetAudiences;

@@ -93,9 +93,9 @@ public class Lecturer extends BaseAuditableEntity {
         inverseJoinColumns = @JoinColumn(name = "topic_id")
     )
     @EqualsAndHashCode.Exclude
-    private Set<Topic> topics;
+    private Set<LecturerTopic> topics;
     
-    public Lecturer(UUID userId, CreateLecturerDTO lecturerData) {
+    public Lecturer(UUID userId, CreateLecturerDTO lecturerData, Set<LecturerTopic> topics) {
         this.userId = userId;
         this.firstName = lecturerData.getFirstName();
         this.lastName = lecturerData.getLastName();
@@ -108,9 +108,9 @@ public class Lecturer extends BaseAuditableEntity {
         this.status = LecturerStatus.PENDING; // Default status when created
         // Timestamps are now handled automatically by JPA auditing
         this.workingAreas = lecturerData.getWorkingAreas() != null ? new HashSet<>(lecturerData.getWorkingAreas()) : new HashSet<>();
-        this.lectures = new HashSet<>();
-        this.targetAudiences = new HashSet<>();
-        this.topics = new HashSet<>();
+        this.lectures = new HashSet<>(); // will be filled when lecture is enrolled
+        this.targetAudiences = new HashSet<>(); // will be filled when lecture is enrolled
+        this.enrollLecturerTopics(topics); // helper method to enroll topics
         this.externalLinks = lecturerData.getExternalLinks() == null ? new HashSet<>() :
             lecturerData.getExternalLinks().stream()
                 .map(link -> new ExternalLink(link.getUrl(), link.getDescription()))
@@ -126,7 +126,6 @@ public class Lecturer extends BaseAuditableEntity {
         if(lecture!=null){
             this.lectures.add(lecture);
             lecture.enrollLecturer(this);
-            this.enrollTopics(lecture.getTopics());
             this.enrollTargetAudiences(lecture.getTargetAudiences());
         }
     }
@@ -141,22 +140,13 @@ public class Lecturer extends BaseAuditableEntity {
         // lastUpdatedAt is now handled automatically by JPA auditing
         if (lecture != null) {
             this.lectures.remove(lecture);
-            initTopicsAndTargetAudiences();
+            initTargetAudiences();
         }
     }
 
     // Full name helper method
     public String getFullName() {
         return firstName + " " + lastName;
-    }
-
-    private void enrollTopics(Set<Topic> topics) {
-        if (topics != null) {
-            if (this.topics == null) {
-                this.topics = new HashSet<>();
-            }
-            this.topics.addAll(topics);
-        }
     }
     
     private void enrollTargetAudiences(Set<TargetAudience> targetAudiences) {
@@ -168,35 +158,6 @@ public class Lecturer extends BaseAuditableEntity {
         }
     }
 
-
-    public void initTopicsAndTargetAudiences(){
-        for (Lecture lecture : this.lectures) {
-            if (lecture.getTopics() != null) {
-                if (this.topics == null) {
-                    this.topics = new HashSet<>();
-                }
-                this.topics.addAll(lecture.getTopics());
-            }
-            if (lecture.getTargetAudiences() != null) {
-                if (this.targetAudiences == null) {
-                    this.targetAudiences = new HashSet<>();
-                }
-                this.targetAudiences.addAll(lecture.getTargetAudiences());
-            }
-        }
-    }
-
-    public void initTopics(){
-        for(Lecture lecture : this.lectures) {
-            if(lecture.getTopics() != null) {
-                if (this.topics == null) {
-                    this.topics = new HashSet<>();
-                }
-                this.topics.addAll(lecture.getTopics());
-            }
-        }
-    }
-
     public void initTargetAudiences(){
         for(Lecture lecture : this.lectures) {
             if(lecture.getTargetAudiences() != null) {
@@ -205,6 +166,13 @@ public class Lecturer extends BaseAuditableEntity {
                 }
                 this.targetAudiences.addAll(lecture.getTargetAudiences());
             }
+        }
+    }
+
+    public void enrollLecturerTopics(Set<LecturerTopic> topics) {
+        if(topics!=null){
+            this.topics = new HashSet<>(); // initialize the topics set
+            this.topics.addAll(topics);
         }
     }
 }

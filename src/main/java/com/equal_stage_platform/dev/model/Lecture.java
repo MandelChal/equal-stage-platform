@@ -84,9 +84,9 @@ public class Lecture extends BaseAuditableEntity {
         inverseJoinColumns = @JoinColumn(name = "topic_id")
     )
     @EqualsAndHashCode.Exclude
-    private Set<Topic> topics;
+    private Set<LectureTopic> topics;
 
-    public Lecture(CreateLectureDTO lectureData, Set<TargetAudience> targetAudiences, Set<Topic> topics) {
+    public Lecture(CreateLectureDTO lectureData, Set<TargetAudience> targetAudiences, Set<LectureTopic> topics) {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
@@ -166,16 +166,13 @@ public class Lecture extends BaseAuditableEntity {
         }
     }
 
-    public void setTopics(Set<Topic> topics) {
+    public void setTopics(Set<LectureTopic> topics) {
         if (topics != null) {
             if (this.topics == null) {
                 this.topics = new HashSet<>();
             }
             this.topics.clear();
             this.topics.addAll(topics);
-            for(Lecturer lecturer : this.lecturers) {
-                lecturer.initTopics();
-            }
         }
     }
 

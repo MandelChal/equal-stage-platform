@@ -53,7 +53,7 @@ public class HomePageService {
         return addBannerUrl(
             addBannerObject.getUrl(),
             addBannerObject.getTitle(),
-            BannerObjectType.valueOf(addBannerObject.getObjectType()),
+            addBannerObject.getObjectType(),
             addBannerObject.getDisplayOrder()
         );
     }

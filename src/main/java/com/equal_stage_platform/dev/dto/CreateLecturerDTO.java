@@ -65,4 +65,9 @@ public class CreateLecturerDTO {
     @Size(max = 2, message = "Maximum of 2 video links allowed")
     @Valid
     private Set<ExternalLinkDTO> videoLinks;
+
+    @Schema(description = "List of **MAX 5** lecturer topics", example = "[1, 2, 3, 4, 5]")
+    @Size(max = 5, message = "Maximum of 5 lecturer topics allowed")
+    @NotNull(message = "Lecturer topics are required")
+    private Set<Long> lecturerTopicsIds;
 }

@@ -14,7 +14,8 @@ import com.equal_stage_platform.dev.dto.PaginatedResponseDTO;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.dto.fakerUserDTO;
-import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.LectureTopic;
+import com.equal_stage_platform.dev.model.LecturerTopic;
 import com.equal_stage_platform.dev.model.TargetAudience;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
@@ -23,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.test.annotation.Rollback;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,8 @@ public class FlowIntegrationTest {
 	private ObjectMapper objectMapper;
 
 	private Long testTopicId;
-	private Long testTargetAudienceId;
+    private Long testTargetAudienceId;
+    private Long testLecturerTopicId;
 
 	// Helper to register and login, returns JWT token
 	private String registerAndLogin(String email, String password) throws Exception {
@@ -88,20 +88,21 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to create lecturer
-	private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Set<Area> workingAreas, int expectedStatus) throws Exception {
+    private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Set<Area> workingAreas, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lecturers/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"firstName\":\"" + firstName + "\", " +
-				"\"lastName\":\"" + lastName + "\", " +
-				"\"bio\":\"" + bio + "\", " +
-				"\"city\":\"" + city + "\", " +
-				"\"email\":\"" + email + "\", " +
-				"\"phone\":\"" + phone + "\", " +
-				"\"imageUrl\":\"" + imageUrl + "\", " +
-				"\"workingAreas\":[\"" + workingAreas.iterator().next().name() + "\"], " +
-				"\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}], " +
-				"\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}]}"))
+                .content("{\"firstName\":\"" + firstName + "\", " +
+                "\"lastName\":\"" + lastName + "\", " +
+                "\"bio\":\"" + bio + "\", " +
+                "\"city\":\"" + city + "\", " +
+                "\"email\":\"" + email + "\", " +
+                "\"phone\":\"" + phone + "\", " +
+                "\"imageUrl\":\"" + imageUrl + "\", " +
+                "\"workingAreas\":[\"" + workingAreas.iterator().next().name() + "\"], " +
+                "\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}], " +
+                "\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}], " +
+                "\"lecturerTopicsIds\":[" + testLecturerTopicId + "]}"))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -238,17 +239,28 @@ public class FlowIntegrationTest {
 			objectMapper.getTypeFactory().constructCollectionType(Set.class, ResponseLectureDTO.class));
 	}
 
-	private void setupTopicsAndTargetAudiences(String adminToken) throws Exception {
-		// Create a test topic (requires admin authentication)
-		MvcResult topicResult = mockMvc.perform(post("/topics/admin/create")
+    private void setupTopicsAndTargetAudiences(String adminToken) throws Exception {
+        // Create a test lecture topic (requires admin authentication)
+        MvcResult topicResult = mockMvc.perform(post("/lecture-topics/admin/create")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"Test Topic\", \"description\":\"A test topic for integration tests\"}"))
 				.andExpect(status().isCreated())
 				.andReturn();
 		
-		Topic topic = objectMapper.readValue(topicResult.getResponse().getContentAsString(), Topic.class);
+		LectureTopic topic = objectMapper.readValue(topicResult.getResponse().getContentAsString(), LectureTopic.class);
 		testTopicId = topic.getTopicId();
+
+        // Create a test lecturer topic (requires admin authentication)
+        MvcResult lecturerTopicResult = mockMvc.perform(post("/lecturer-topics/admin/create")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Test Lecturer Topic\", \"description\":\"A test lecturer topic for integration tests\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        LecturerTopic lecturerTopic = objectMapper.readValue(lecturerTopicResult.getResponse().getContentAsString(), LecturerTopic.class);
+        testLecturerTopicId = lecturerTopic.getTopicId();
 		
 		// Create a test target audience (requires admin authentication)
 		MvcResult targetAudienceResult = mockMvc.perform(post("/target-audiences/admin/create")
@@ -389,7 +401,6 @@ public class FlowIntegrationTest {
 
 	@Test
 	public void testFakerSystemAndFiltering() throws Exception {
-		System.exit(0);
 		// Initialize faker system with 10 lecturers and 3 lectures per lecturer
 		int lecturersCount = 10;
 		int lecturesPerLecturer = 3;

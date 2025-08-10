@@ -11,7 +11,7 @@ import java.util.Set;
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.Lecturer;
 import com.equal_stage_platform.dev.model.TargetAudience;
-import com.equal_stage_platform.dev.model.Topic;
+import com.equal_stage_platform.dev.model.LecturerTopic;
 import java.util.stream.Collectors;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -52,8 +52,8 @@ public class ResponseLecturerDTO {
     private Set<ExternalLinkDTO> externalLinks;
     @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
     private Set<ExternalLinkDTO> videoLinks;
-    @Schema(description = "Set of Topics related to the lecturer", exampleClasses = Topic.class, implementation = Topic.class)
-    private Set<Topic> topics;
+    @Schema(description = "Set of Topics related to the lecturer", exampleClasses = LecturerTopic.class, implementation = LecturerTopic.class)
+    private Set<LecturerTopic> topics;
     @Schema(description = "Set of Target Audiences related to the lecturer", exampleClasses = TargetAudience.class, implementation = TargetAudience.class)
     private Set<TargetAudience> targetAudiences;
     
