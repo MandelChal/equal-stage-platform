@@ -52,10 +52,9 @@ public class HomePageController {
     @ApiResponse(responseCode = "200", description = "Banner URL added successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "500", description = "Internal server error")
-    public ResponseEntity<String> addBannerUrl(@Valid @RequestBody AddHomePageBanner bannerObject){
+    public ResponseEntity<?> addBannerUrl(@Valid @RequestBody AddHomePageBanner bannerObject){
         try {
-            String response = homePageService.addBannerUrl(bannerObject);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(homePageService.addBannerUrl(bannerObject));
         } catch (HomePageExeption e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
@@ -68,10 +67,9 @@ public class HomePageController {
     @ApiResponse(responseCode = "200", description = "Banner URL deleted successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "404", description = "Banner URL not found")
-    public ResponseEntity<String> deleteBannerUrl(@PathVariable Long id) {
+    public ResponseEntity<?> deleteBannerUrl(@PathVariable Integer id) {
         try {
-            String response = homePageService.deleteBannerUrl(id);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(homePageService.deleteBannerUrl(id));
         } catch (HomePageExeption e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
@@ -85,10 +83,24 @@ public class HomePageController {
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "404", description = "Banner not found")
     @ApiResponse(responseCode = "500", description = "Internal server error")
-    public ResponseEntity<String> editBannerUrls(@Valid @RequestBody List<UpdateHomePageBannerDTO> updateList) {
+    public ResponseEntity<?> editBannerUrls(@Valid @RequestBody List<UpdateHomePageBannerDTO> updateList) {
         try {
-            String response = homePageService.editBannerUrls(updateList);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(homePageService.editBannerUrls(updateList));
+        } catch (HomePageExeption e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PutMapping("/admin/banner/urls/reorder")
+    @Operation(summary = "Reorder Banner URLs", description = "Reorders the banner URLs on the home page. Access: Admin (requires authentication).")
+    @ApiResponse(responseCode = "200", description = "Banner URLs reordered successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input data")
+    @ApiResponse(responseCode = "500", description = "Internal server error")
+    public ResponseEntity<?> reOrderBanners(@Valid @RequestBody List<Integer> newPositions) {
+        try {
+            return ResponseEntity.ok(homePageService.reOrderBanners(newPositions));
         } catch (HomePageExeption e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {

@@ -38,6 +38,8 @@ public class ResponseLecturerDTO {
     private String phone;
     @Schema(description = "Profile image URL", example = "https://example.com/image.png")
     private String imageUrl;
+    @Schema(description = "Rank of the lecturer", example = "3.5")
+    private Double rank;
     @Schema(description = "Creation timestamp (ISO 8601)", example = "2024-06-01T12:00:00Z")
     private String createdAt;
     @Schema(description = "Last update timestamp (ISO 8601)", example = "2024-06-02T12:00:00Z")
@@ -84,6 +86,7 @@ public class ResponseLecturerDTO {
         this.email = lecturer.getEmail();
         this.phone = lecturer.getPhone();
         this.imageUrl = lecturer.getImageUrl();
+        this.rank = lecturer.getRank();
         this.createdAt = lecturer.getCreatedAt().toString();
         this.lastUpdatedAt = lecturer.getLastUpdatedAt().toString();
         this.status = lecturer.getStatus();

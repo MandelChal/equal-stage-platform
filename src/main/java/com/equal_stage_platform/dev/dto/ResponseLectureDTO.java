@@ -38,6 +38,9 @@ public class ResponseLectureDTO {
     @Schema(description = "Price of the lecture", example = "100")
     private Integer price;
 
+    @Schema(description = "Rank of the lecture", example = "3.5")
+    private Double rank;
+
     @Schema(description = "Creation timestamp (ISO 8601)", example = "2024-06-01T12:00:00Z")
     private String createdAt;
 
@@ -79,6 +82,7 @@ public class ResponseLectureDTO {
         this.description = lecture.getDescription();
         this.duration = lecture.getDuration();
         this.price = lecture.getPrice();
+        this.rank = lecture.getRank();
         this.createdAt = lecture.getCreatedAt().toString();
         this.updatedAt = lecture.getLastUpdatedAt().toString();
         this.status = lecture.getStatus().name();

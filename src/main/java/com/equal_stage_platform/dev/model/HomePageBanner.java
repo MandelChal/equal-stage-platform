@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 
-import com.equal_stage_platform.dev.model.enums.BannerObjectType;
+import com.equal_stage_platform.dev.model.enums.MediaType;
 
 @Data
 @Entity
@@ -21,7 +21,7 @@ public class HomePageBanner extends BaseAuditableEntity {
     @Id
     @GeneratedValue
     @Column(name = "id")
-    private Long id;
+    private Integer id;
 
     @Column(name = "url", nullable = false, length = 2048, unique = true)
     private String url;
@@ -30,9 +30,9 @@ public class HomePageBanner extends BaseAuditableEntity {
     private String title;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "object_type", nullable = false)
-    private BannerObjectType objectType;
+    @Column(name = "media_type", nullable = false)
+    private MediaType mediaType;
 
-    @Column(name = "display_order", nullable = false, unique = true)
-    private Integer displayOrder;
+    @Column(name = "position", nullable = false)
+    private Integer position;
 }

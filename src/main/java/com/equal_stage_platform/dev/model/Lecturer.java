@@ -48,6 +48,9 @@ public class Lecturer extends BaseAuditableEntity {
     @Column(name = "phone", nullable = false, unique = true)
     private String phone;
 
+    @Column(name = "rank", nullable = false)
+    private Double rank;
+
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
@@ -106,6 +109,7 @@ public class Lecturer extends BaseAuditableEntity {
         this.phone = lecturerData.getPhone();
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
+        this.rank = 3.5;
         // Timestamps are now handled automatically by JPA auditing
         this.workingAreas = lecturerData.getWorkingAreas() != null ? new HashSet<>(lecturerData.getWorkingAreas()) : new HashSet<>();
         this.lectures = new HashSet<>(); // will be filled when lecture is enrolled

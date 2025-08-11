@@ -1,6 +1,6 @@
 package com.equal_stage_platform.dev.model.enums;
 
-public enum BannerObjectType {
+public enum MediaType {
     PHOTO,
     VIDEO
 }

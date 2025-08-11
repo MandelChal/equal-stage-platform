@@ -1,6 +1,6 @@
 package com.equal_stage_platform.dev.dto;
 
-import com.equal_stage_platform.dev.model.enums.BannerObjectType;
+import com.equal_stage_platform.dev.model.enums.MediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -16,7 +16,7 @@ public class UpdateHomePageBannerDTO {
     
     @Schema(description = "Banner ID", example = "1")
     @NotNull(message = "Banner ID is required")
-    private Long id;
+    private Integer id;
 
     @Schema(description = "URL", example = "https://example.com/banner.jpg")
     @URL(message = "Invalid URL format")
@@ -26,8 +26,5 @@ public class UpdateHomePageBannerDTO {
     private String title;
 
     @Schema(description = "Type of the banner object", example = "PHOTO")
-    private BannerObjectType objectType;
-
-    @Schema(description = "Display order for the banner", example = "1")
-    private Integer displayOrder;
+    private MediaType mediaType;
 }

@@ -42,6 +42,9 @@ public class Lecture extends BaseAuditableEntity {
     @Column(name = "price", nullable = false)
     private Integer price;
 
+    @Column(name = "rank", nullable = false)
+    private Double rank;
+
     @ManyToMany(mappedBy = "lectures", fetch = FetchType.LAZY)
     @EqualsAndHashCode.Exclude
     private Set<Lecturer> lecturers = new HashSet<>();
@@ -91,6 +94,7 @@ public class Lecture extends BaseAuditableEntity {
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
         this.price = lectureData.getPrice();
+        this.rank = 3.5;
         // Timestamps are now handled automatically by JPA auditing
         this.imageUrl = lectureData.getImageUrl();
         this.status = lectureData.getLectureStatus();

@@ -1,15 +1,16 @@
 package com.equal_stage_platform.dev.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.HashSet;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.equal_stage_platform.dev.dto.AddHomePageBanner;
 import com.equal_stage_platform.dev.dto.UpdateHomePageBannerDTO;
 import com.equal_stage_platform.dev.model.HomePageBanner;
-import com.equal_stage_platform.dev.model.enums.BannerObjectType;
 import com.equal_stage_platform.dev.repository.HomePageRepository;
 import com.equal_stage_platform.dev.exception.HomePageExeption;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,180 +25,88 @@ public class HomePageService {
 
     @Transactional(readOnly = true)
     public List<HomePageBanner> getAllBannerUrls() {
-        return homePageRepository.findAllByOrderByDisplayOrderAsc();
+        return homePageRepository.findAllByOrderByPositionAsc();
     }
 
     @Transactional
-    public String addBannerUrl(String url, String title, BannerObjectType objectType, Integer displayOrder) {
-        // Validate URL uniqueness
-        if (homePageRepository.findByUrl(url).isPresent()) {
-            throw new HomePageExeption("Banner with this URL already exists");
+    public HomePageBanner addBannerUrl(AddHomePageBanner addBannerObject) {
+        if(homePageRepository.findByUrl(addBannerObject.getUrl()).isPresent()) {
+            throw new HomePageExeption("Banner already exists with url: " + addBannerObject.getUrl());
         }
-
-        // Handle display order
-        Integer finalDisplayOrder = handleDisplayOrderForNewBanner(displayOrder);
-        
+        int position = handleDisplayOrderForNewBanner(addBannerObject.getPosition());
         HomePageBanner banner = HomePageBanner.builder()
-                .url(url)
-                .title(title)
-                .objectType(objectType)
-                .displayOrder(finalDisplayOrder)
-                .build();
-        
-        homePageRepository.save(banner);
-        return "Banner added successfully with display order: " + finalDisplayOrder;
+            .url(addBannerObject.getUrl())
+            .title(addBannerObject.getTitle())
+            .mediaType(addBannerObject.getMediaType())
+            .position(position)
+            .build();
+        return homePageRepository.save(banner);
     }
 
-    @Transactional
-    public String addBannerUrl(AddHomePageBanner addBannerObject) {
-        return addBannerUrl(
-            addBannerObject.getUrl(),
-            addBannerObject.getTitle(),
-            addBannerObject.getObjectType(),
-            addBannerObject.getDisplayOrder()
-        );
-    }
-
-    @Transactional
-    public String deleteBannerUrl(Long id) {
-        Optional<HomePageBanner> bannerOpt = homePageRepository.findById(id);
-        if (bannerOpt.isEmpty()) {
-            throw new HomePageExeption("Banner with ID not found: " + id);
+    private int handleDisplayOrderForNewBanner(Integer position) {
+        int maxDisplayOrder = homePageRepository.findMaxPosition();
+        int pos = position == null || position > maxDisplayOrder ? maxDisplayOrder+1 : position;
+        if(pos <= maxDisplayOrder) {
+            homePageRepository.shiftBannersToRight(pos);
         }
-        
-        HomePageBanner banner = bannerOpt.get();
-        Integer deletedDisplayOrder = banner.getDisplayOrder();
-        
+        return pos;
+    }
+
+    @Transactional
+    public String deleteBannerUrl(Integer id) {
+        HomePageBanner banner = homePageRepository.findById(id)
+            .orElseThrow(() -> new HomePageExeption("Banner not found with id: " + id));
+        homePageRepository.shiftBannersToLeft(banner.getPosition());
         homePageRepository.delete(banner);
-        
-        // Reorder remaining banners to maintain continuity
-        reorderBannersAfterDeletion(deletedDisplayOrder);
-        
         return "Banner deleted successfully";
     }
 
     @Transactional
-    public String editBannerUrls(List<UpdateHomePageBannerDTO> updateList) {
+    public List<HomePageBanner> editBannerUrls(List<UpdateHomePageBannerDTO> updateList) {
+        List<HomePageBanner> updatedBanners = new ArrayList<>();
         for (UpdateHomePageBannerDTO updateDTO : updateList) {
-            editSingleBanner(updateDTO);
+            updatedBanners.add(editSingleBanner(updateDTO));
         }
-        return "Banners updated successfully";
+        return updatedBanners;
     }
-    
-    /*
-     * private methods to handle the banner operations (add, delete, edit)
-     * 
-    */
-    private void editSingleBanner(UpdateHomePageBannerDTO updateDTO) {
-        Optional<HomePageBanner> bannerOpt = homePageRepository.findById(updateDTO.getId());
-        if (bannerOpt.isEmpty()) {
-            throw new HomePageExeption("Banner not found with ID: " + updateDTO.getId());
-        }
-        
-        HomePageBanner banner = bannerOpt.get();
-        Integer oldDisplayOrder = banner.getDisplayOrder();
-        
-        // Update fields if provided
-        if (updateDTO.getUrl() != null) {
-            // Check URL uniqueness only if URL is being changed
-            if (!banner.getUrl().equals(updateDTO.getUrl()) && 
-                homePageRepository.findByUrl(updateDTO.getUrl()).isPresent()) {
-                throw new HomePageExeption("Banner with this URL already exists");
+
+    private HomePageBanner editSingleBanner(UpdateHomePageBannerDTO updateDTO) {
+        HomePageBanner banner = homePageRepository.findById(updateDTO.getId())
+            .orElseThrow(() -> new HomePageExeption("Banner not found with id: " + updateDTO.getId()));
+        if(updateDTO.getUrl() != null) {
+            if(homePageRepository.findByUrl(updateDTO.getUrl()).isPresent()) {
+                throw new HomePageExeption("Banner already exists with url: " + updateDTO.getUrl());
             }
             banner.setUrl(updateDTO.getUrl());
         }
-        
-        if (updateDTO.getTitle() != null) {
+        if(updateDTO.getTitle() != null) {
             banner.setTitle(updateDTO.getTitle());
         }
-        
-        if (updateDTO.getObjectType() != null) {
-            banner.setObjectType(updateDTO.getObjectType());
+        if(updateDTO.getMediaType() != null) {
+            banner.setMediaType(updateDTO.getMediaType());
         }
-        
-        // Handle display order change
-        if (updateDTO.getDisplayOrder() != null && !oldDisplayOrder.equals(updateDTO.getDisplayOrder())) {
-            handleDisplayOrderChange(banner, oldDisplayOrder, updateDTO.getDisplayOrder());
-        }
-        try {
-            homePageRepository.save(banner);
-        } catch (DataIntegrityViolationException e) {
-            throw new HomePageExeption("Failed to update banner due to url conflict");
-        }
+        return homePageRepository.save(banner);
     }
-    
-    private Integer handleDisplayOrderForNewBanner(Integer requestedDisplayOrder) {
-        Integer maxDisplayOrder = homePageRepository.findMaxDisplayOrder();
-        
-        if (requestedDisplayOrder == null) {
-            // If no display order specified, append to the end
-            return maxDisplayOrder + 1;
-        }
-        
-        if (requestedDisplayOrder <= 0) {
-            throw new HomePageExeption("Display order must be greater than 0");
-        }
-        
-        if (requestedDisplayOrder > maxDisplayOrder + 1) {
-            // If requested order is beyond max, place at the end
-            return maxDisplayOrder + 1;
-        }
-        
-        // Shift existing banners with display order >= requestedDisplayOrder
-        List<HomePageBanner> bannersToShift = homePageRepository.findAllWithDisplayOrderGreaterThan(requestedDisplayOrder - 1);
-        for(int i = bannersToShift.size() - 1; i >= 0; i--) {
-            HomePageBanner banner = bannersToShift.get(i);
-            banner.setDisplayOrder(banner.getDisplayOrder() + 1);
-            homePageRepository.saveAndFlush(banner);
-        }
 
-        return requestedDisplayOrder;
-    }
-    
-    private void reorderBannersAfterDeletion(Integer deletedDisplayOrder) {
-        List<HomePageBanner> bannersToReorder = homePageRepository.findAllWithDisplayOrderGreaterThan(deletedDisplayOrder);
-        
-        for (HomePageBanner banner : bannersToReorder) {
-            banner.setDisplayOrder(banner.getDisplayOrder() - 1);
-            homePageRepository.save(banner);
+    @Transactional
+    public String reOrderBanners(List<Integer> newPositions) {
+        // newPositions will look like [5,2,3,1,4] means the banner with id 5 should be the first, 2 should be the second, etc.
+        if(new HashSet<>(newPositions).size()!= newPositions.size()) {
+            throw new HomePageExeption("Duplicate positions are not allowed");
         }
-    }
-    
-    private void handleDisplayOrderChange(HomePageBanner banner, Integer oldDisplayOrder, Integer newDisplayOrder) {
-        Integer maxDisplayOrder = homePageRepository.findMaxDisplayOrder();
-        
-        if (newDisplayOrder <= 0) {
-            throw new HomePageExeption("Display order must be greater than 0");
+        Map<Integer, HomePageBanner> bannerMap = new HashMap<>();
+        for (HomePageBanner banner : homePageRepository.findAll()) {
+            bannerMap.put(banner.getId(), banner);
         }
-        
-        if (newDisplayOrder > maxDisplayOrder) {
-            newDisplayOrder = maxDisplayOrder;
-        }
-        
-        if (oldDisplayOrder.equals(newDisplayOrder)) {
-            return; // No change needed
-        }
-        
-        if (newDisplayOrder < oldDisplayOrder) {
-            // shift banners to the right
-            List<HomePageBanner> bannersToShift = homePageRepository.findAllByDisplayOrderBetween(newDisplayOrder, oldDisplayOrder - 1);
-            for(int i = bannersToShift.size() - 1; i >= 0; i--) {
-                HomePageBanner b = bannersToShift.get(i);
-                b.setDisplayOrder(b.getDisplayOrder() + 1);
-                homePageRepository.saveAndFlush(b);
+        for (int i = 0; i < newPositions.size(); i++) {
+            Integer id = newPositions.get(i);
+            HomePageBanner banner = bannerMap.get(id);
+            if(banner == null) {
+                throw new HomePageExeption("Banner not found with id: " + id);
             }
-        } else {
-            banner.setDisplayOrder(-1);
-            homePageRepository.saveAndFlush(banner);
-            // shift banners to the left
-            List<HomePageBanner> bannersToShift = homePageRepository.findAllByDisplayOrderBetween(oldDisplayOrder + 1, newDisplayOrder);
-            for (HomePageBanner b : bannersToShift) {
-                b.setDisplayOrder(b.getDisplayOrder() - 1);
-                homePageRepository.saveAndFlush(b);
-            }
+            banner.setPosition(i+1);
         }
-        
-        banner.setDisplayOrder(newDisplayOrder);
-        homePageRepository.saveAndFlush(banner);
+        homePageRepository.saveAll(bannerMap.values());
+        return "Banners reordered successfully";
     }
 }

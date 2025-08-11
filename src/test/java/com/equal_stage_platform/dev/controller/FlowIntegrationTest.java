@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -575,12 +576,12 @@ public class FlowIntegrationTest {
 		
 		// Verify banners are sorted by display order
 		for (int i = 0; i < initialBanners.size() - 1; i++) {
-			assertTrue(initialBanners.get(i).getDisplayOrder() <= initialBanners.get(i + 1).getDisplayOrder(),
+			assertTrue(initialBanners.get(i).getPosition() <= initialBanners.get(i + 1).getPosition(),
 				"Banners should be sorted by display order");
 		}
 
 		// Test 2: Add a new banner (admin only)
-		String newBannerJson = "{\"url\":\"https://example.com/new-banner.jpg\",\"title\":\"New Test Banner\",\"objectType\":\"PHOTO\",\"displayOrder\":2}";
+		String newBannerJson = "{\"url\":\"https://example.com/new-banner.jpg\",\"title\":\"New Test Banner\",\"mediaType\":\"PHOTO\",\"position\":2}";
 		MvcResult addBannerResult = mockMvc.perform(post("/HomePage/admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -592,7 +593,8 @@ public class FlowIntegrationTest {
 				.andReturn();
 		
 		String addBannerResponse = addBannerResult.getResponse().getContentAsString();
-		assertTrue(addBannerResponse.contains("Banner added successfully"), "Banner should be added successfully");
+		HomePageBanner addedBanner = objectMapper.readValue(addBannerResponse, HomePageBanner.class);
+		assertEquals(2, addedBanner.getPosition(), "Banner should be added at position 2");
 
 		// Test 3: Try to add banner without admin token (should fail)
 		mockMvc.perform(post("/HomePage/admin/banner/url")
@@ -605,10 +607,13 @@ public class FlowIntegrationTest {
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(newBannerJson))
+				.andDo(result -> {
+					System.out.println(result.getResponse().getContentAsString());
+				})
 				.andExpect(status().isBadRequest());
 
 		// Test 5: Add another banner at the end (no display order specified)
-		String endBannerJson = "{\"url\":\"https://example.com/end-banner.jpg\",\"title\":\"End Banner\",\"objectType\":\"VIDEO\"}";
+		String endBannerJson = "{\"url\":\"https://example.com/end-banner.jpg\",\"title\":\"End Banner\",\"mediaType\":\"VIDEO\"}";
 		mockMvc.perform(post("/HomePage/admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -625,45 +630,48 @@ public class FlowIntegrationTest {
 			new TypeReference<List<HomePageBanner>>() {});
 		
 		assertEquals(6, updatedBanners.size(), "Should have 6 banners after adding 2 new ones");
-
-		// Test 7: Update banners with correct display orders
-		String updateBannersJson = "[{\"id\":" + updatedBanners.get(0).getId() + ",\"displayOrder\":3},{\"id\":" + updatedBanners.get(1).getId() + ",\"displayOrder\":1}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
-				.header("Authorization", "Bearer " + adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(updateBannersJson))
-				.andExpect(status().isOk());
-
-		// Test 8: Update banner with new URL and title
-		String updateSingleBannerJson = "[{\"id\":" + updatedBanners.get(2).getId() + ",\"url\":\"https://example.com/updated-banner.jpg\",\"title\":\"Updated Banner Title\",\"objectType\":\"PHOTO\"}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
+			
+		// Test 7: Update banner with new URL and title
+		int oldBannerPosition = updatedBanners.get(2).getPosition();
+		String updateSingleBannerJson = "[{\"id\":" + updatedBanners.get(2).getId() + ",\"url\":\"https://example.com/updated-banner.jpg\",\"title\":\"Updated Banner Title\",\"mediaType\":\"PHOTO\"}]";
+		MvcResult updateSingleBannerResult = mockMvc.perform(put("/HomePage/admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateSingleBannerJson))
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn();
 
-		// Test 9: Try to update banner without admin token (should fail)
+		String updateSingleBannerResponse = updateSingleBannerResult.getResponse().getContentAsString();
+		List<HomePageBanner> updatedBanners2 = objectMapper.readValue(updateSingleBannerResponse,
+			new TypeReference<List<HomePageBanner>>() {});
+		assertEquals(oldBannerPosition, updatedBanners2.get(0).getPosition(), "Banner should be updated at position 2");
+		assertEquals("https://example.com/updated-banner.jpg", updatedBanners2.get(0).getUrl(), "Banner URL should be updated");
+		assertEquals("Updated Banner Title", updatedBanners2.get(0).getTitle(), "Banner title should be updated");
+		assertEquals(com.equal_stage_platform.dev.model.enums.MediaType.PHOTO, updatedBanners2.get(0).getMediaType(), "Banner media type should be updated");
+
+
+		// Test 8: Try to update banner without admin token (should fail)
 		mockMvc.perform(put("/HomePage/admin/banner/urls")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(updateBannersJson))
+				.content(updateSingleBannerJson))
 				.andExpect(status().isForbidden());
 
-		// Test 10: Delete a banner
-		Long bannerToDeleteId = updatedBanners.get(3).getId();
+		// Test 9: Delete a banner
+		Integer bannerToDeleteId = updatedBanners.get(3).getId();
 		mockMvc.perform(delete("/HomePage/admin/banner/url/" + bannerToDeleteId)
 				.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().isOk());
 
-		// Test 11: Try to delete banner without admin token (should fail)
+		// Test 10: Try to delete banner without admin token (should fail)
 		mockMvc.perform(delete("/HomePage/admin/banner/url/" + bannerToDeleteId))
 				.andExpect(status().isForbidden());
 
-		// Test 12: Try to delete non-existent banner (should fail)
+		// Test 11: Try to delete non-existent banner (should fail)
 		mockMvc.perform(delete("/HomePage/admin/banner/url/99999")
 				.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().isBadRequest());
 
-		// Test 13: Verify final banner count
+		// Test 12: Verify final banner count
 		MvcResult finalBannersResult = mockMvc.perform(get("/HomePage/banner/urls"))
 				.andExpect(status().isOk())
 				.andReturn();
@@ -676,14 +684,61 @@ public class FlowIntegrationTest {
 
 		// Test 14: Verify banners are still sorted by display order
 		for (int i = 0; i < finalBanners.size() - 1; i++) {
-			assertTrue(finalBanners.get(i).getDisplayOrder() <= finalBanners.get(i + 1).getDisplayOrder(),
+			assertTrue((int)finalBanners.get(i).getPosition() == ((int)finalBanners.get(i + 1).getPosition())-1,
 				"Banners should remain sorted by display order after operations");
 		}
+
+		// Test 15: Reorder banners
+		String reorderBannersJson = "[5,2,6,1,4]"; //id 3 was deleted
+		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(reorderBannersJson))
+				.andExpect(status().isOk());
+		MvcResult reorderedBannersResult = mockMvc.perform(get("/HomePage/banner/urls"))
+				.andExpect(status().isOk())
+				.andReturn();
+		
+		String reorderedBannersResponse = reorderedBannersResult.getResponse().getContentAsString();
+		List<HomePageBanner> reorderedBanners = objectMapper.readValue(reorderedBannersResponse,
+			new TypeReference<List<HomePageBanner>>() {});
+		Map<Integer, HomePageBanner> reorderedBannersMap = new HashMap<>();
+		for (HomePageBanner banner : reorderedBanners) {
+			reorderedBannersMap.put(banner.getId(), banner);
+		}
+		assertEquals(1, reorderedBannersMap.get(5).getPosition(), "banner with id 5 should be at position 1");
+		assertEquals(2, reorderedBannersMap.get(2).getPosition(), "banner with id 2 should be at position 2");
+		assertEquals(3, reorderedBannersMap.get(6).getPosition(), "banner with id 6 should be at position 3");
+		assertEquals(4, reorderedBannersMap.get(1).getPosition(), "banner with id 1 should be at position 4");
+		assertEquals(5, reorderedBannersMap.get(4).getPosition(), "banner with id 4 should be at position 5");
+
+		// Test 16: Try to reorder banners with duplicate positions
+		String duplicatePositionsJson = "[2,6,1,4,2]";
+		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(duplicatePositionsJson))
+				.andExpect(status().isBadRequest());
+
+		// Test 17: Try to reorder banners with invalid positions
+		String invalidPositionsJson = "[5,2,3,1,6]";
+		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(invalidPositionsJson))
+				.andExpect(status().isBadRequest());
+
+		// Test 18: Try to reorder banners with negative positions
+		String negativePositionsJson = "[5,2,3,4,-1]";
+		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(negativePositionsJson))
+				.andExpect(status().isBadRequest());
 	}
 
 	@Test
 	public void testHomePageBannerErrorCases() throws Exception {
-		System.exit(0);
 		// Initialize faker system
 		int lecturersCount = 2;
 		int lecturesPerLecturer = 2;
@@ -701,7 +756,7 @@ public class FlowIntegrationTest {
             .filter(user -> user.isAdmin())
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Admin user not found"));
-        String adminToken = registerAndLogin(admin.getEmail(), admin.getPassword());
+        String adminToken = login(admin.getEmail(), admin.getPassword());
 
 		// Get initial banners
 		MvcResult bannersResult = mockMvc.perform(get("/HomePage/banner/urls"))
@@ -712,39 +767,23 @@ public class FlowIntegrationTest {
 		List<HomePageBanner> initialBanners = objectMapper.readValue(bannersResponse,
 			new TypeReference<List<HomePageBanner>>() {});
 
-		// Test 1: Update banners with wrong display orders (duplicate display orders)
-		String wrongDisplayOrdersJson = "[{\"id\":" + initialBanners.get(0).getId() + ",\"displayOrder\":1},{\"id\":" + initialBanners.get(1).getId() + ",\"displayOrder\":1}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
-				.header("Authorization", "Bearer " + adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(wrongDisplayOrdersJson))
-				.andExpect(status().isBadRequest());
-
-		// Test 2: Update banners with invalid display order (zero or negative)
-		String invalidDisplayOrderJson = "[{\"id\":" + initialBanners.get(0).getId() + ",\"displayOrder\":0}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
-				.header("Authorization", "Bearer " + adminToken)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(invalidDisplayOrderJson))
-				.andExpect(status().isBadRequest());
-
-		// Test 3: Update banners with non-existent banner ID
-		String nonExistentBannerJson = "[{\"id\":99999,\"displayOrder\":1}]";
+		// Test 2: Update banners with non-existent banner ID
+		String nonExistentBannerJson = "[{\"id\":99999,\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}]";
 		mockMvc.perform(put("/HomePage/admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(nonExistentBannerJson))
 				.andExpect(status().isBadRequest());
 
-		// Test 4: Add banner with invalid URL format
-		String invalidUrlJson = "{\"url\":\"invalid-url\",\"title\":\"Invalid URL Banner\",\"objectType\":\"PHOTO\",\"displayOrder\":1}";
+		// Test 3: Add banner with invalid URL format
+		String invalidUrlJson = "{\"url\":\"invalid-url\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}";
 		mockMvc.perform(post("/HomePage/admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(invalidUrlJson))
 				.andExpect(status().isBadRequest());
 
-		// Test 5: Add banner with missing required fields
+		// Test 4: Add banner with missing required fields
 		String missingFieldsJson = "{\"url\":\"https://example.com/test.jpg\"}";
 		mockMvc.perform(post("/HomePage/admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
@@ -752,15 +791,15 @@ public class FlowIntegrationTest {
 				.content(missingFieldsJson))
 				.andExpect(status().isBadRequest());
 
-		// Test 6: Update banners with conflicting display orders (same order for different banners)
-		String conflictingOrdersJson = "[{\"id\":" + initialBanners.get(0).getId() + ",\"displayOrder\":2},{\"id\":" + initialBanners.get(1).getId() + ",\"displayOrder\":2},{\"id\":" + initialBanners.get(2).getId() + ",\"displayOrder\":2}]";
+		// Test 5: Update banners with conflicting display orders (same order for different banners)
+		String conflictingOrdersJson = "[{\"id\":" + initialBanners.get(0).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"},{\"id\":" + initialBanners.get(1).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"},{\"id\":" + initialBanners.get(2).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}]";
 		mockMvc.perform(put("/HomePage/admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(conflictingOrdersJson))
 				.andExpect(status().isBadRequest());
 
-		// Test 7: Update banner with duplicate URL
+		// Test 6: Update banner with duplicate URL
 		// First, get a banner to update
 		HomePageBanner firstBanner = initialBanners.get(0);
 		HomePageBanner secondBanner = initialBanners.get(1);
