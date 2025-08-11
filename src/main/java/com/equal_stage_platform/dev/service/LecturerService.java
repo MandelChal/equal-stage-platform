@@ -28,7 +28,6 @@ import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.exception.TopicException;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
-import com.equal_stage_platform.dev.util.TimeUtils;
 import com.equal_stage_platform.dev.model.LecturerTopic;
 
 @Service
