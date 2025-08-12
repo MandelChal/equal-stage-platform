@@ -125,7 +125,7 @@ public class LecturerController {
     }
 
     @Operation(summary = "Get all lecturers (admin)", description = "Retrieves all lecturers. Access: Only users with role ADMIN.")
-    @ApiResponse(responseCode = "200", description = "List of lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "200", description = "List of lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO[].class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/all")
@@ -143,7 +143,7 @@ public class LecturerController {
     }
 
     @Operation(summary = "Get all approved lecturers", description = "Retrieves all approved lecturers. Access: Public (no authentication required).")
-    @ApiResponse(responseCode = "200", description = "List of approved lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "200", description = "List of approved lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO[].class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/all/approved")
@@ -160,7 +160,7 @@ public class LecturerController {
     }
 
     @Operation(summary = "Get lecturer by ID", description = "Retrieves a lecturer by user ID. Access: Public (no authentication required).")
-    @ApiResponse(responseCode = "200", description = "Lecturer found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    @ApiResponse(responseCode = "200", description = "Lecturer found", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO[].class)))
     @ApiResponse(responseCode = "404", description = "Lecturer not found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("search/id/{userId}")

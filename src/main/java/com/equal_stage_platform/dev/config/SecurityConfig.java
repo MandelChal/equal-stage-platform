@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
                 .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/search/**", "/lectures/paginated", "/lectures/topLectures/**", "/lectures/filter/**", "/lectures/paginated/filter/**", "/lectures/filter/**" ).permitAll()
                 //----Home Page Banner endpoints----
-                .requestMatchers("/HomePage/banner/urls").permitAll()
+                .requestMatchers("/HomePage/banner/urls", "/HomePage/about_us").permitAll()
                 .requestMatchers("/HomePage/admin/**").hasRole("ADMIN")
                 //---TargetAudience endpoints---
                 .requestMatchers("/target-audiences/all", "/target-audiences/{id}", "/target-audiences/search/{prefix}").permitAll()

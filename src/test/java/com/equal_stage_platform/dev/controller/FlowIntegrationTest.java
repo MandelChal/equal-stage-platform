@@ -20,6 +20,7 @@ import com.equal_stage_platform.dev.model.TargetAudience;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.HomePageBanner;
+import com.equal_stage_platform.dev.model.AboutUs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -55,6 +56,81 @@ public class FlowIntegrationTest {
 
 		return login(email, password);
 	}
+
+    @Test
+    public void testAboutUsEndpoints() throws Exception {
+        // 1. Initialize faker system
+        int lecturersCount = 2;
+        int lecturesPerLecturer = 1;
+        MvcResult fakerResult = mockMvc.perform(post("/faker/initSystem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"lecturersCount\":\"" + lecturersCount + "\", \"lecturesPerLecturer\":" + lecturesPerLecturer + "}"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String json = fakerResult.getResponse().getContentAsString();
+        Map<String, Set<fakerUserDTO>> usersInfo = objectMapper.readValue(
+            json, new TypeReference<Map<String, Set<fakerUserDTO>>>() {});
+
+        // 2. Login with admin
+        fakerUserDTO admin = usersInfo.get("users").stream()
+            .filter(f -> f.isAdmin())
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Admin user not found"));
+        String adminToken = login(admin.getEmail(), admin.getPassword());
+
+        // 3.a GET /HomePage/about_us (public)
+        MvcResult getRes = mockMvc.perform(get("/HomePage/about_us"))
+                .andExpect(status().isOk())
+                .andReturn();
+        AboutUs aboutUs = objectMapper.readValue(getRes.getResponse().getContentAsString(), AboutUs.class);
+        assertTrue(aboutUs.getText() != null && !aboutUs.getText().isBlank());
+        assertTrue(aboutUs.getImageUrls() != null && !aboutUs.getImageUrls().isEmpty());
+        assertTrue(aboutUs.getVideoUrls() != null && !aboutUs.getVideoUrls().isEmpty());
+
+        // 3.b PUT /HomePage/admin/about_us (authorized)
+        String updateJson = "{\"text\":\"Updated about us text\",\"imageUrls\":[\"https://example.com/img1.jpg\",\"https://example.com/img2.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=abc\"]}";
+        MvcResult putRes = mockMvc.perform(put("/HomePage/admin/about_us")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateJson))
+                .andExpect(status().isOk())
+                .andReturn();
+        AboutUs updated = objectMapper.readValue(putRes.getResponse().getContentAsString(), AboutUs.class);
+        assertEquals("Updated about us text", updated.getText());
+        assertTrue(updated.getImageUrls().contains("https://example.com/img1.jpg"));
+        assertTrue(updated.getVideoUrls().contains("https://youtube.com/watch?v=abc"));
+
+        // 3.c GET again to confirm persistence
+        MvcResult getRes2 = mockMvc.perform(get("/HomePage/about_us"))
+                .andExpect(status().isOk())
+                .andReturn();
+        AboutUs updatedGet = objectMapper.readValue(getRes2.getResponse().getContentAsString(), AboutUs.class);
+        assertEquals("Updated about us text", updatedGet.getText());
+
+        // 3.d PUT /HomePage/admin/about_us (unauthorized)
+        mockMvc.perform(put("/HomePage/admin/about_us")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateJson))
+                .andExpect(status().isForbidden());
+
+        // 3.e POST /HomePage/admin/about_us (authorized) – create another record
+        String createJson = "{\"text\":\"Another about us\",\"imageUrls\":[\"https://example.com/img3.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=def\"]}";
+        MvcResult postRes = mockMvc.perform(post("/HomePage/admin/about_us")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createJson))
+                .andExpect(status().isOk())
+                .andReturn();
+        AboutUs created = objectMapper.readValue(postRes.getResponse().getContentAsString(), AboutUs.class);
+        assertEquals("Another about us", created.getText());
+
+        // 3.f POST /HomePage/admin/about_us (unauthorized)
+        mockMvc.perform(post("/HomePage/admin/about_us")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(createJson))
+                .andExpect(status().isForbidden());
+    }
 
 	private String login(String email, String password) throws Exception {
 		String body = objectMapper.writeValueAsString(Map.of("email", email, "password", password));

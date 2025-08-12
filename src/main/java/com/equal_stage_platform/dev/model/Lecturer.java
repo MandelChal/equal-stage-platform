@@ -109,7 +109,7 @@ public class Lecturer extends BaseAuditableEntity {
         this.phone = lecturerData.getPhone();
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
-        this.rank = 3.5;
+        this.rank = 4.0;
         // Timestamps are now handled automatically by JPA auditing
         this.workingAreas = lecturerData.getWorkingAreas() != null ? new HashSet<>(lecturerData.getWorkingAreas()) : new HashSet<>();
         this.lectures = new HashSet<>(); // will be filled when lecture is enrolled

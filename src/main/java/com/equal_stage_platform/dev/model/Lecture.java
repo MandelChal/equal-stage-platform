@@ -94,7 +94,7 @@ public class Lecture extends BaseAuditableEntity {
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
         this.price = lectureData.getPrice();
-        this.rank = 3.5;
+        this.rank = 4.0;
         // Timestamps are now handled automatically by JPA auditing
         this.imageUrl = lectureData.getImageUrl();
         this.status = lectureData.getLectureStatus();
