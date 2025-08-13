@@ -19,7 +19,7 @@ import com.equal_stage_platform.dev.model.AboutUs;
 import org.springframework.transaction.annotation.Transactional;
 import com.equal_stage_platform.dev.dto.AboutUsDTOs.*;
 import com.equal_stage_platform.dev.dto.ContactUsDTOs.*;
-import com.equal_stage_platform.dev.service.MailService;
+// import com.equal_stage_platform.dev.service.MailService;
 
 @Service
 public class HomePageService {

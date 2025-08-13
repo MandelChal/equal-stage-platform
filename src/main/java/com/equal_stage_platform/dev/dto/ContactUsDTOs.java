@@ -40,6 +40,7 @@ public final class ContactUsDTOs {
     ) {
 
         @AssertTrue(message = "Position must not be blank when organization is provided")
+        @Schema(description = "No Need to add this field to the json body")
         public boolean isPositionRequiredWhenOrganizationProvided() {
             return organization == null || organization.isBlank() || (position != null && !position.isBlank());
         }
