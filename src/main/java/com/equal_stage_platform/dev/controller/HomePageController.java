@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.equal_stage_platform.dev.dto.AddHomePageBanner;
 import com.equal_stage_platform.dev.dto.UpdateHomePageBannerDTO;
 import com.equal_stage_platform.dev.dto.AboutUsDTOs.*;
+import com.equal_stage_platform.dev.dto.ContactUsDTOs.*;
 import com.equal_stage_platform.dev.model.HomePageBanner;
 import com.equal_stage_platform.dev.model.AboutUs;
 import com.equal_stage_platform.dev.service.HomePageService;
@@ -170,13 +171,19 @@ public class HomePageController {
         }
     }
 
-    // @PostMapping("/contact_us")
-    // @Operation(summary = "Contact Us", description = "Sends a contact us message. Access: Public (no authentication required).")
-    // @ApiResponse(responseCode = "200", description = "Contact us message sent successfully")
-    // @ApiResponse(responseCode = "400", description = "Invalid input data")
-    // @ApiResponse(responseCode = "500", description = "Internal server error")
-    // public ResponseEntity<?> contactUs(@Valid @RequestBody ContactUsDTO contactUsDTO) {
-    //     return ResponseEntity.ok(homePageService.contactUs(contactUsDTO));
-    // }
+    @PostMapping("/contact_us")
+    @Operation(summary = "Contact Us", description = "Sends a contact us message. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Contact us message sent successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid input data")
+    @ApiResponse(responseCode = "500", description = "Internal server error")
+    public ResponseEntity<String> contactUs(@Valid @RequestBody ContactUsDTO contactUsDTO) {
+        try {
+            return ResponseEntity.ok(homePageService.contactUs(contactUsDTO));
+        } catch (HomePageExeption e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
 
 }

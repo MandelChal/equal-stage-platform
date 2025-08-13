@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sound.midi.SysexMessage;
-
 import java.util.HashSet;
 
 import org.springframework.stereotype.Service;
@@ -20,14 +18,18 @@ import com.equal_stage_platform.dev.repository.AboutUsRepository;
 import com.equal_stage_platform.dev.model.AboutUs;
 import org.springframework.transaction.annotation.Transactional;
 import com.equal_stage_platform.dev.dto.AboutUsDTOs.*;
+import com.equal_stage_platform.dev.dto.ContactUsDTOs.*;
+import com.equal_stage_platform.dev.service.MailService;
 
 @Service
 public class HomePageService {
     private final HomePageRepository homePageRepository;
     private final AboutUsRepository aboutUsRepository;
-    public HomePageService(HomePageRepository homePageRepository, AboutUsRepository aboutUsRepository) {
+    private final MailService mailService;
+    public HomePageService(HomePageRepository homePageRepository, AboutUsRepository aboutUsRepository, MailService mailService) {
         this.homePageRepository = homePageRepository;
         this.aboutUsRepository = aboutUsRepository;
+        this.mailService = mailService;
     }
 
     @Transactional(readOnly = true)
@@ -150,5 +152,23 @@ public class HomePageService {
             aboutUs.setVideoUrls(updateAboutUsDTO.videoUrls());
         }
         return aboutUsRepository.save(aboutUs);
+    }
+
+    public String contactUs(ContactUsDTO contactUsDTO) {
+        String subject = "צור קשר חדש מאת " + contactUsDTO.name();
+        String body = "==============\n" +
+                     "שם: " + contactUsDTO.name() + "\n" +
+                      "ארגון: " + contactUsDTO.organization() + "\n" +
+                      "תפקיד: " + contactUsDTO.position() + "\n" +
+                      "דואר אלקטרוני: " + contactUsDTO.email() + "\n" +
+                      "טלפון: " + contactUsDTO.phone() + "\n" +
+                      "==============\n" +
+                      "הודעה: \n" + contactUsDTO.message();
+        try{
+            mailService.sendMail("justAnEmail@gmail.com", subject, body);//TODO: change to the actual email
+            return "Contact us message sent successfully";
+        } catch (Exception e) {
+            throw new HomePageExeption("Failed to send contact us message, please try again");
+        }
     }
 }

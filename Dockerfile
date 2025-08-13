@@ -15,5 +15,6 @@ COPY src ./src
 
 CMD ["./mvnw", "spring-boot:run"]
 #./mvnw spring-boot:run
+# than on browser -> http://localhost:8080/swagger-ui/index.html
 #./mvnw test -Dset=fakerTest#testUpdateLecturer
 #./mvnw test -Dset=<filename>#<functionName>
