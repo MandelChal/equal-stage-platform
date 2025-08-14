@@ -19,12 +19,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Lecture response DTO containing lecture details")
 @Data
 public class ResponseLectureDTO {
-    @Schema(description = "List of user UUIDs associated with the lecture", example = "['b3b6a8e2-8c3d-4e2a-9c3d-8e2a8c3d4e2a', 'c4d5e6f7-8g9h-0i1j-2k3l-4m5n6o7p8q9r']")
-    private List<UUID> userIds;
-
     @Schema(description = "Unique ID of the lecture", example = "123")
     private Long lectureId;
 
+    @Schema(description = "List of user UUIDs associated with the lecture", example = "['b3b6a8e2-8c3d-4e2a-9c3d-8e2a8c3d4e2a']")
+    private List<UUID> userLecturerIds;
     @Schema(description = "Is the lecture approved?", example = "\"true\" OR \"false\"")
     private boolean approved;
 
@@ -83,7 +82,7 @@ public class ResponseLectureDTO {
         // Default constructor
     }
     public ResponseLectureDTO(Lecture lecture, Set<LectureInfo> lectureInfos) {
-        this.userIds = lecture.getLecturersIds();
+        this.userLecturerIds = lecture.getLecturersIds();
         this.lectureId = lecture.getLectureId();
         this.approved = lecture.isApproved();
         this.lecturers = lecture.getLecturers().stream()
@@ -114,7 +113,7 @@ public class ResponseLectureDTO {
     public String toString(){
         return "ResponseLectureDTO\n\t"+
                 "lectureId: " + lectureId + "\n\t" +
-                "userIds: " + userIds + "\n\t" +
+                "userLecturerIds: " + userLecturerIds + "\n\t" +
                 "approved: " + approved + "\n\t" +
                 "lecturers: " + lecturers + "\n\t" +
                 "title: " + title + "\n\t" +
