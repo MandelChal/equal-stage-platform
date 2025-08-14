@@ -24,6 +24,7 @@ public class ResponseLectureDTO {
 
     @Schema(description = "List of user UUIDs associated with the lecture", example = "['b3b6a8e2-8c3d-4e2a-9c3d-8e2a8c3d4e2a']")
     private List<UUID> userLecturerIds;
+    
     @Schema(description = "Is the lecture approved?", example = "\"true\" OR \"false\"")
     private boolean approved;
 

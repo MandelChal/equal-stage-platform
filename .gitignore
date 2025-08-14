@@ -53,3 +53,9 @@ src/main/java/com/equal_stage_platform/dev/dto/fakerUserDTO.java
 
 # === ApiResponse DTO ===
 src/main/java/com/equal_stage_platform/dev/dto/ApiResponseDTO.java
+
+# === Logs ===
+logs/
+
+# === .md files ===
+*.md

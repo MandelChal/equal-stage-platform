@@ -24,6 +24,14 @@ public class AuthService {
     private final MailService mailService;
     private final PasswordResetRedisService passwordResetRedisService;
 
+
+ // function without endpoint - just for inner use validation
+    public String deleteAccountByAdmin(String email){
+        User user = userRepository.findByEmail(email).orElseThrow(()->new AuthException("User not found with email :" + email));
+        userRepository.delete(user);
+        return "User deleted successfully";
+    }
+
     @Transactional
     public String register(String email, String password) {
         if (userRepository.findByEmail(email).isPresent()) {

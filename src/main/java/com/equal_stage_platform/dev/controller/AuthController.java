@@ -28,6 +28,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class AuthController {
     private final AuthService authService;
 
+
+    // function without endpoint - just for inner use validation
+    public String deleteAccountByAdmin(String email){
+        return authService.deleteAccountByAdmin(email);
+    }
+    
     @Operation(summary = "Register a new user", description = "Registers a new user. Access: Public (no authentication required).")
     @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
