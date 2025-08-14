@@ -179,4 +179,20 @@ public class Lecturer extends BaseAuditableEntity {
             this.topics.addAll(topics);
         }
     }
+
+    public String LecturerInfo() {
+        return "Lecturer: \n\t" + fullName + "\n" +
+                "userId: \n\t" + userId + "\n" +
+                "email: \n\t" + email + "\n" +
+                "phone: \n\t" + phone + "\n" +
+                "status: " + status;
+    }
+
+    public String LecturerInfoHebrew() {
+        return "מרצה: \n\t" + fullName + "\n" +
+                "מזהה: \n\t" + userId + "\n" +
+                "דואר אלקטרוני: \n\t" + email + "\n" +
+                "טלפון: \n\t" + phone + "\n" +
+                "סטאטוס: \n\t" + (status==LecturerStatus.APPROVED ? "מאושר" : "לא מאושר");
+    }
 }

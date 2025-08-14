@@ -57,22 +57,30 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
            "WHERE l.status = :status " +
            "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
            "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
-           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))")
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))" +
+           "AND (:minRank IS NULL OR l.rank >= :minRank) " +
+           "AND (:maxRank IS NULL OR l.rank <= :maxRank)")
     List<Lecturer> filterLecturers(@Param("status") LecturerStatus status,
                                    @Param("targetAudiences") List<Long> targetAudiences,
                                    @Param("topics") List<Long> topics,
-                                   @Param("workingAreas") List<Area> workingAreas);
+                                   @Param("workingAreas") List<Area> workingAreas,
+                                   @Param("minRank") Double minRank,
+                                   @Param("maxRank") Double maxRank);
 
        // pageable filter lecturers by multiple criteria
     @Query("SELECT DISTINCT l FROM Lecturer l " +
            "WHERE l.status = :status " +
            "AND (:targetAudiences IS NULL OR EXISTS (SELECT 1 FROM l.targetAudiences ta WHERE ta.targetAudienceId IN :targetAudiences)) " +
            "AND (:topics IS NULL OR EXISTS (SELECT 1 FROM l.topics t WHERE t.topicId IN :topics)) " +
-           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))")
+           "AND (:workingAreas IS NULL OR EXISTS (SELECT 1 FROM l.workingAreas wa WHERE wa IN :workingAreas))" +
+           "AND (:minRank IS NULL OR l.rank >= :minRank) " +
+           "AND (:maxRank IS NULL OR l.rank <= :maxRank)")
        Page<Lecturer> filterLecturersPageable(@Param("status") LecturerStatus status,
                                    @Param("targetAudiences") List<Long> targetAudiences,
                                    @Param("topics") List<Long> topics,
                                    @Param("workingAreas") List<Area> workingAreas,
+                                   @Param("minRank") Double minRank,
+                                   @Param("maxRank") Double maxRank,
                                    Pageable pageable);
 
 }

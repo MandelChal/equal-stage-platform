@@ -12,6 +12,7 @@ import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.service.LecturerService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -88,8 +89,12 @@ public class LecturerController {
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PatchMapping("/admin/{lecturerId}/status/{status}")
-    public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status) {
-        return updateLecturerStatus(userId, status, true);
+    public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status, @RequestBody Map<String, String> requestBody) {
+        String note = requestBody.get("note");
+        if(status == LecturerStatus.REJECTED && (note == null || note.isEmpty())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Note is required");
+        }
+        return updateLecturerStatus(userId, status, true, note);
     }
 
     @Operation(summary = "Update lecturer status", description = "Updates the status of the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
@@ -102,19 +107,19 @@ public class LecturerController {
     public ResponseEntity<?> updateLecturerStatus(@RequestHeader("Authorization") String token, @PathVariable LecturerStatus status) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            return updateLecturerStatus(userId, status, false);
+            return updateLecturerStatus(userId, status, false, null);
         } catch (Exception e) {
             // logger.error("Unexpected error while updating lecturer status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
-    private ResponseEntity<?> updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin) {
+    private ResponseEntity<?> updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin, String note) {
         try {
             if(status == null || status == LecturerStatus.PENDING) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid status provided");
             } 
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, isAdmin));
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(userId, status, isAdmin, note));
         } catch (LecturerException e) {
             // logger.error("LecturerException while updating lecturer status", e);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -252,9 +257,11 @@ public class LecturerController {
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/admin/approve/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
-    public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId) {
+    public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId, @RequestBody Map<String, String> requestBody) {
         try {
-            ResponseLecturerDTO lecturer = lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.APPROVED, true);
+            String note = requestBody.get("note");
+            LecturerStatus status = LecturerStatus.APPROVED;
+            ResponseLecturerDTO lecturer = lecturerService.updateLecturerStatus(lecturerId, status, true, note);
             if(authService.getUserRole(lecturerId) != Role.ADMIN) {
                 authService.changeRole(lecturerId, Role.LECTURER);
             }
@@ -274,9 +281,11 @@ public class LecturerController {
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/admin/reject/{lecturerId}")
     // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
-    public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId) {
+    public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId, @RequestBody Map<String, String> requestBody) {
         try {
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, LecturerStatus.REJECTED, true));
+            String note = requestBody.get("note");
+            LecturerStatus status = LecturerStatus.REJECTED;
+            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, status, true, note));
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -431,17 +440,18 @@ public class LecturerController {
     }
 
     @GetMapping("/filter") // how such URL should look like? /lecturers/filter?targetAudience=...&topic=...&workingArea=...&rank=...
-    @Operation(summary = "Filter lecturers by Target audience/Topic/Working area/Rank(future feature)", 
-               description = "Access: Public (no authentication required). Example URL: /lecturers/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER")
+    @Operation(summary = "Filter lecturers by Target audience/Topic/Working area/Min Rank/Max Rank", 
+               description = "Access: Public (no authentication required). Example URL: /lecturers/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER&minRank=1.5&maxRank=5.0")
     @ApiResponse(responseCode = "200", description = "Filtered lecturers", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     public ResponseEntity<?> filterLecturers(@RequestParam(required = false) List<Long> targetAudiences,
                                              @RequestParam(required = false) List<Long> topics,
-                                             @RequestParam(required = false) List<Area> workingAreas){
-                                            //  @RequestParam(required = false) Double rank) {
+                                             @RequestParam(required = false) List<Area> workingAreas,
+                                             @RequestParam(required = false) Double minRank,
+                                             @RequestParam(required = false) Double maxRank) {
         try {
-            return ResponseEntity.ok(lecturerService.filterLecturers(targetAudiences, topics, workingAreas));
+            return ResponseEntity.ok(lecturerService.filterLecturers(targetAudiences, topics, workingAreas, minRank, maxRank));
         } catch (LecturerException e) {
             // logger.error("LecturerException while filtering lecturers", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -452,17 +462,20 @@ public class LecturerController {
     }
 
     @GetMapping("paginated/filter")
-    @Operation(summary = "Get paginated filtered lecturers", description = "Returns a paginated list of filtered lecturers. Access: Public (no authentication required).")
+    @Operation(summary = "Get paginated filtered lecturers by Target audience/Topic/Working area/Min Rank/Max Rank", 
+               description = "Returns a paginated list of filtered lecturers. Access: Public (no authentication required). Example URL: /lecturers/paginated/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER&minRank=1.5&maxRank=5.0")
     @ApiResponse(responseCode = "200", description = "Paginated filtered lecturers", content = @Content(schema = @Schema(implementation = PaginatedResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     public ResponseEntity<?> getPaginatedFilteredLecturers(@RequestBody PaginationRequest request,
                                                            @RequestParam(required = false) List<Long> targetAudiences,
                                                            @RequestParam(required = false) List<Long> topics,
-                                                           @RequestParam(required = false) List<Area> workingAreas) {
+                                                           @RequestParam(required = false) List<Area> workingAreas,
+                                                           @RequestParam(required = false) Double minRank,
+                                                           @RequestParam(required = false) Double maxRank) {
         try {
             PaginatedResponseDTO<ResponseLecturerDTO> paginated = lecturerService.filterLecturersPaginated(
-                request.getPageNum(), request.getPageSize(), targetAudiences, topics, workingAreas);
+                request.getPageNum(), request.getPageSize(), targetAudiences, topics, workingAreas, minRank, maxRank);
             return ResponseEntity.ok(paginated);
         } catch (LecturerException e) {
             // logger.error("LecturerException while fetching paginated filtered lecturers", e);

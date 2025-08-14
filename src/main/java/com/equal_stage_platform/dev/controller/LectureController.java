@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -290,10 +291,11 @@ public class LectureController {
     @ApiResponse(responseCode = "200", description = "Lecture approved", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
     @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    public ResponseEntity<?> approveLecture(@PathVariable Long lectureId) {
+    public ResponseEntity<?> approveLecture(@PathVariable Long lectureId, @RequestBody Map<String, String> requestBody) {
         try {
             boolean isApproved = true;
-            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved));
+            String note = requestBody.get("note");
+            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved, note));
         } catch (LectureException e) {
             // logger.error("LectureException while approving lecture", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -308,10 +310,11 @@ public class LectureController {
     @ApiResponse(responseCode = "200", description = "Lecture rejected", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
     @ApiResponse(responseCode = "404", description = "Lecture not found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    public ResponseEntity<?> rejectLecture(@PathVariable Long lectureId) {
+    public ResponseEntity<?> rejectLecture(@PathVariable Long lectureId, @RequestBody Map<String, String> requestBody) {
         try {
             boolean isApproved = false;
-            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved));
+            String note = requestBody.get("note");
+            return ResponseEntity.ok(lectureService.setApproveLecture(lectureId, isApproved, note));
         } catch (LectureException e) {
             // logger.error("LectureException while rejecting lecture", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -348,20 +351,19 @@ public class LectureController {
     }
     
     @GetMapping("/filter")
-    @Operation(summary = "Filter lectures by PriceRange, Target audiences/Topics/Working areas/Ranks(future feature)", 
-               description = "Access: Public (no authentication required). Example URL: /lectures/filter?priceMin=100&priceMax=500&targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER")
+    @Operation(summary = "Filter lectures by Target audiences/Topics/Working areas/Min Rank/Max Rank", 
+               description = "Access: Public (no authentication required). Example URL: /lectures/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER&minRank=1.5&maxRank=5.0")
     @ApiResponse(responseCode = "200", description = "Filtered lectures", content = @Content(schema = @Schema(implementation = ResponseLectureDTO.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    public ResponseEntity<?> filterLectures(@RequestParam(required = false) int priceMin,
-                                            @RequestParam(required = false) int priceMax,
-                                            @RequestParam(required = false) List<Long> targetAudiences,
+    public ResponseEntity<?> filterLectures(@RequestParam(required = false) List<Long> targetAudiences,
                                             @RequestParam(required = false) List<Long> topics,
-                                            @RequestParam(required = false) List<Area> workingAreas){
-                                            //  @RequestParam(required = false) Double rank) {
+                                            @RequestParam(required = false) List<Area> workingAreas,
+                                            @RequestParam(required = false) Double minRank,
+                                            @RequestParam(required = false) Double maxRank) {
         try {
-            return ResponseEntity.ok(lectureService.filterLectures(priceMin, priceMax, targetAudiences, topics, workingAreas));
+            return ResponseEntity.ok(lectureService.filterLectures(targetAudiences, topics, workingAreas, minRank, maxRank));
         } catch (LectureException e) {
             // logger.error("LectureException while filtering lectures", e);
             if (e.getMessage().contains("price")) {
@@ -375,26 +377,27 @@ public class LectureController {
     }
 
     @GetMapping("/paginated/filter") 
-    @Operation(summary = "Get paginated filtered lectures", description = "Returns a paginated list of filtered lectures based on the provided parameters. Access: Public (no authentication required).")
+    @Operation(summary = "Get paginated filtered lectures by Target audiences/Topics/Working areas/Min Rank/Max Rank", 
+               description = "Returns a paginated list of filtered lectures based on the provided parameters. Access: Public (no authentication required). Example URL: /lectures/paginated/filter?targetAudiences=1,2&topics=3,4&workingAreas=NORTH,CENTER&minRank=1.5&maxRank=5.0")
     @ApiResponse(responseCode = "200", description = "Paginated filtered lectures", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PaginatedResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     public ResponseEntity<?> getPaginatedFilteredLectures(@RequestBody PaginationRequest paginationRequest,
-                                                          @RequestParam(required = false) int priceMin,
-                                                          @RequestParam(required = false) int priceMax,
                                                           @RequestParam(required = false) List<Long> targetAudiences,
                                                           @RequestParam(required = false) List<Long> topics,
-                                                          @RequestParam(required = false) List<Area> workingAreas) {
+                                                          @RequestParam(required = false) List<Area> workingAreas,
+                                                          @RequestParam(required = false) Double minRank,
+                                                          @RequestParam(required = false) Double maxRank) {
         try {
             PaginatedResponseDTO<ResponseLectureDTO> paginated = lectureService.filterLecturesPageable(
                 paginationRequest.getPageNum(), 
                 paginationRequest.getPageSize(),
-                priceMin, 
-                priceMax,
                 targetAudiences, 
                 topics,
-                workingAreas
+                workingAreas,
+                minRank,
+                maxRank
             );
             return ResponseEntity.ok(paginated);
         } catch (LectureException e) {

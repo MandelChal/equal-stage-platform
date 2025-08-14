@@ -57,80 +57,7 @@ public class FlowIntegrationTest {
 		return login(email, password);
 	}
 
-    @Test
-    public void testAboutUsEndpoints() throws Exception {
-        // 1. Initialize faker system
-        int lecturersCount = 2;
-        int lecturesPerLecturer = 1;
-        MvcResult fakerResult = mockMvc.perform(post("/faker/initSystem")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"lecturersCount\":\"" + lecturersCount + "\", \"lecturesPerLecturer\":" + lecturesPerLecturer + "}"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String json = fakerResult.getResponse().getContentAsString();
-        Map<String, Set<fakerUserDTO>> usersInfo = objectMapper.readValue(
-            json, new TypeReference<Map<String, Set<fakerUserDTO>>>() {});
-
-        // 2. Login with admin
-        fakerUserDTO admin = usersInfo.get("users").stream()
-            .filter(f -> f.isAdmin())
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("Admin user not found"));
-        String adminToken = login(admin.getEmail(), admin.getPassword());
-
-        // 3.a GET /HomePage/about_us (public)
-        MvcResult getRes = mockMvc.perform(get("/HomePage/about_us"))
-                .andExpect(status().isOk())
-                .andReturn();
-        AboutUs aboutUs = objectMapper.readValue(getRes.getResponse().getContentAsString(), AboutUs.class);
-        assertTrue(aboutUs.getText() != null && !aboutUs.getText().isBlank());
-        assertTrue(aboutUs.getImageUrls() != null && !aboutUs.getImageUrls().isEmpty());
-        assertTrue(aboutUs.getVideoUrls() != null && !aboutUs.getVideoUrls().isEmpty());
-
-        // 3.b PUT /HomePage/admin/about_us (authorized)
-        String updateJson = "{\"text\":\"Updated about us text\",\"imageUrls\":[\"https://example.com/img1.jpg\",\"https://example.com/img2.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=abc\"]}";
-        MvcResult putRes = mockMvc.perform(put("/HomePage/admin/about_us")
-                .header("Authorization", "Bearer " + adminToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateJson))
-                .andExpect(status().isOk())
-                .andReturn();
-        AboutUs updated = objectMapper.readValue(putRes.getResponse().getContentAsString(), AboutUs.class);
-        assertEquals("Updated about us text", updated.getText());
-        assertTrue(updated.getImageUrls().contains("https://example.com/img1.jpg"));
-        assertTrue(updated.getVideoUrls().contains("https://youtube.com/watch?v=abc"));
-
-        // 3.c GET again to confirm persistence
-        MvcResult getRes2 = mockMvc.perform(get("/HomePage/about_us"))
-                .andExpect(status().isOk())
-                .andReturn();
-        AboutUs updatedGet = objectMapper.readValue(getRes2.getResponse().getContentAsString(), AboutUs.class);
-        assertEquals("Updated about us text", updatedGet.getText());
-
-        // 3.d PUT /HomePage/admin/about_us (unauthorized)
-        mockMvc.perform(put("/HomePage/admin/about_us")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateJson))
-                .andExpect(status().isForbidden());
-
-        // 3.e POST /HomePage/admin/about_us (authorized) – create another record
-        String createJson = "{\"text\":\"Another about us\",\"imageUrls\":[\"https://example.com/img3.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=def\"]}";
-        MvcResult postRes = mockMvc.perform(post("/HomePage/admin/about_us")
-                .header("Authorization", "Bearer " + adminToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
-                .andExpect(status().isOk())
-                .andReturn();
-        AboutUs created = objectMapper.readValue(postRes.getResponse().getContentAsString(), AboutUs.class);
-        assertEquals("Another about us", created.getText());
-
-        // 3.f POST /HomePage/admin/about_us (unauthorized)
-        mockMvc.perform(post("/HomePage/admin/about_us")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(createJson))
-                .andExpect(status().isForbidden());
-    }
+   
 
 	private String login(String email, String password) throws Exception {
 		String body = objectMapper.writeValueAsString(Map.of("email", email, "password", password));
@@ -219,7 +146,9 @@ public class FlowIntegrationTest {
 	// Helper to approve lecturer
 	private void approveLecturer(String token, UUID lecturerId, int expectedStatus) throws Exception {
 		mockMvc.perform(post("/lecturers/admin/approve/" + lecturerId)
-			.header("Authorization", "Bearer " + token))
+			.header("Authorization", "Bearer " + token)
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"note\":\"Approved by test\"}"))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -229,9 +158,9 @@ public class FlowIntegrationTest {
 			.andReturn()
 			.getResponse()
 			.getContentAsString();
-	
+		
 		ResponseLectureDTO dto = objectMapper.readValue(response, ResponseLectureDTO.class);
-	
+		
 		// Assuming ResponseLectureDTO has a getTitle() method that returns the lecture title
 		assertEquals(title, dto.getTitle());
 	}
@@ -248,7 +177,6 @@ public class FlowIntegrationTest {
 					.andExpect(status().is(expectedStatus));
 		}
 	}
-
 	// Add helper for updating lecturer status expecting failure
 	private void updateLecturerStatusExpect(String token, String status, int expectedStatus) throws Exception {
 		mockMvc.perform(patch("/lecturers/update/status/" + status)
@@ -300,7 +228,9 @@ public class FlowIntegrationTest {
 
 	private void approveLecture(String token, Long lectureId, int expectedStatus) throws Exception {
 		mockMvc.perform(patch("/lectures/admin/approve/" + lectureId)
-				.header("Authorization", "Bearer " + token))
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -351,6 +281,24 @@ public class FlowIntegrationTest {
 		testTargetAudienceId = targetAudience.getTargetAudienceId();
 	}
 
+	// Helper to reject a lecture (requires note)
+	private void rejectLecture(String token, Long lectureId, String note, int expectedStatus) throws Exception {
+		mockMvc.perform(patch("/lectures/admin/reject/" + lectureId)
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"note\":\"" + note + "\"}"))
+				.andExpect(status().is(expectedStatus));
+	}
+
+	// Helper to reject a lecturer (requires note)
+	private void rejectLecturer(String token, UUID lecturerId, String note, int expectedStatus) throws Exception {
+		mockMvc.perform(post("/lecturers/admin/reject/" + lecturerId)
+				.header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"note\":\"" + note + "\"}"))
+				.andExpect(status().is(expectedStatus));
+	}
+	
 	@Test
 	public void testFullFlow() throws Exception {
 		// 1. user1 registers
@@ -504,19 +452,25 @@ public class FlowIntegrationTest {
 		// Test paginated filter for lectures
 		testRegularFilterLectures1(lectures);
 
-		// Test paginated filter for lecturers  
+		// Test lecture filters with multiple params
 		testRegularFilterLectures2(lectures);
+
+		// Test regular filter for lecturers
+		testRegularFilterLecturers();
 		
-		// Test paginated filter endpoint
+		// Test paginated filter endpoint for lectures
 		testPaginatedFilterLectures(lectures);
+
+		// Test paginated filter endpoint for lecturers
+		testPaginatedFilterLecturers();
 
 	}
 
 	private void testRegularFilterLectures1(List<ResponseLectureDTO> allLectures) throws Exception {
 		// Instead test regular lectures filter
 		MvcResult res = mockMvc.perform(get("/lectures/filter")
-				.param("priceMin", "100")
-				.param("priceMax", "200"))
+				.param("minRank", "3.5")
+				.param("maxRank", "4.5"))
 				.andExpect(status().isOk())
 				.andReturn();
 
@@ -526,7 +480,7 @@ public class FlowIntegrationTest {
 			new TypeReference<List<ResponseLectureDTO>>() {});
 
 		int expectedSize = (int) allLectures.stream()
-				.filter(lecture -> lecture.getPrice() >= 100 && lecture.getPrice() <= 200)
+				.filter(lecture -> lecture.getRank() >= 3.5 && lecture.getRank() <= 4.5)
 				.count();
 
 		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
@@ -535,8 +489,8 @@ public class FlowIntegrationTest {
 
 	private void testRegularFilterLectures2(List<ResponseLectureDTO> allLectures) throws Exception {
 		MvcResult res = mockMvc.perform(get("/lectures/filter")
-				.param("priceMin", "100")
-				.param("priceMax", "200")
+				.param("minRank", "3.5")
+				.param("maxRank", "4.5")
 				.param("workingAreas", "NORTH,CENTER"))
 				.andExpect(status().isOk())
 				.andReturn();
@@ -547,7 +501,7 @@ public class FlowIntegrationTest {
 			new TypeReference<List<ResponseLectureDTO>>() {});
 
 		int expectedSize = (int) allLectures.stream()
-				.filter(lecture -> lecture.getPrice() >= 100 && lecture.getPrice() <= 200)
+				.filter(lecture -> lecture.getRank() >= 3.5 && lecture.getRank() <= 4.5)
 				.filter(lecture -> lecture.getAreas().stream()
 						.anyMatch(area -> area == Area.NORTH || area == Area.CENTER))
 				.count();
@@ -560,8 +514,8 @@ public class FlowIntegrationTest {
 		MvcResult res = mockMvc.perform(get("/lectures/paginated/filter")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"pageNum\":0,\"pageSize\":5}")
-				.param("priceMin", "100")
-				.param("priceMax", "200"))
+				.param("minRank", "0")
+				.param("maxRank", "5"))
 				.andExpect(status().isOk())
 				.andReturn();
 
@@ -577,8 +531,8 @@ public class FlowIntegrationTest {
 		
 		// 2. Verify that returned lectures are according to the filter
 		for (ResponseLectureDTO lecture : paginatedLectures) {
-			assertEquals(true, lecture.getPrice() >= 100 && lecture.getPrice() <= 200, 
-				"Lecture price should be between 100 and 200, but was: " + lecture.getPrice());
+			assertEquals(true, lecture.getRank() >= 0 && lecture.getRank() <= 5, 
+				"Lecture rank should be between 0 and 5, but was: " + lecture.getRank());
 		}
 		
 		// Verify pagination structure
@@ -590,8 +544,8 @@ public class FlowIntegrationTest {
 		MvcResult res2 = mockMvc.perform(get("/lectures/paginated/filter")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"pageNum\":0,\"pageSize\":3}")
-				.param("priceMin", "0")
-				.param("priceMax", "300")
+				.param("minRank", "0")
+				.param("maxRank", "5")
 				.param("workingAreas", "NORTH,CENTER"))
 				.andExpect(status().isOk())
 				.andReturn();
@@ -606,8 +560,8 @@ public class FlowIntegrationTest {
 		
 		// Verify the extra filters are applied correctly
 		for (ResponseLectureDTO lecture : filteredLectures) {
-			assertEquals(true, lecture.getPrice() >= 0 && lecture.getPrice() <= 300, 
-				"Lecture price should be between 150 and 300, but was: " + lecture.getPrice());
+			assertEquals(true, lecture.getRank() >= 0 && lecture.getRank() <= 5, 
+				"Lecture rank should be between 0 and 5, but was: " + lecture.getRank());
 			assertEquals(true, lecture.getAreas().stream()
 				.anyMatch(area -> area == Area.NORTH || area == Area.CENTER),
 				"Lecture should have NORTH or CENTER area");
@@ -615,6 +569,63 @@ public class FlowIntegrationTest {
 		
 		assertEquals(true, filteredLectures.size() <= 3, "Page size should not exceed 3");
 		assertEquals(3, paginatedResponse2.getPageSize(), "Page size should be 3");
+	}
+
+	private void testRegularFilterLecturers() throws Exception {
+		// Fetch all approved lecturers to compute expected size
+		MvcResult allApprovedRes = mockMvc.perform(get("/lecturers/all/approved"))
+				.andExpect(status().isOk())
+				.andReturn();
+		String allApprovedStr = allApprovedRes.getResponse().getContentAsString();
+		List<ResponseLecturerDTO> allApproved = objectMapper.readValue(allApprovedStr,
+				new TypeReference<List<ResponseLecturerDTO>>() {});
+
+		// Apply filter via endpoint
+		MvcResult res = mockMvc.perform(get("/lecturers/filter")
+				.param("minRank", "3.5")
+				.param("maxRank", "5.0")
+				.param("workingAreas", "NORTH,CENTER"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String response = res.getResponse().getContentAsString();
+		List<ResponseLecturerDTO> filtered = objectMapper.readValue(response,
+				new TypeReference<List<ResponseLecturerDTO>>() {});
+
+		int expectedSize = (int) allApproved.stream()
+				.filter(l -> l.getRank() != null && l.getRank() >= 3.5 && l.getRank() <= 5.0)
+				.filter(l -> l.getWorkingAreas() != null && l.getWorkingAreas().stream()
+						.anyMatch(a -> a.equals("NORTH") || a.equals("CENTER")))
+				.count();
+
+		assertEquals(expectedSize, filtered.size(), "Filtered lecturers count should match expected size");
+	}
+
+	private void testPaginatedFilterLecturers() throws Exception {
+		MvcResult res = mockMvc.perform(get("/lecturers/paginated/filter")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pageNum\":0,\"pageSize\":4}")
+				.param("minRank", "0")
+				.param("maxRank", "5"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String response = res.getResponse().getContentAsString();
+		PaginatedResponseDTO<ResponseLecturerDTO> paginated = objectMapper.readValue(response,
+				objectMapper.getTypeFactory().constructParametricType(
+						PaginatedResponseDTO.class,
+						ResponseLecturerDTO.class));
+
+		List<ResponseLecturerDTO> content = paginated.getContent();
+		for (ResponseLecturerDTO lecturer : content) {
+			if (lecturer.getRank() != null) {
+				assertEquals(true, lecturer.getRank() >= 0 && lecturer.getRank() <= 5,
+						"Lecturer rank should be between 0 and 5, but was: " + lecturer.getRank());
+			}
+		}
+		assertEquals(true, content.size() <= 4, "Page size should not exceed 4");
+		assertEquals(0, paginated.getPageNumber(), "Page number should be 0");
+		assertEquals(4, paginated.getPageSize(), "Page size should be 4");
 	}
 
 	@Test
@@ -887,6 +898,126 @@ public class FlowIntegrationTest {
 				.content(duplicateUrlJson))
 				.andExpect(status().isBadRequest());
 	}
+
+	@Test
+	public void testAboutUsEndpoints() throws Exception {
+		// 1. Initialize faker system
+		int lecturersCount = 2;
+		int lecturesPerLecturer = 1;
+		MvcResult fakerResult = mockMvc.perform(post("/faker/initSystem")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"lecturersCount\":\"" + lecturersCount + "\", \"lecturesPerLecturer\":" + lecturesPerLecturer + "}"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String json = fakerResult.getResponse().getContentAsString();
+		Map<String, Set<fakerUserDTO>> usersInfo = objectMapper.readValue(
+			json, new TypeReference<Map<String, Set<fakerUserDTO>>>() {});
+
+		// 2. Login with admin
+		fakerUserDTO admin = usersInfo.get("users").stream()
+			.filter(f -> f.isAdmin())
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("Admin user not found"));
+		String adminToken = login(admin.getEmail(), admin.getPassword());
+
+		// 3.a GET /HomePage/about_us (public)
+		MvcResult getRes = mockMvc.perform(get("/HomePage/about_us"))
+				.andExpect(status().isOk())
+				.andReturn();
+		AboutUs aboutUs = objectMapper.readValue(getRes.getResponse().getContentAsString(), AboutUs.class);
+		assertTrue(aboutUs.getText() != null && !aboutUs.getText().isBlank());
+		assertTrue(aboutUs.getImageUrls() != null && !aboutUs.getImageUrls().isEmpty());
+		assertTrue(aboutUs.getVideoUrls() != null && !aboutUs.getVideoUrls().isEmpty());
+
+		// 3.b PUT /HomePage/admin/about_us (authorized)
+		String updateJson = "{\"text\":\"Updated about us text\",\"imageUrls\":[\"https://example.com/img1.jpg\",\"https://example.com/img2.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=abc\"]}";
+		MvcResult putRes = mockMvc.perform(put("/HomePage/admin/about_us")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+				.andExpect(status().isOk())
+				.andReturn();
+		AboutUs updated = objectMapper.readValue(putRes.getResponse().getContentAsString(), AboutUs.class);
+		assertEquals("Updated about us text", updated.getText());
+		assertTrue(updated.getImageUrls().contains("https://example.com/img1.jpg"));
+		assertTrue(updated.getVideoUrls().contains("https://youtube.com/watch?v=abc"));
+
+		// 3.c GET again to confirm persistence
+		MvcResult getRes2 = mockMvc.perform(get("/HomePage/about_us"))
+				.andExpect(status().isOk())
+				.andReturn();
+		AboutUs updatedGet = objectMapper.readValue(getRes2.getResponse().getContentAsString(), AboutUs.class);
+		assertEquals("Updated about us text", updatedGet.getText());
+
+		// 3.d PUT /HomePage/admin/about_us (unauthorized)
+		mockMvc.perform(put("/HomePage/admin/about_us")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(updateJson))
+				.andExpect(status().isForbidden());
+
+		// 3.e POST /HomePage/admin/about_us (authorized) – create another record
+		String createJson = "{\"text\":\"Another about us\",\"imageUrls\":[\"https://example.com/img3.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=def\"]}";
+		MvcResult postRes = mockMvc.perform(post("/HomePage/admin/about_us")
+				.header("Authorization", "Bearer " + adminToken)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createJson))
+				.andExpect(status().isOk())
+				.andReturn();
+		AboutUs created = objectMapper.readValue(postRes.getResponse().getContentAsString(), AboutUs.class);
+		assertEquals("Another about us", created.getText());
+
+		// 3.f POST /HomePage/admin/about_us (unauthorized)
+		mockMvc.perform(post("/HomePage/admin/about_us")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createJson))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+public void testAdminApproveAndRejectFlow() throws Exception {
+	// 1. create user
+	String email = "flowuser+" + UUID.randomUUID() + "@example.com";
+	String token = registerAndLogin(email, "Password!1234");
+
+	// 2. make him admin
+	registerAdmin(token, 200);
+
+	// prerequisites for lecturer/lecture creation
+	setupTopicsAndTargetAudiences(token);
+
+	// 3. create lecturer
+	String lecturerEmail = "lecturerA@example.com";
+	createLecturer(token, "Flow", "User", "Bio", "Tel Aviv", lecturerEmail, "0500000000",
+			"https://example.com/image.jpg", Set.of(Area.CENTER), 201);
+
+	// 4. approve him
+	Set<ResponseLecturerDTO> pendLects = getPendingLecturers(token);
+	UUID lecturerId = pendLects.iterator().next().getUserId();
+	approveLecturer(token, lecturerId, 200);
+
+	// 5. create lecture
+	String lectureTitle = "Flow Lecture A";
+	createLecture(token, lectureTitle, "Desc", 60, 150, LectureStatus.ON_AIR, true,
+			"https://example.com/lecture.jpg", 201);
+
+	// find just-created pending lecture
+	Set<ResponseLectureDTO> pendingLectures = getPendingLectures(token);
+	Long lectureId = pendingLectures.stream()
+		.filter(l -> lectureTitle.equals(l.getTitle()))
+		.findFirst()
+		.orElseThrow()
+		.getLectureId();
+
+	// 6. approve lecture
+	approveLecture(token, lectureId, 200);
+
+	// 7. reject lecture
+	rejectLecture(token, lectureId, "Not suitable", 200);
+
+	// 8. reject lecturer
+	rejectLecturer(token, lecturerId, "Profile not acceptable", 200);
+}
 }
 // running test in terminal:
 // ./mvnw test -Dtest=FlowIntegrationTest

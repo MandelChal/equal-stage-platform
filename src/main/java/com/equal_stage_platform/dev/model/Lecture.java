@@ -192,4 +192,20 @@ public class Lecture extends BaseAuditableEntity {
             }
         }
     }
+
+    public String LectureInfo() {
+        return "Lecture: \n\t" + title + "\n" +
+                "lectureId: \n\t" + lectureId + "\n" +
+                "description: \n\t" + description + "\n" +
+                "duration: \n\t" + duration + "\n" +
+                "approved: \n\t" + (approved ? "True" : "False");
+    }
+
+    public String LectureInfoHebrew() {
+        return "הרצאה: \n\t" + title + "\n" +
+                "מזהה ההרצאה: \n\t" + lectureId + "\n" +
+                "תיאור ההרצאה: \n\t" + description + "\n" +
+                "משך ההרצאה: \n\t" + duration + "\n" +
+                "סטאטוס: \n\t" + (approved ? "מאושר" : "לא מאושר");
+    }
 }

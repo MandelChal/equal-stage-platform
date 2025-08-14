@@ -36,11 +36,13 @@ public class LecturerService {
     private final LectureRepository lectureRepository;
     private final AuthService authService;
     private final LecturerTopicService topicService;
-    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService) {
+    private final MailService mailService;
+    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService, MailService mailService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.authService = authService;
         this.topicService = topicService;
+        this.mailService = mailService;
     }
 
     // ---------------------- create / update / retrieve methods ----------------------
@@ -166,7 +168,7 @@ public class LecturerService {
      * @return A boolean indicating whether the update was successful.
      */
     @Transactional
-    public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin) {
+    public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin, String note) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
         if(!isAdmin && lecturer.getStatus().equals(LecturerStatus.PENDING)) {
@@ -175,6 +177,19 @@ public class LecturerService {
         }
         lecturer.setStatus(status);
         lecturerRepository.save(lecturer);
+        if(isAdmin){
+            if (status == LecturerStatus.REJECTED && (note == null || note.isEmpty())) {
+                throw new LecturerException("Note is required");
+            }
+            String email = lecturer.getEmail();
+            String subject = "עדכון סטאטוס מרצה";
+            String text = (status == LecturerStatus.APPROVED ? "אנו שמחים לבשר לך שהפרופיל שלך אושר בהצלחה" : "סטאטוס מרצה: לא מאושר \n --------------------\nהתייחסות החלטה: \n" + note) + "\n\n" + lecturer.LecturerInfoHebrew();
+            try{
+                mailService.sendMail(email, subject, text);
+            }catch(Exception e){
+                // logger.error("Error sending email to lecturer", e);
+            }
+        }
         return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
     }
 
@@ -409,7 +424,9 @@ public class LecturerService {
     @Transactional(readOnly = true)
     public List<ResponseLecturerDTO> filterLecturers(List<Long> targetAudiences, 
                                                     List<Long> topics, 
-                                                    List<Area> workingAreas) {
+                                                    List<Area> workingAreas,
+                                                    Double minRank,
+                                                    Double maxRank) {
         // Convert empty lists to null for proper query handling
         List<Long> targetAudienceIds = (targetAudiences != null && targetAudiences.isEmpty()) ? null : targetAudiences;
         List<Long> topicIds = (topics != null && topics.isEmpty()) ? null : topics;
@@ -419,7 +436,9 @@ public class LecturerService {
             LecturerStatus.APPROVED, // Only approved lecturers
             targetAudienceIds, 
             topicIds, 
-            areas
+            areas,
+            minRank,
+            maxRank
         );
 
         if (lecturers.isEmpty()) {
@@ -446,13 +465,17 @@ public class LecturerService {
                                                                               int pageSize,
                                                                               List<Long> targetAudiences, 
                                                                               List<Long> topics, 
-                                                                              List<Area> workingAreas) {
+                                                                              List<Area> workingAreas,
+                                                                              Double minRank,
+                                                                              Double maxRank){
         PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
         Page<Lecturer> page = lecturerRepository.filterLecturersPageable(
             LecturerStatus.APPROVED, // Only approved lecturers
             targetAudiences, 
             topics, 
-            workingAreas, 
+            workingAreas,
+            minRank,
+            maxRank,
             pageRequest
         );
 

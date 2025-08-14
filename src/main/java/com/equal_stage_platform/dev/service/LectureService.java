@@ -41,13 +41,15 @@ public class LectureService {
     private final UserRepository userRepository;
     private final LectureTopicService topicService;
     private final TargetAudienceService targetAudienceService;
+    private final MailService mailService;
     public LectureService(LectureRepository lectureRepository, LecturerRepository lecturerRepository, UserRepository userRepository, 
-                          LectureTopicService topicService, TargetAudienceService targetAudienceService) {
+                          LectureTopicService topicService, TargetAudienceService targetAudienceService, MailService mailService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.userRepository = userRepository;
         this.topicService = topicService;
         this.targetAudienceService = targetAudienceService;
+        this.mailService = mailService;
     }
     // ---------------------- create / update / retrieve methods ----------------------
     /**
@@ -362,11 +364,20 @@ public class LectureService {
      * @throws LectureException if the lecture is not found.
      */
     @Transactional
-    public ResponseLectureDTO setApproveLecture(Long lectureId, boolean approve) {
+    public ResponseLectureDTO setApproveLecture(Long lectureId, boolean approve, String note) {
+        if(!approve && (note == null || note.isEmpty())) {
+            throw new LectureException("Note is required");
+        }
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         lecture.setApproved(approve);
         lectureRepository.save(lecture);
+        for (Lecturer lecturer : lecture.getLecturers()) {
+            String email = lecturer.getEmail();
+            String subject = "עדכון סטאטוס הרצאה";
+            String text = (approve ? "אנו שמחים לבשר לך שההרצאה " + lecture.getTitle() + " אושרה בהצלחה" : "סטאטוס הרצאה: לא מאושר \n --------------------\nהתייחסות החלטה: \n" + note) + "\n\n" + lecture.LectureInfoHebrew();
+            mailService.sendMail(email, subject, text);
+        }
         return new ResponseLectureDTO(lecture);
     }
     /**
@@ -458,23 +469,21 @@ public class LectureService {
      * Filters lectures based on price range, target audiences, topics, and working areas.
      * Only returns approved lectures with ON_AIR status and approved lecturers.
      *
-     * @param priceMin Minimum price filter (optional)
-     * @param priceMax Maximum price filter (optional)
      * @param targetAudiences List of target audience IDs to filter by (optional)
      * @param topics List of topic IDs to filter by (optional)
      * @param workingAreas List of working areas to filter by (optional)
      * @return A list of ResponseLectureDTO containing filtered lectures
      */
     @Transactional(readOnly = true)
-    public List<ResponseLectureDTO> filterLectures(Integer priceMin, Integer priceMax, 
-                                                  List<Long> targetAudiences, 
+    public List<ResponseLectureDTO> filterLectures(List<Long> targetAudiences, 
                                                   List<Long> topics, 
-                                                  List<Area> workingAreas) {
-        // Validate price range
-        if (priceMin != null && priceMax != null && priceMin > priceMax) {
-            throw new LectureException("Minimum price cannot be greater than maximum price");
+                                                  List<Area> workingAreas,
+                                                  Double minRank,
+                                                  Double maxRank) {
+        // Validate Rank range
+        if (minRank != null && maxRank != null && minRank > maxRank) {
+            throw new LectureException("Minimum rank cannot be greater than maximum rank");
         }
-
         // Convert empty lists to null for proper query handling
         List<Long> targetAudienceIds = (targetAudiences != null && targetAudiences.isEmpty()) ? null : targetAudiences;
         List<Long> topicIds = (topics != null && topics.isEmpty()) ? null : topics;
@@ -483,11 +492,11 @@ public class LectureService {
         List<Lecture> lectures = lectureRepository.filterLectures(
             LectureStatus.ON_AIR, 
             true, // approved
-            priceMin, 
-            priceMax, 
             targetAudienceIds, 
             topicIds, 
-            areas
+            areas,
+            minRank,
+            maxRank
         );
 
         System.out.println("DEBUG: Found " + lectures.size() + " lectures from repository query");
@@ -527,13 +536,14 @@ public class LectureService {
      */
     @Transactional(readOnly = true)
     public PaginatedResponseDTO<ResponseLectureDTO> filterLecturesPageable(int pageNum, int pageSize, 
-                                                                           Integer priceMin, Integer priceMax, 
                                                                            List<Long> targetAudiences,
                                                                             List<Long> topics,
-                                                                            List<Area> workingAreas) {
-        // Validate price range
-        if (priceMin != null && priceMax != null && priceMin > priceMax) {
-            throw new LectureException("Minimum price cannot be greater than maximum price");
+                                                                            List<Area> workingAreas,
+                                                                            Double minRank,
+                                                                            Double maxRank) {
+        // Validate Rank range
+        if (minRank != null && maxRank != null && minRank > maxRank) {
+            throw new LectureException("Minimum rank cannot be greater than maximum rank");
         }
 
         // Convert empty lists to null for proper query handling
@@ -545,11 +555,11 @@ public class LectureService {
         Page<Lecture> page = lectureRepository.filterLecturesPageable(
             LectureStatus.ON_AIR, 
             true, // approved
-            priceMin, 
-            priceMax, 
             targetAudienceIds, 
             topicIds, 
-            areas, 
+            areas,
+            minRank,
+            maxRank,
             pageRequest
         );
 
