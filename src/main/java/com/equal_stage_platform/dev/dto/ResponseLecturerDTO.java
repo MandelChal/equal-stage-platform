@@ -49,7 +49,7 @@ public class ResponseLecturerDTO {
     @Schema(description = "Set of working areas of the lecturer", example = "[CENTER, NORTH, SOUTH] OR [ONLINE_ONLY]")
     private Set<String> workingAreas; // Assuming working areas are represented as strings for simplicity
     @Schema(description = "Set of lectures given by the lecturer")
-    private Set<ResponseLectureDTO> lectures;
+    private Set<LectureInfo> lectures;
     @Schema(description = "List of external links associated with the lecturer", example = "[{\"url\": \"https://example.com\", \"description\": \"Personal website\"}]")
     private Set<ExternalLinkDTO> externalLinks;
     @Schema(description = "Set of video links associated with the lecture", example = "[{\"url\": \"https://example.com/video\", \"description\": \"Lecture Video\"}]")
@@ -94,7 +94,7 @@ public class ResponseLecturerDTO {
             .map(Area::name)
             .collect(Collectors.toSet());
         this.lectures = lectures.stream()
-            .map(lecture -> new ResponseLectureDTO(lecture))
+            .map(lecture -> new LectureInfo(lecture))
             .collect(Collectors.toSet());
         this.externalLinks = lecturer.getExternalLinks().stream()
             .map(link -> new ExternalLinkDTO(link.getUrl(), link.getDescription()))
@@ -107,3 +107,4 @@ public class ResponseLecturerDTO {
     }
 
 }
+

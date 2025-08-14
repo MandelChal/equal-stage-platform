@@ -1,9 +1,10 @@
 package com.equal_stage_platform.dev.repository;
 import com.equal_stage_platform.dev.model.Lecture;
+import com.equal_stage_platform.dev.model.LectureTopic;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.Area;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -67,4 +68,8 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
                                    @Param("minRank") Double minRank,
                                    @Param("maxRank") Double maxRank,
                                    Pageable pageable);
+
+    // get lectures by topic
+    @Query("SELECT l FROM Lecture l JOIN l.topics t WHERE t = :topic")
+    List<Lecture> findByTopics(@Param("topic") LectureTopic topic);
 }

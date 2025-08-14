@@ -108,7 +108,7 @@ public class LectureController {
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/{lectureId}")
     public ResponseEntity<?> getLectureById(@PathVariable Long lectureId) {
-        return getLectureByIdAdmin(lectureId, false);
+        return getLectureById(lectureId, false);
     }
 
     @Operation(summary = "Get lecture by ID (admin)", description = "Retrieves a lecture by its ID for admin users. Access: Only users with role ADMIN.")
@@ -117,10 +117,10 @@ public class LectureController {
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/{lectureId}")
     public ResponseEntity<?> getLectureByIdAdmin(@PathVariable Long lectureId) {
-        return getLectureByIdAdmin(lectureId, true);
+        return getLectureById(lectureId, true);
     }
 
-    private ResponseEntity<?> getLectureByIdAdmin(Long lectureId, boolean isAdmin) {
+    private ResponseEntity<?> getLectureById(Long lectureId, boolean isAdmin) {
         try {
             return ResponseEntity.ok(lectureService.getLectureById(lectureId, isAdmin));
         } catch (LectureException e) {

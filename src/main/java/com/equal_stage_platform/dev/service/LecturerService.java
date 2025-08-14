@@ -37,12 +37,14 @@ public class LecturerService {
     private final AuthService authService;
     private final LecturerTopicService topicService;
     private final MailService mailService;
-    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService, MailService mailService) {
+    private final LectureService lectureService;
+    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService, MailService mailService, LectureService lectureService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
         this.authService = authService;
         this.topicService = topicService;
         this.mailService = mailService;
+        this.lectureService = lectureService;
     }
 
     // ---------------------- create / update / retrieve methods ----------------------
@@ -133,7 +135,7 @@ public class LecturerService {
         }
         return lecturer.getLectures()
                 .stream()
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(lectureService::getResponseLectureDTO)
                 .toList();
     }
 
@@ -157,7 +159,7 @@ public class LecturerService {
                 .filter(lecture -> lecture.getLectureId().equals(lectureId))
                 .filter(lecture -> lecture.getStatus() == LectureStatus.ON_AIR)
                 .findFirst()
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(lectureService::getResponseLectureDTO)
                 .orElseThrow(() -> new LecturerException("Lecture not found with ID: " + lectureId));
     }
     /**

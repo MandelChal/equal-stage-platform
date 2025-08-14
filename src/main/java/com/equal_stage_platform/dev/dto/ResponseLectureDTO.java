@@ -4,9 +4,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import com.equal_stage_platform.dev.model.Lecture;
 import com.equal_stage_platform.dev.model.LectureTopic;
+import com.equal_stage_platform.dev.model.Lecturer;
+import com.equal_stage_platform.dev.model.LecturerTopic;
 import com.equal_stage_platform.dev.model.TargetAudience;
 import com.equal_stage_platform.dev.model.enums.Area;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,8 +28,8 @@ public class ResponseLectureDTO {
     @Schema(description = "Is the lecture approved?", example = "\"true\" OR \"false\"")
     private boolean approved;
 
-    @Schema(description = "Names of the lecturers", example = "['John Doe', 'Jane Smith']")
-    private List<String> lecturerName;
+    @Schema(description = "Set of LecturerInfo objects associated with the lecture", exampleClasses = LecturerInfo.class, implementation = LecturerInfo.class)
+    private Set<LecturerInfo> lecturers;
 
     @Schema(description = "Title of the lecture", example = "Introduction to AI")
     private String title;
@@ -70,14 +75,20 @@ public class ResponseLectureDTO {
 
     @Schema(description = "Set of Target Audience objects associated with the lecture")
     private Set<TargetAudience> targetAudiences;
+
+    @Schema(description = "Set of Similar Lectures based on same Lecture topic", exampleClasses = LectureInfo.class, implementation = LectureInfo.class)
+    private Set<LectureInfo> similarLectures;
+    
     public ResponseLectureDTO() {
         // Default constructor
     }
-    public ResponseLectureDTO(Lecture lecture) {
+    public ResponseLectureDTO(Lecture lecture, Set<LectureInfo> lectureInfos) {
         this.userIds = lecture.getLecturersIds();
         this.lectureId = lecture.getLectureId();
         this.approved = lecture.isApproved();
-        this.lecturerName = lecture.getLecturersNames();
+        this.lecturers = lecture.getLecturers().stream()
+            .map(LecturerInfo::new)
+            .collect(Collectors.toSet());
         this.title = lecture.getTitle();
         this.description = lecture.getDescription();
         this.duration = lecture.getDuration();
@@ -97,6 +108,7 @@ public class ResponseLectureDTO {
         this.areas = lecture.getWorkingAreas();
         this.topics = lecture.getTopics();
         this.targetAudiences = lecture.getTargetAudiences();
+        this.similarLectures = lectureInfos;
     }
     @Override
     public String toString(){
@@ -104,7 +116,7 @@ public class ResponseLectureDTO {
                 "lectureId: " + lectureId + "\n\t" +
                 "userIds: " + userIds + "\n\t" +
                 "approved: " + approved + "\n\t" +
-                "lecturerName: " + lecturerName + "\n\t" +
+                "lecturers: " + lecturers + "\n\t" +
                 "title: " + title + "\n\t" +
                 "description: " + description + "\n\t" +
                 "duration: " + duration + "\n\t" +
@@ -119,5 +131,27 @@ public class ResponseLectureDTO {
                 "areas: " + areas + "\n\t" +
                 "topics: " + topics + "\n\t" +
                 "targetAudiences: " + targetAudiences;
+    }
+}
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+class LecturerInfo {
+	private UUID userId;
+	private String lecturerName;
+    private String lecturerImage;
+    private String lecturerBio;
+    private Set<LecturerTopic> lecturerTopics;
+    private Double lecturerRank;
+
+
+    public LecturerInfo(Lecturer lecturer) {
+        this.userId = lecturer.getUserId();
+        this.lecturerName = lecturer.getFullName();
+        this.lecturerImage = lecturer.getImageUrl();
+        this.lecturerBio = lecturer.getBio();
+        this.lecturerTopics = lecturer.getTopics();
+        this.lecturerRank = lecturer.getRank();
     }
 }

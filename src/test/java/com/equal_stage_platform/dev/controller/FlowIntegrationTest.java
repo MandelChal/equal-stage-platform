@@ -422,6 +422,8 @@ public class FlowIntegrationTest {
 		UUID newUser3LecturerId = newLecturers3.iterator().next().getUserId();
 		approveLecturer(user1Token, newUser3LecturerId, 200);
 		deleteLecturerByAdmin(user1Token, newUser3LecturerId, 200);
+
+		System.out.println("testFullFlow passed");	
 	}
 
 	@Test
@@ -464,6 +466,8 @@ public class FlowIntegrationTest {
 		// Test paginated filter endpoint for lecturers
 		testPaginatedFilterLecturers();
 
+		System.out.println("testFakerSystemAndFiltering passed");
+
 	}
 
 	private void testRegularFilterLectures1(List<ResponseLectureDTO> allLectures) throws Exception {
@@ -485,6 +489,7 @@ public class FlowIntegrationTest {
 
 		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
 
+		System.out.println("testRegularFilterLectures1 passed");
 	}
 
 	private void testRegularFilterLectures2(List<ResponseLectureDTO> allLectures) throws Exception {
@@ -507,6 +512,8 @@ public class FlowIntegrationTest {
 				.count();
 
 		assertEquals(expectedSize, lectures.size(), "Filtered lectures count should match expected size");
+
+		System.out.println("testRegularFilterLectures2 passed");
 	}
 
 	private void testPaginatedFilterLectures(List<ResponseLectureDTO> allLectures) throws Exception {
@@ -569,6 +576,7 @@ public class FlowIntegrationTest {
 		
 		assertEquals(true, filteredLectures.size() <= 3, "Page size should not exceed 3");
 		assertEquals(3, paginatedResponse2.getPageSize(), "Page size should be 3");
+		System.out.println("testPaginatedFilterLectures passed");
 	}
 
 	private void testRegularFilterLecturers() throws Exception {
@@ -599,6 +607,7 @@ public class FlowIntegrationTest {
 				.count();
 
 		assertEquals(expectedSize, filtered.size(), "Filtered lecturers count should match expected size");
+		System.out.println("testRegularFilterLecturers passed");
 	}
 
 	private void testPaginatedFilterLecturers() throws Exception {
@@ -626,6 +635,7 @@ public class FlowIntegrationTest {
 		assertEquals(true, content.size() <= 4, "Page size should not exceed 4");
 		assertEquals(0, paginated.getPageNumber(), "Page number should be 0");
 		assertEquals(4, paginated.getPageSize(), "Page size should be 4");
+		System.out.println("testPaginatedFilterLecturers passed");
 	}
 
 	@Test
@@ -822,6 +832,7 @@ public class FlowIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(negativePositionsJson))
 				.andExpect(status().isBadRequest());
+		System.out.println("testHomePage passed");
 	}
 
 	@Test
@@ -897,6 +908,7 @@ public class FlowIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(duplicateUrlJson))
 				.andExpect(status().isBadRequest());
+		System.out.println("testHomePageBannerErrorCases passed");
 	}
 
 	@Test
@@ -972,9 +984,10 @@ public class FlowIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(createJson))
 				.andExpect(status().isForbidden());
+		System.out.println("testAboutUsEndpoints passed");
 	}
 
-	@Test
+@Test
 public void testAdminApproveAndRejectFlow() throws Exception {
 	// 1. create user
 	String email = "flowuser+" + UUID.randomUUID() + "@example.com";
@@ -1017,7 +1030,14 @@ public void testAdminApproveAndRejectFlow() throws Exception {
 
 	// 8. reject lecturer
 	rejectLecturer(token, lecturerId, "Profile not acceptable", 200);
+	System.out.println("testAdminApproveAndRejectFlow passed");
 }
 }
-// running test in terminal:
-// ./mvnw test -Dtest=FlowIntegrationTest
+// command to run tests in terminal:
+// ./mvnw -q -Dtest='FlowIntegrationTest#testAdminApproveAndRejectFlow' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testHomePageBannerErrorCases' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testAboutUsEndpoints' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testFullFlow' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testFakerSystemAndFiltering' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testHomePage' test
+

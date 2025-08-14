@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 // ---- class imports ----
 import com.equal_stage_platform.dev.dto.CreateLectureDTO;
+import com.equal_stage_platform.dev.dto.LectureInfo;
 import com.equal_stage_platform.dev.dto.ResponseLectureDTO;
 import com.equal_stage_platform.dev.dto.ResponseLecturerDTO;
 import com.equal_stage_platform.dev.dto.UpdateLectureDTO;
@@ -74,7 +76,7 @@ public class LectureService {
         lecturer.enrollLecture(lecture);
         lecturerRepository.save(lecturer);
         // no need to save lecture, it will be saved by the lecturer (Spring Data JPA Optimization)
-        return new ResponseLectureDTO(lecture);
+        return getResponseLectureDTO(lecture);
     }
 
     /**
@@ -84,7 +86,7 @@ public class LectureService {
      * @return A ResponseLectureDTO containing the lecture's details.
      */
     @Transactional(readOnly = true)
-    public ResponseLectureDTO getLectureById(Long lectureId, boolean isAdmin) {
+    public Set<ResponseLectureDTO> getLectureById(Long lectureId, boolean isAdmin) {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new LectureException("Lecture not found with ID: " + lectureId));
         if (!isAdmin){
@@ -92,7 +94,7 @@ public class LectureService {
                 throw new LectureException("Lecture not found with ID: " + lectureId);
             }
         }
-        return new ResponseLectureDTO(lecture);
+        return Set.of(getResponseLectureDTO(lecture));
     }
 
     /**
@@ -113,7 +115,7 @@ public class LectureService {
         }
         lecture.setStatus(status);
         lectureRepository.save(lecture);
-        return new ResponseLectureDTO(lecture);
+        return getResponseLectureDTO(lecture);
     }
 
     /**
@@ -140,7 +142,7 @@ public class LectureService {
     public List<ResponseLectureDTO> getAllLecturesAdmin() {
         return lectureRepository.findAll()
                 .stream()
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(this::getResponseLectureDTO)
                 .toList();
     }
 
@@ -159,7 +161,7 @@ public class LectureService {
         }
         return lectures.stream()
                 .filter(this::hasApprovedLecturers)
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(this::getResponseLectureDTO)
                 .toList();
     }
 
@@ -183,7 +185,7 @@ public class LectureService {
             if(!hasOnAirStatus(lecture) || !hasApprovedLecturers(lecture))
                 throw new LectureException("Lecture not found with title: " + title);
         }
-        return new ResponseLectureDTO(lecture);
+        return getResponseLectureDTO(lecture);
 
     }
 
@@ -212,7 +214,7 @@ public class LectureService {
         }
         return lectures.stream()
                 .filter(this::hasApprovedLecturers)
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(this::getResponseLectureDTO)
                 .toList();
     }
 
@@ -255,7 +257,7 @@ public class LectureService {
         List<Lecture> lectures = lectureRepository.findByStatusAndApproved(status, approved);
         return lectures.stream()
                 .filter(this::hasApprovedLecturers)
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(this::getResponseLectureDTO)
                 .toList();
     }
 
@@ -279,7 +281,7 @@ public class LectureService {
             lectures = lectures.subList(0, limit);
         }
         return lectures.stream()
-                .map(lecture -> new ResponseLectureDTO(lecture))
+                .map(this::getResponseLectureDTO)
                 .toList();
     }        
 
@@ -299,12 +301,12 @@ public class LectureService {
         List<ResponseLectureDTO> content = null;
         if(isAdmin){
             content = page.getContent().stream()
-                .map(ResponseLectureDTO::new)
+                .map(this::getResponseLectureDTO)
                 .toList();
         }else{
             content = page.getContent().stream()
                 .filter(this::hasApprovedLecturers)
-                .map(ResponseLectureDTO::new)
+                .map(this::getResponseLectureDTO)
                 .toList();
         }
         return PaginatedResponseDTO.<ResponseLectureDTO>builder()
@@ -333,7 +335,7 @@ public class LectureService {
         return lectureRepository.findByTitleStartingWith(prefix)
             .stream()
             .filter(lecture -> lecture.isApproved() && lecture.getStatus() == LectureStatus.ON_AIR && hasApprovedLecturers(lecture))
-            .map(ResponseLectureDTO::new)
+            .map(this::getResponseLectureDTO)
             .toList();
     }
 
@@ -350,7 +352,7 @@ public class LectureService {
             throw new LectureException("No pending lectures found");
         }
         return lectures.stream()
-                .map(ResponseLectureDTO::new)
+                .map(this::getResponseLectureDTO)
                 .toList();
     }
 
@@ -378,9 +380,9 @@ public class LectureService {
             String text = (approve ? "אנו שמחים לבשר לך שההרצאה " + lecture.getTitle() + " אושרה בהצלחה" : "סטאטוס הרצאה: לא מאושר \n --------------------\nהתייחסות החלטה: \n" + note) + "\n\n" + lecture.LectureInfoHebrew();
             mailService.sendMail(email, subject, text);
         }
-        return new ResponseLectureDTO(lecture);
+        return getResponseLectureDTO(lecture);
     }
-    /**
+    /** 
      * Updates an existing lecture.
      *
      * @param userId The ID of the user requesting the update.
@@ -397,7 +399,7 @@ public class LectureService {
         }
         updateLecture(lecture, lectureData);
         lectureRepository.save(lecture);
-        return new ResponseLectureDTO(lecture);
+        return getResponseLectureDTO(lecture);
     }
 
     private void updateLecture(Lecture lecture, UpdateLectureDTO lectureData) {
@@ -514,7 +516,7 @@ public class LectureService {
                                      " (lecturers count: " + lecture.getLecturers().size() + ")");
                     return hasApproved;
                 })
-                .map(ResponseLectureDTO::new)
+                .map(this::getResponseLectureDTO)
                 .toList();
         
         System.out.println("DEBUG: Final filtered count: " + filteredLectures.size());
@@ -570,7 +572,7 @@ public class LectureService {
         // Additional filter for approved lecturers
         List<ResponseLectureDTO> content = page.getContent().stream()
                 .filter(this::hasApprovedLecturers)
-                .map(ResponseLectureDTO::new)
+                .map(this::getResponseLectureDTO)
                 .toList();
 
         return PaginatedResponseDTO.<ResponseLectureDTO>builder()
@@ -581,5 +583,39 @@ public class LectureService {
             .totalPages(page.getTotalPages())
             .last(page.isLast())
             .build();
+    }
+
+    /**
+     * Returns a set of LectureInfo objects for similar lectures based on the same topic.
+     * The similar lectures are filtered by:
+     * (1) Not the same lecture
+     * (2) Approved
+     * (3) ON_AIR status
+     * (4) Has approved lecturers
+     * 
+     * @param lecture The lecture to get similar lectures for.
+     * @return A set of LectureInfo objects for similar lectures.
+     */
+    private Set<LectureInfo> getSimilarLectures(Lecture lecture) {
+        long lectureId = lecture.getLectureId();
+        Set<Lecture> similarLectures = new HashSet<>();
+        for (LectureTopic topic : lecture.getTopics()) {
+            similarLectures.addAll(lectureRepository.findByTopics(topic));
+        } 
+        return similarLectures.stream()
+            .filter(l -> l.getLectureId() != lectureId && l.isApproved() && l.getStatus() == LectureStatus.ON_AIR && hasApprovedLecturers(l))
+            .map(LectureInfo::new)
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Returns a ResponseLectureDTO for a given lecture.
+     * 
+     * @param lecture The lecture to get a ResponseLectureDTO for.
+     * @return A ResponseLectureDTO for the given lecture.
+     */
+    public ResponseLectureDTO getResponseLectureDTO(Lecture lecture){
+        Set<LectureInfo> similarLectures = getSimilarLectures(lecture);
+        return new ResponseLectureDTO(lecture, similarLectures);
     }
 }
