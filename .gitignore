@@ -56,6 +56,15 @@ src/main/java/com/equal_stage_platform/dev/dto/ApiResponseDTO.java
 
 # === Logs ===
 logs/
+*.log
+*.gz
 
 # === .md files ===
 *.md
+
+# === 2nd main ===
+src/main/java/com/equal_stage_platform/dev/EqualStagePlatformApplication2.java
+
+# === 2nd docker-compose.yml ===
+docker-compose.override.yml
+
