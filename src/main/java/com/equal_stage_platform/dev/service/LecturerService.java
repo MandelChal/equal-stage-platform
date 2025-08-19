@@ -29,6 +29,8 @@ import com.equal_stage_platform.dev.exception.TopicException;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
 import com.equal_stage_platform.dev.model.LecturerTopic;
+import com.equal_stage_platform.dev.model.User;
+import com.equal_stage_platform.dev.exception.AuthException;
 
 @Service
 public class LecturerService {
@@ -56,12 +58,40 @@ public class LecturerService {
      */
     @Transactional
     public ResponseLecturerDTO createLecturer(UUID userId, CreateLecturerDTO lecturerData){
+        
+        User user = getUserById(userId);
+        checkIfUserIsLecturer(user);
         Set<LecturerTopic> topics = getTopicsFromIds(lecturerData.getLecturerTopicsIds());
+
         // save the lecturer to the database
-        Lecturer lecturer = lecturerRepository.save(new Lecturer(userId,lecturerData, topics));
+        Lecturer lecturer = lecturerRepository.save(new Lecturer(user, lecturerData, topics));
+
         // return the saved lecturer as a ResponseLecturerDTO
         return new ResponseLecturerDTO(lecturer, lecturer.getLectures());
     }
+
+    private void checkIfUserIsLecturer(User user){
+        if(user.getRole() == Role.LECTURER){
+            throw new LecturerException("User is already a lecturer");
+        }
+    }
+
+    private User getUserById(UUID userId){
+        try{
+            return authService.getUserById(userId);
+        }catch(AuthException e){
+            throw new LecturerException(e.getMessage());
+        }
+    }
+
+    // no need at the moment
+    // private User getUserByEmail(String email){
+    //     try{
+    //         return authService.getUserByEmail(email);
+    //     }catch(AuthException e){
+    //         throw new LecturerException(e.getMessage());
+    //     }
+    // }
 
     /**
      * Retrieves all lecturers from the system.
@@ -228,17 +258,12 @@ public class LecturerService {
 
         if (lecturerData.getFirstName() != null) {
             lecturer.setFirstName(lecturerData.getFirstName());
-            lecturer.setFullName(lecturerData.getFirstName() + " " + lecturer.getLastName());
         }
         if (lecturerData.getLastName() != null) {
             lecturer.setLastName(lecturerData.getLastName());
-            lecturer.setFullName(lecturer.getFirstName() + " " + lecturerData.getLastName());
         }
         if (lecturerData.getBio() != null) {
             lecturer.setBio(lecturerData.getBio());
-        }
-        if (lecturerData.getCity() != null) {
-            lecturer.setCity(lecturerData.getCity());
         }
         if (lecturerData.getEmail() != null) {
             lecturer.setEmail(lecturerData.getEmail());
@@ -377,7 +402,7 @@ public class LecturerService {
                 lectureRepository.save(lecture);
             }
         }
-        authService.changeRole(userId, Role.USER);
+        authService.changeRole(userId, Role.CLIENT);
         lecturerRepository.delete(lecturer);
         return "Lecturer with userId: " + userId + " has been deleted successfully.";       
     }

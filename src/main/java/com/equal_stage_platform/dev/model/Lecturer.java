@@ -1,5 +1,6 @@
 package com.equal_stage_platform.dev.model;
 import com.equal_stage_platform.dev.dto.CreateLecturerDTO;
+import com.equal_stage_platform.dev.exception.LecturerException;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LectureStatus;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
@@ -27,26 +28,16 @@ public class Lecturer extends BaseAuditableEntity {
     @Column(name = "user_id", nullable = false, unique = true, columnDefinition = "UUID")
     private UUID userId;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
+    @OneToOne(optional = false)
+    @MapsId
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(name = "bio", columnDefinition = "TEXT")
     private String bio;
 
-    @Column(name = "city", nullable = false)
-    private String city;
-
     @Column(name = "email", nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "phone", nullable = false, unique = true)
-    private String phone;
+    private String email; // email field will not be as user email in order to let lecturer enter work email
 
     @Column(name = "rank", nullable = false)
     private Double rank;
@@ -98,15 +89,14 @@ public class Lecturer extends BaseAuditableEntity {
     @EqualsAndHashCode.Exclude
     private Set<LecturerTopic> topics;
     
-    public Lecturer(UUID userId, CreateLecturerDTO lecturerData, Set<LecturerTopic> topics) {
-        this.userId = userId;
-        this.firstName = lecturerData.getFirstName();
-        this.lastName = lecturerData.getLastName();
-        this.fullName = lecturerData.getFirstName() + " " + lecturerData.getLastName();
+    public Lecturer(User user, CreateLecturerDTO lecturerData, Set<LecturerTopic> topics) {
+        // this.userId = userId;
+        if(user == null){
+            throw new LecturerException("User cannot be null");
+        }
+        this.user = user;
         this.bio = lecturerData.getBio();
-        this.city = lecturerData.getCity();
-        this.email = lecturerData.getEmail();
-        this.phone = lecturerData.getPhone();
+        this.email = lecturerData.getEmail() != null ? lecturerData.getEmail() : user.getEmail();
         this.imageUrl = lecturerData.getImageUrl();
         this.status = LecturerStatus.PENDING; // Default status when created
         this.rank = 4.0;
@@ -148,11 +138,39 @@ public class Lecturer extends BaseAuditableEntity {
         }
     }
 
-    // Full name helper method
+    // ============ helper function to interact with user object ============
+    // ============ getters ============
     public String getFullName() {
-        return firstName + " " + lastName;
+        return user.getFirstName() + " " + user.getLastName();
     }
-    
+
+    public String getPhone() {
+        return user.getPhone();
+    }
+
+    public String getFirstName() {
+        return user.getFirstName();
+    }
+
+    public String getLastName() {
+        return user.getLastName();
+    }
+
+    // ============ setters ============
+    public void setFirstName(String firstName) {
+        user.setFirstName(firstName);
+    }
+
+    public void setLastName(String lastName) {
+        user.setLastName(lastName);
+    }
+
+    public void setPhone(String phone) {
+        user.setPhone(phone);
+    }
+
+    // ============ helper function to interact with targetAudiences object ============
+
     private void enrollTargetAudiences(Set<TargetAudience> targetAudiences) {
         if (targetAudiences != null) {
             if (this.targetAudiences == null) {
@@ -181,18 +199,18 @@ public class Lecturer extends BaseAuditableEntity {
     }
 
     public String LecturerInfo() {
-        return "Lecturer: \n\t" + fullName + "\n" +
+        return "Lecturer: \n\t" + getFullName() + "\n" +
                 "userId: \n\t" + userId + "\n" +
                 "email: \n\t" + email + "\n" +
-                "phone: \n\t" + phone + "\n" +
+                "phone: \n\t" + getPhone() + "\n" +
                 "status: " + status;
     }
 
     public String LecturerInfoHebrew() {
-        return "מרצה: \n\t" + fullName + "\n" +
+        return "מרצה: \n\t" + getFullName() + "\n" +
                 "מזהה: \n\t" + userId + "\n" +
                 "דואר אלקטרוני: \n\t" + email + "\n" +
-                "טלפון: \n\t" + phone + "\n" +
+                "טלפון: \n\t" + getPhone() + "\n" +
                 "סטאטוס: \n\t" + (status==LecturerStatus.APPROVED ? "מאושר" : "לא מאושר");
     }
 }

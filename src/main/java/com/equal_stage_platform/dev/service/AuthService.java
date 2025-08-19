@@ -1,5 +1,7 @@
 package com.equal_stage_platform.dev.service;
 
+import com.equal_stage_platform.dev.dto.RegisterRequest;
+import com.equal_stage_platform.dev.dto.ResponseLoginDTO;
 import com.equal_stage_platform.dev.exception.AuthException;
 import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.model.enums.Role;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -33,19 +36,26 @@ public class AuthService {
     }
 
     @Transactional
-    public String register(String email, String password) {
-        if (userRepository.findByEmail(email).isPresent()) {
+    public String register(RegisterRequest registerRequest) {
+        if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new AuthException("Email is taken");
         }
 
-        User user = new User(email, passwordEncoder.encode(password));
+        // encrypt password in the request object
+        encryptPassword(registerRequest);
+        // create user object
+        User user = new User(registerRequest);
 
         userRepository.save(user);
         return "User registered successfully";
     }
 
+    private void encryptPassword(RegisterRequest registerRequest) {
+        registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+    }
+
     @Transactional(readOnly = true)
-    public Map<String, String> login(String email, String password) {
+    public ResponseLoginDTO login(String email, String password) {
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new AuthException("User not found"));
 
@@ -55,7 +65,7 @@ public class AuthService {
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
-        return Map.of("token", accessToken, "refresh", refreshToken);
+        return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()));
     }
 
     @Transactional(readOnly = true)
@@ -234,5 +244,17 @@ public class AuthService {
         // Delete the user
         userRepository.delete(user);
         return "User deleted successfully";
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+            .orElseThrow(() -> new AuthException("User with email: " + email + " not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public User getUserById(UUID userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new AuthException("User with userId: " + userId + " not found"));
     }
 }

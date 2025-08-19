@@ -34,10 +34,10 @@ public class SecurityConfig {
                 //----Auth endpoints----
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth/reset-pass-token").permitAll()
                 .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")  // Only admins can create new admins
-                .requestMatchers("/api/auth/refresh", "/api/auth/logout", "/api/auth/reset-pass").hasAnyRole("USER", "ADMIN", "LECTURER")
-                .requestMatchers("/api/auth/delete-account").hasAnyRole("USER")
+                .requestMatchers("/api/auth/refresh", "/api/auth/logout", "/api/auth/reset-pass").hasAnyRole("CLIENT", "ADMIN", "LECTURER")
+                .requestMatchers("/api/auth/delete-account").hasAnyRole("CLIENT")
                 //----Lecturer endpoints----
-                .requestMatchers("/lecturers/create").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/lecturers/create").hasAnyRole("CLIENT", "ADMIN")
                 .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
                 .requestMatchers("/lecturers/{lecturerId}/lectures/{lectureId}", "/lecturers/{lecturerId}/lectures/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated", "/lecturers/filter/**", "/lecturers/paginated/filter/**", "/lecturers/filter/**").permitAll()
                 .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")

@@ -82,7 +82,6 @@ public class ResponseLecturerDTO {
         this.firstName = lecturer.getFirstName();
         this.lastName = lecturer.getLastName();
         this.bio = lecturer.getBio();
-        this.city = lecturer.getCity();
         this.email = lecturer.getEmail();
         this.phone = lecturer.getPhone();
         this.imageUrl = lecturer.getImageUrl();

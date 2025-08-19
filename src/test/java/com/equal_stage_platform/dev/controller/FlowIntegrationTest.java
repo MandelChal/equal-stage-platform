@@ -47,11 +47,19 @@ public class FlowIntegrationTest {
     private Long testLecturerTopicId;
 
 	// Helper to register and login, returns JWT token
-	private String registerAndLogin(String email, String password) throws Exception {
-		// Register
+	private String registerAndLogin(String firstName, String lastName, String email, String phone, String password) throws Exception { // 
+		// Register with all required fields for new RegisterRequest DTO
+		// Generate unique phone number based on email hash to avoid conflicts
+		String registerJson = "{" +
+			"\"firstName\":\"" + firstName + "\"," +
+			"\"lastName\":\"" + lastName + "\"," +
+			"\"email\":\"" + email + "\"," +
+			"\"phone\":\"" + phone + "\"," +
+			"\"password\":\"" + password + "\"" +
+			"}";
 		mockMvc.perform(post("/api/auth/register")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"" + email + "\", \"password\":\"" + password + "\"}"))
+				.content(registerJson))
 				.andExpect(status().isCreated());
 
 		return login(email, password);
@@ -92,21 +100,26 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to create lecturer
-    private void createLecturer(String token, String firstName, String lastName, String bio, String city, String email, String phone, String imageUrl, Set<Area> workingAreas, int expectedStatus) throws Exception {
+    private void createLecturer(String token, String bio, String email, String imageUrl, Set<Area> workingAreas, int expectedStatus) throws Exception {
+		String workingAreasJson = workingAreas.stream()
+			.map(area -> "\"" + area.name() + "\"")
+			.reduce((a, b) -> a + "," + b)
+			.orElse("");
+		
+		String lecturerJson = "{" +
+			"\"bio\":\"" + bio + "\"," +
+			"\"email\":\"" + email + "\"," +
+			"\"imageUrl\":\"" + imageUrl + "\"," +
+			"\"workingAreas\":[" + workingAreasJson + "]," +
+			"\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}]," +
+			"\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}]," +
+			"\"lecturerTopicsIds\":[" + testLecturerTopicId + "]" +
+			"}";
+		
 		mockMvc.perform(post("/lecturers/create")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-                .content("{\"firstName\":\"" + firstName + "\", " +
-                "\"lastName\":\"" + lastName + "\", " +
-                "\"bio\":\"" + bio + "\", " +
-                "\"city\":\"" + city + "\", " +
-                "\"email\":\"" + email + "\", " +
-                "\"phone\":\"" + phone + "\", " +
-                "\"imageUrl\":\"" + imageUrl + "\", " +
-                "\"workingAreas\":[\"" + workingAreas.iterator().next().name() + "\"], " +
-                "\"externalLinks\":[{\"url\":\"https://example.com\",\"description\":\"Test external link\"}], " +
-                "\"videoLinks\":[{\"url\":\"https://youtube.com/test\",\"description\":\"Test video link\"}], " +
-                "\"lecturerTopicsIds\":[" + testLecturerTopicId + "]}"))
+                .content(lecturerJson))
 				.andExpect(status().is(expectedStatus));
 	}
 
@@ -302,7 +315,7 @@ public class FlowIntegrationTest {
 	@Test
 	public void testFullFlow() throws Exception {
 		// 1. user1 registers
-		String user1Token = registerAndLogin("user1@example.com", "Password!1234");
+		String user1Token = registerAndLogin("John", "Doe", "user1@example.com", "0501234567", "Password!1234");
 
 		// 2. user1 registers as admin
 		registerAdmin(user1Token, 200);
@@ -311,7 +324,7 @@ public class FlowIntegrationTest {
 		setupTopicsAndTargetAudiences(user1Token);
 
 		// 3. user2 registers
-		String user2Token = registerAndLogin("user2@example.com", "Password!4321");
+		String user2Token = registerAndLogin("Jane", "Smith", "user2@example.com", "0502345678", "Password!4321");
 
 		// 4. user2 tries to make himself admin (should fail)
 		registerAdmin(user2Token, 403);
@@ -323,7 +336,7 @@ public class FlowIntegrationTest {
 		makeAdmin(user1Token, "user2@example.com", 200);
 
 		// 7. user1 creates a lecturer
-		createLecturer(user1Token, "John", "Doe", "I am a lecturer", "New York", "john.doe@example.com", "0542354687", "https://example.com/image.jpg", Set.of(Area.CENTER), 201);
+		createLecturer(user1Token, "I am a lecturer", "john.doe@example.com", "https://example.com/image.jpg", Set.of(Area.CENTER), 201);
 
 		// 7.1 user1 creates a lecture before approval (should fail, assuming 403)
 		createLecture(user1Token, "Lecture1_user1", "Description of Lecture1_user1", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image3.jpg", 403);
@@ -338,7 +351,7 @@ public class FlowIntegrationTest {
 		}
 
 		// 9. user2 creates a lecturer
-		createLecturer(user2Token, "Jane", "Smith", "I am a lecturer", "Los Angeles", "jane.smith@example.com", "0598654321", "https://example.com/image2.jpg", Set.of(Area.NORTH), 201);
+		createLecturer(user2Token, "I am a lecturer", "jane.smith@example.com", "https://example.com/image2.jpg", Set.of(Area.NORTH), 201);
 
 		// 9.1 user2 creates a lecture before approval (should fail, assuming 403)
 		createLecture(user2Token, "Lecture1_user2", "Description of Lecture1_user2", 60, 100, LectureStatus.ON_AIR, true, "https://example.com/image4.jpg", 403);
@@ -362,10 +375,10 @@ public class FlowIntegrationTest {
 
 		// === Begin user3 flow ===
 		// 1. user3 registers
-		String user3Token = registerAndLogin("user3@example.com", "Password!5678");
+		String user3Token = registerAndLogin("Alice", "Wonder", "user3@example.com", "0503456789", "Password!5678");
 
 		// 2. user3 creates lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3", "Chicago", "alice.wonder@example.com", "0555123457", "https://example.com/image5.jpg", Set.of(Area.SOUTH), 201);
+		createLecturer(user3Token, "I am user3", "alice.wonder@example.com", "https://example.com/image5.jpg", Set.of(Area.SOUTH), 201);
 
 		// 3. user1 approves pending lecturers (user3)
 		Set<ResponseLecturerDTO> lecturers3 = getPendingLecturers(user1Token);
@@ -414,7 +427,7 @@ public class FlowIntegrationTest {
 		deleteLecturerBySelf(user3Token, 200);
 
 		// 17. user3 creates a new lecturer
-		createLecturer(user3Token, "Alice", "Wonder", "I am user3 again", "Chicago", "alice.wonder2@example.com", "0555123457", "https://example.com/image6.jpg", Set.of(Area.SOUTH), 201);
+		createLecturer(user3Token, "I am user3 again", "alice.wonder2@example.com", "https://example.com/image6.jpg", Set.of(Area.SOUTH), 201);
 
 		// 18. user1 deletes user3 lecturer profile
 		// Get the new lecturer id
@@ -991,7 +1004,7 @@ public class FlowIntegrationTest {
 public void testAdminApproveAndRejectFlow() throws Exception {
 	// 1. create user
 	String email = "flowuser+" + UUID.randomUUID() + "@example.com";
-	String token = registerAndLogin(email, "Password!1234");
+	String token = registerAndLogin("Flow", "User", email, "0504567890", "Password!1234");
 
 	// 2. make him admin
 	registerAdmin(token, 200);
@@ -1001,8 +1014,7 @@ public void testAdminApproveAndRejectFlow() throws Exception {
 
 	// 3. create lecturer
 	String lecturerEmail = "lecturerA@example.com";
-	createLecturer(token, "Flow", "User", "Bio", "Tel Aviv", lecturerEmail, "0500000000",
-			"https://example.com/image.jpg", Set.of(Area.CENTER), 201);
+	createLecturer(token, "Bio", lecturerEmail, "https://example.com/image.jpg", Set.of(Area.CENTER), 201);
 
 	// 4. approve him
 	Set<ResponseLecturerDTO> pendLects = getPendingLecturers(token);
@@ -1034,10 +1046,10 @@ public void testAdminApproveAndRejectFlow() throws Exception {
 }
 }
 // command to run tests in terminal:
-// ./mvnw -q -Dtest='FlowIntegrationTest#testAdminApproveAndRejectFlow' test
-// ./mvnw -q -Dtest='FlowIntegrationTest#testHomePageBannerErrorCases' test
-// ./mvnw -q -Dtest='FlowIntegrationTest#testAboutUsEndpoints' test
+
 // ./mvnw -q -Dtest='FlowIntegrationTest#testFullFlow' test
 // ./mvnw -q -Dtest='FlowIntegrationTest#testFakerSystemAndFiltering' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testAdminApproveAndRejectFlow' test
 // ./mvnw -q -Dtest='FlowIntegrationTest#testHomePage' test
-
+// ./mvnw -q -Dtest='FlowIntegrationTest#testAboutUsEndpoints' test
+// ./mvnw -q -Dtest='FlowIntegrationTest#testHomePageBannerErrorCases' test

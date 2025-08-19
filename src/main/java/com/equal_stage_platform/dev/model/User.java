@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.equal_stage_platform.dev.dto.RegisterRequest;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.model.enums.UserStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,15 +31,27 @@ public class User extends BaseAuditableEntity {
     @Column(name = "user_id", columnDefinition = "UUID")
     private UUID userId;
 
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
+
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
     @Column(name = "email", nullable = false, unique = true)
     private String email;
+
+    @Column(name = "phone", nullable = false, unique = true)
+    private String phone;
 
     @Column(name = "password", nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private Role role; // USER, ADMIN
+    private Role role; // CLIENT, SUPER_ADMIN, ADMIN, LECTURER
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -52,11 +65,15 @@ public class User extends BaseAuditableEntity {
     @Column(name = "next_password_change", nullable = false)
     private LocalDateTime nextPasswordChange;
 
-    public User(String email, String password) {
-        this.email = email;
-        this.password = password;
+    public User(RegisterRequest registerRequest) {
+        this.firstName = registerRequest.getFirstName();
+        this.lastName = registerRequest.getLastName();
+        this.fullName = registerRequest.getFirstName() + " " + registerRequest.getLastName();
+        this.phone = registerRequest.getPhone();
+        this.email = registerRequest.getEmail();
+        this.password = registerRequest.getPassword();
         // Timestamps are now handled automatically by JPA auditing
-        this.role = Role.USER;
+        this.role = Role.CLIENT;
         this.status = UserStatus.ACTIVE;
         this.nextPasswordChange = TimeUtils.nowInIsrael().plusMonths(4);
         this.pastPasswords = new HashSet<>();
@@ -93,4 +110,15 @@ public class User extends BaseAuditableEntity {
         }
         return true; // New password is valid
     }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+        this.fullName = firstName + " " + this.lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+        this.fullName = this.firstName + " " + lastName;
+    }
+
 }

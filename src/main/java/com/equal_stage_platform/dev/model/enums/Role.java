@@ -1,7 +1,8 @@
 package com.equal_stage_platform.dev.model.enums;
 
 public enum Role {
-    USER,
+    CLIENT,
     ADMIN,
+    SUPER_ADMIN,
     LECTURER
 }

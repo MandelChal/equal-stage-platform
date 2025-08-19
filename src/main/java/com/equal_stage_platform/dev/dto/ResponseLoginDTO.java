@@ -13,11 +13,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Response DTO containing login details")
 public class ResponseLoginDTO {
     @Schema(description = "Access token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
     private String token;
     @Schema(description = "Refresh token")
     private String refreshToken;
-    @Schema(description = "Role of the user", example = "USER")
+    @Schema(description = "Set of roles of the user", example = "[USER, ADMIN]")
     private Set<Role> roles;
 }

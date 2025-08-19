@@ -42,7 +42,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
         try {
-            String result = authService.register(registerRequest.getEmail(), registerRequest.getPassword());
+            String result = authService.register(registerRequest);
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
@@ -60,8 +60,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            Map<String, String> tokens = authService.login(loginRequest.getEmail(), loginRequest.getPassword());
-            return ResponseEntity.ok(tokens);
+            return ResponseEntity.ok(authService.login(loginRequest.getEmail(), loginRequest.getPassword()));
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {

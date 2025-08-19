@@ -16,7 +16,7 @@ import org.springframework.data.domain.Pageable;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 
 public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     // Find lecturers by their status
@@ -26,15 +26,16 @@ public interface LecturerRepository extends JpaRepository<Lecturer, UUID> {
     // Search lecturer by email
     Optional<Lecturer> findByEmail(String email);
 
-    // Search lecturer by phone
-    Optional<Lecturer> findByPhone(String phone);
+    // Search lecturer by phone (accessing through user relationship)
+    @Query("SELECT l FROM Lecturer l WHERE l.user.phone = :phone")
+    Optional<Lecturer> findByPhone(@Param("phone") String phone);
     
     // Search lecturers by first name or last name or full name containing a specific string
-    @Query("SELECT l FROM Lecturer l WHERE LOWER(l.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(l.lastName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(l.fullName) LIKE LOWER(CONCAT('%', :name, '%'))")
+    @Query("SELECT l FROM Lecturer l WHERE LOWER(l.user.firstName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(l.user.lastName) LIKE LOWER(CONCAT('%', :name, '%')) OR LOWER(l.user.fullName) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Lecturer> findByNameContaining(@Param("name") String name);
     
     // Search lecturers by full name or last name starting with a specific string
-    @Query("SELECT l FROM Lecturer l WHERE LOWER(l.fullName) LIKE LOWER(CONCAT(:name, '%')) OR LOWER(l.lastName) LIKE LOWER(CONCAT(:name, '%'))")
+    @Query("SELECT l FROM Lecturer l WHERE LOWER(l.user.fullName) LIKE LOWER(CONCAT(:name, '%')) OR LOWER(l.user.lastName) LIKE LOWER(CONCAT(:name, '%'))")
     List<Lecturer> findByNameStartingWith(@Param("name") String name);
 
     // Count lecturers
