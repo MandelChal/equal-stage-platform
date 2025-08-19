@@ -20,4 +20,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<Role> getRoleByUserId(@Param("userId") UUID userId);
     boolean existsByEmail(String email);
     boolean existsByUserId(UUID userId);
+    Optional<User> findByGoogleId(String googleId);
 }

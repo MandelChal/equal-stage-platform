@@ -1,5 +1,6 @@
 package com.equal_stage_platform.dev.service;
 
+import com.equal_stage_platform.dev.dto.CompleteRegistrationRequestDTO;
 import com.equal_stage_platform.dev.dto.RegisterRequest;
 import com.equal_stage_platform.dev.dto.ResponseLoginDTO;
 import com.equal_stage_platform.dev.exception.AuthException;
@@ -7,11 +8,18 @@ import com.equal_stage_platform.dev.model.User;
 import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.model.enums.UserStatus;
 import com.equal_stage_platform.dev.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
+import java.security.GeneralSecurityException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +34,8 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final MailService mailService;
     private final PasswordResetRedisService passwordResetRedisService;
-
+    @Value("${google.client-id}")
+    private String googleClientId;
 
  // function without endpoint - just for inner use validation
     public String deleteAccountByAdmin(String email){
@@ -54,6 +63,49 @@ public class AuthService {
         registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     }
 
+    @Transactional
+    public String completeRegistration(String token, CompleteRegistrationRequestDTO completeRegistrationRequest) {
+        UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+        User user = userRepository.findById(userId).orElseThrow(() -> new AuthException("User not found"));
+        if(user.isRegistrationCompleted()){
+            throw new AuthException("Registration already completed");
+        }
+        user.completeRegistration(completeRegistrationRequest.getFirstName(), completeRegistrationRequest.getLastName(), completeRegistrationRequest.getPhone());
+        userRepository.save(user);
+        return "Registration completed successfully";
+    }
+
+    public ResponseLoginDTO loginWithGoogle(String idToken) {
+        try{
+            var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            var jsonFactory = GsonFactory.getDefaultInstance();
+            var googleIdTokenVerifier = new GoogleIdTokenVerifier.Builder(httpTransport, jsonFactory)
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+            GoogleIdToken googleIdToken = googleIdTokenVerifier.verify(idToken);
+            if(googleIdToken == null){
+                throw new AuthException("Invalid Google ID token");
+            }
+            GoogleIdToken.Payload payload = googleIdToken.getPayload();
+            String email = payload.getEmail();
+            String googleId = payload.getSubject();
+            User user = userRepository.findByGoogleId(googleId).orElse(null);
+            if(user == null){ // user not found - need to register
+                user = new User(email, googleId);
+                userRepository.save(user);
+            }
+            String accessToken = jwtService.generateToken(user);
+            String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
+            return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()), user.isRegistrationCompleted());
+        }catch(GeneralSecurityException e){
+            throw new AuthException("Invalid Google ID token");
+        }catch(AuthException e){
+            throw e;
+        }catch(Exception e){
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
     @Transactional(readOnly = true)
     public ResponseLoginDTO login(String email, String password) {
         User user = userRepository.findByEmail(email)
@@ -65,7 +117,7 @@ public class AuthService {
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
-        return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()));
+        return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()), true);
     }
 
     @Transactional(readOnly = true)

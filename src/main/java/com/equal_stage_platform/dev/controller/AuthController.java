@@ -2,8 +2,10 @@ package com.equal_stage_platform.dev.controller;
 
 import com.equal_stage_platform.dev.dto.RegisterRequest;
 import com.equal_stage_platform.dev.dto.ResetPassDTO;
+import com.equal_stage_platform.dev.dto.ResponseLoginDTO;
 import com.equal_stage_platform.dev.dto.LoginRequest;
 import com.equal_stage_platform.dev.dto.PassDTO;
+import com.equal_stage_platform.dev.dto.CompleteRegistrationRequestDTO;
 import com.equal_stage_platform.dev.dto.CreateAdminRequest;
 import com.equal_stage_platform.dev.dto.ForgotPassDTO;
 import com.equal_stage_platform.dev.exception.AuthException;
@@ -15,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+
 import java.util.Map;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,6 +70,39 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Internal server error");
+        }
+    }
+
+    @Operation(summary = "Login with Google", description = "Authenticates a user via Google ID token and returns tokens. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @PostMapping("/login/google")
+    public ResponseEntity<?> loginWithGoogle(@NotBlank(message = "Id token is required") @RequestParam String idToken) {
+        try {
+            ResponseLoginDTO responseLoginDTO = authService.loginWithGoogle(idToken);
+            return ResponseEntity.ok(responseLoginDTO);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Internal server error");
+        }
+    }
+
+    @Operation(summary = "Complete registration", description = "Completes the registration of a user. Access: Public (no authentication required).")
+    @ApiResponse(responseCode = "200", description = "Registration completed", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @PostMapping("/complete-registration")
+    public ResponseEntity<?> completeRegistration(@RequestHeader("Authorization") String token, @Valid @RequestBody CompleteRegistrationRequestDTO completeRegistrationRequest) {
+        try {
+            String result = authService.completeRegistration(token, completeRegistrationRequest);
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
 

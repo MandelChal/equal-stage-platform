@@ -62,8 +62,11 @@ public class User extends BaseAuditableEntity {
     @Column(name = "past_password")
     private Set<String> pastPasswords;
 
-    @Column(name = "next_password_change", nullable = false)
+    @Column(name = "next_password_change", nullable = true)
     private LocalDateTime nextPasswordChange;
+
+    @Column(name = "google_id", nullable = true)
+    private String googleId;
 
     public User(RegisterRequest registerRequest) {
         this.firstName = registerRequest.getFirstName();
@@ -77,6 +80,26 @@ public class User extends BaseAuditableEntity {
         this.status = UserStatus.ACTIVE;
         this.nextPasswordChange = TimeUtils.nowInIsrael().plusMonths(4);
         this.pastPasswords = new HashSet<>();
+        this.googleId = null;
+    }
+
+    public User(String email, String googleId) {
+        this.email = email;
+        this.googleId = googleId;
+        this.role = Role.CLIENT;
+        this.status = UserStatus.ACTIVE;
+        // default values for non-nullable fields
+        this.firstName = "";
+        this.lastName = "";
+        this.fullName = "";
+        this.phone = "";
+        this.password = "";
+        this.nextPasswordChange = null;
+        this.pastPasswords = new HashSet<>();
+    }
+
+    public boolean isRegistrationCompleted() {
+        return this.firstName != "" && this.firstName != null && this.lastName != "" && this.lastName != null && this.phone != "" && this.phone != null;
     }
 
     public boolean isAdmin() {
@@ -121,4 +144,10 @@ public class User extends BaseAuditableEntity {
         this.fullName = this.firstName + " " + lastName;
     }
 
+    public void completeRegistration(String firstName, String lastName, String phone) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.phone = phone;
+        this.fullName = firstName + " " + lastName;
+    }
 }

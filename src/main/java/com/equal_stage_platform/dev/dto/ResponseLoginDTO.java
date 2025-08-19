@@ -21,4 +21,6 @@ public class ResponseLoginDTO {
     private String refreshToken;
     @Schema(description = "Set of roles of the user", example = "[USER, ADMIN]")
     private Set<Role> roles;
+    @Schema(description = "boolean value to check if registration was completed - means that ther is missing information", example = "true")
+    private boolean registrationCompleted;
 }
