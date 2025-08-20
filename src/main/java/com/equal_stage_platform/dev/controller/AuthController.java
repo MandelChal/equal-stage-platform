@@ -91,7 +91,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Complete registration", description = "Completes the registration of a user. Access: Public (no authentication required).")
+    @Operation(summary = "Complete registration", description = "Completes the registration of a user. Access: CLIENT.")
     @ApiResponse(responseCode = "200", description = "Registration completed", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
@@ -106,7 +106,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Refresh token", description = "Refreshes the authentication token. Access: USER, ADMIN, or LECTURER.")
+    @Operation(summary = "Refresh token", description = "Refreshes the authentication token. Access: CLIENT.")
     @ApiResponse(responseCode = "200", description = "Token refreshed", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
@@ -123,7 +123,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Logout user", description = "Logs out the user. Access: USER, ADMIN, or LECTURER.")
+    @Operation(summary = "Logout user", description = "Logs out the user. Access: CLIENT.")
     @ApiResponse(responseCode = "200", description = "Logout successful", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
@@ -141,14 +141,14 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Setup first admin", description = "Sets up the first admin user. Access: USER, ADMIN, or LECTURER.")
+    @Operation(summary = "Setup super admin", description = "Sets up the super admin user. Access: CLIENT.")
     @ApiResponse(responseCode = "200", description = "Admin setup successful", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @PostMapping("/registerAdmin")
-    public ResponseEntity<?> setupFirstAdmin(@RequestHeader("Authorization") String token) {
+    @PostMapping("/registerSuperAdmin")
+    public ResponseEntity<?> setupSuperAdmin(@RequestHeader("Authorization") String token) {
         try {
-            String result = authService.setupFirstAdmin(token);
+            String result = authService.setupSuperAdmin(token);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -158,12 +158,12 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Create admin (admin only)", description = "Creates a new admin user. Access: Only users with role ADMIN.")
+    @Operation(summary = "Create admin (super admin only)", description = "Creates a new admin user. Access: role SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Admin created", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @PostMapping("/admin/create-admin")
+    @PostMapping("/super-admin/create-admin")
     public ResponseEntity<?> createAdmin(@RequestHeader("Authorization") String token,@Valid @RequestBody CreateAdminRequest createAdminRequest) {
         try {
             String result = authService.createAdmin(token, createAdminRequest.getEmail());
@@ -211,13 +211,12 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Reset password", description = "Resets password for authenticated user. Access: USER, ADMIN, or LECTURER.")
+    @Operation(summary = "Reset password", description = "Resets password for authenticated user. Access: CLIENT.")
     @ApiResponse(responseCode = "200", description = "Password reset successful", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request: invalid input data", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @PostMapping("/reset-pass")
-    // @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> resetPass(@RequestHeader("Authorization") String token, @Valid @RequestBody ResetPassDTO resetPassRequest){
         try{
             String result = authService.resetPass(token, resetPassRequest.getOldPassword(), resetPassRequest.getNewPassword());
@@ -230,15 +229,14 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Delete own account", description = "Deletes the authenticated user's account. Access: USER only.")
+    @Operation(summary = "Delete own account", description = "Deletes the authenticated user's account. Access: Client.")
     @ApiResponse(responseCode = "200", description = "Account deleted", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @DeleteMapping("/delete-account")
-    // @PreAuthorize("hasRole('USER')")
+    @DeleteMapping("/self/del")
     public ResponseEntity<?> deleteAccount(@RequestHeader("Authorization") String token) {
         try {
-            String result = authService.deleteUser(token);
+            String result = authService.deleteClientAccount(token);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -247,15 +245,48 @@ public class AuthController {
                 .body("Internal server error");
         }
     }
-    @Operation(summary = "Delete account by admin", description = "Deletes a user account by admin. Access: Only users with role ADMIN.")
+    @Operation(summary = "Delete all account data by admin", description = "Deletes a user account by admin. Access: role SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Account deleted", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @DeleteMapping("/admin/delete-account/{userId}")
-    // @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteAccountByAdmin(@PathVariable UUID userId) {
+    @DeleteMapping("/super-admin/delete-account/{userId}")
+    public ResponseEntity<?> deleteUserBySuperAdmin(@PathVariable UUID userId) {
         try {
-            String result = authService.deleteUserByAdmin(userId);
+            String result = authService.deleteUserBySuperAdmin(userId);
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Internal server error");
+        }
+    }
+
+    @Operation(summary = "Delete client account by admin", description = "Deletes a client account by admin. Access: role SUPER_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Account deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @DeleteMapping("/super-admin/delete-client-account/{userId}")
+    public ResponseEntity<?> deleteClientAccountBySuperAdmin(@PathVariable UUID userId) {
+        try {
+            String result = authService.deleteClientAccountBySuperAdmin(userId);
+            return ResponseEntity.ok(result);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Internal server error");
+        }
+    }
+
+    @Operation(summary = "Delete admin profile", description = "Deletes an admin profile. Access: Only users with role SUPER_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Admin profile deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @DeleteMapping("/super-admin/delete-admin/{userId}")
+    public ResponseEntity<?> deleteAdminProfileBySuperAdmin(@PathVariable UUID userId) {
+        try {
+            String result = authService.deleteAdminProfileBySuperAdmin(userId);
             return ResponseEntity.ok(result);
         } catch (AuthException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

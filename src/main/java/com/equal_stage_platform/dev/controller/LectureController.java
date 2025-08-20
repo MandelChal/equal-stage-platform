@@ -246,7 +246,7 @@ public class LectureController {
         }
     }
 
-    @Operation(summary = "Delete a lecture", description = "Deletes a lecture by ID for the authenticated lecturer or admin. Access: Only users with roles LECTURER or ADMIN.")
+    @Operation(summary = "Delete a lecture", description = "Deletes a lecture by ID for the authenticated lecturer or admin. Access: LECTURER.")
     @ApiResponse(responseCode = "200", description = "Lecture deleted", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
@@ -254,6 +254,29 @@ public class LectureController {
     @DeleteMapping("/del/{lectureId}")
     // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can delete lectures
     public ResponseEntity<?> deleteLecture(@RequestHeader("Authorization") String token, @PathVariable Long lectureId) {
+        try {
+            UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
+            return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); 
+        } catch (LectureException e) {
+            // logger.error("LectureException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (AuthException e) {
+            // logger.error("AuthException while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // logger.error("Unexpected error while updating lecture status", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @Operation(summary = "Delete a lecture", description = "Deletes a lecture by ID. Access: SUPER_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lecture deleted", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = String.class)))
+    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    @DeleteMapping("/super-admin/del/{lectureId}")
+    // @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN')") // Only lecturers and admins can delete lectures
+    public ResponseEntity<?> deleteLectureBySuperAdmin(@RequestHeader("Authorization") String token, @PathVariable Long lectureId) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
             return ResponseEntity.ok(lectureService.deleteLecture(userId, lectureId)); 

@@ -7,26 +7,29 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.equal_stage_platform.dev.model.enums.Role;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.Set;
 
 @Getter
 public class CustomUserDetails implements UserDetails {
     private final UUID id;
     private final String username;
     private final String password;
-    private final Role role;
+    private final Set<Role> roles;
 
-    public CustomUserDetails(UUID id, String username, String password, Role role) {
+    public CustomUserDetails(UUID id, String username, String password, Set<Role> roles) {
         this.id = id;
         this.username = username;
         this.password = password;
-        this.role = role;
+        this.roles = roles;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return roles.stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+            .collect(Collectors.toList());
     }
 
     @Override

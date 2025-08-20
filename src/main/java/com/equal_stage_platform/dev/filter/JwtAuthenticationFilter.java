@@ -2,7 +2,7 @@ package com.equal_stage_platform.dev.filter;
 
 import com.equal_stage_platform.dev.service.CustomUserDetailsService;
 import com.equal_stage_platform.dev.service.JwtService;
-import com.equal_stage_platform.dev.service.RefreshTokenService;
+import com.equal_stage_platform.dev.service.RedisTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,7 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
-    private final RefreshTokenService refreshTokenService;
+    private final RedisTokenService redisTokenService;
 
 
     @Override
@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = authHeader.substring(7);
         try {
             String jti = jwtService.extractJti(jwt);
-            if (refreshTokenService.isTokenBlacklisted(jti)) {
+            if (redisTokenService.isTokenBlacklisted(jti)) {
                 sendUnauthorized(response, "JWT blacklisted");
                 return;
             }

@@ -49,9 +49,14 @@ public class User extends BaseAuditableEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
+    // @Enumerated(EnumType.STRING)
+    // @Column(name = "role", nullable = false)
+    // private Role role; // CLIENT, SUPER_ADMIN, ADMIN, LECTURER
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "9(8%5&_user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    private Role role; // CLIENT, SUPER_ADMIN, ADMIN, LECTURER
+    private Set<Role> roles;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -76,7 +81,8 @@ public class User extends BaseAuditableEntity {
         this.email = registerRequest.getEmail();
         this.password = registerRequest.getPassword();
         // Timestamps are now handled automatically by JPA auditing
-        this.role = Role.CLIENT;
+        this.roles = new HashSet<>();
+        this.roles.add(Role.CLIENT);
         this.status = UserStatus.ACTIVE;
         this.nextPasswordChange = TimeUtils.nowInIsrael().plusMonths(4);
         this.pastPasswords = new HashSet<>();
@@ -86,7 +92,8 @@ public class User extends BaseAuditableEntity {
     public User(String email, String googleId) {
         this.email = email;
         this.googleId = googleId;
-        this.role = Role.CLIENT;
+        this.roles = new HashSet<>();
+        this.roles.add(Role.CLIENT);
         this.status = UserStatus.ACTIVE;
         // default values for non-nullable fields
         this.firstName = "";
@@ -103,12 +110,36 @@ public class User extends BaseAuditableEntity {
     }
 
     public boolean isAdmin() {
-        return this.role == Role.ADMIN;
+        return this.roles.contains(Role.ADMIN)||this.roles.contains(Role.SUPER_ADMIN);
     }
 
     public boolean isLecturer() {
-        return this.role == Role.LECTURER;
+        return this.roles.contains(Role.LECTURER);
     }
+
+    public boolean isClient() {
+        return this.roles.contains(Role.CLIENT);
+    }
+
+    public boolean isSuperAdmin() {
+        return this.roles.contains(Role.SUPER_ADMIN);
+    }
+
+    public boolean canDeleteClient() {
+        //logic -> client can be deleted only if he is only a client
+        return this.roles.size() == 1 && this.roles.contains(Role.CLIENT);
+    }
+
+    public boolean canDeleteLecturer() {
+        //logic -> lecturer can be deleted only if he is not an admin or super admin
+        return this.roles.contains(Role.LECTURER);
+    }
+    
+    public boolean canDeleteAdmin() {
+        //logic -> admin can be deleted only if he is not a super admin
+        return this.roles.contains(Role.ADMIN) && !this.roles.contains(Role.SUPER_ADMIN);
+    }
+    
 
     public boolean updatePass(String newPass, PasswordEncoder passwordEncoder) {
         if (!canUsePass(newPass, passwordEncoder)) {
@@ -149,5 +180,11 @@ public class User extends BaseAuditableEntity {
         this.lastName = lastName;
         this.phone = phone;
         this.fullName = firstName + " " + lastName;
+    }
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+    public void removeRole(Role role) {
+        this.roles.remove(role);
     }
 }

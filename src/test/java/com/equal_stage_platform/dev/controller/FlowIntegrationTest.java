@@ -83,8 +83,8 @@ public class FlowIntegrationTest {
 	}
 
 	// Helper to register admin
-	private void registerAdmin(String token, int expectedStatus) throws Exception {
-		mockMvc.perform(post("/api/auth/registerAdmin")
+	private void registerSuperAdmin(String token, int expectedStatus) throws Exception {
+		mockMvc.perform(post("/api/auth/registerSuperAdmin")
 				.header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().is(expectedStatus));
@@ -92,7 +92,7 @@ public class FlowIntegrationTest {
 
 	// Helper to make admin by admin
 	private void makeAdmin(String adminToken, String email, int expectedStatus) throws Exception {
-		mockMvc.perform(post("/api/auth/admin/create-admin")
+		mockMvc.perform(post("/api/auth/super-admin/create-admin")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + email + "\"}"))
@@ -227,7 +227,7 @@ public class FlowIntegrationTest {
 
 	// Add helper for deleting lecturer by admin
 	private void deleteLecturerByAdmin(String adminToken, UUID lecturerId, int expectedStatus) throws Exception {
-		mockMvc.perform(delete("/lecturers/admin/del/" + lecturerId)
+		mockMvc.perform(delete("/lecturers/super-admin/del/" + lecturerId)
 				.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().is(expectedStatus));
 	}
@@ -318,7 +318,7 @@ public class FlowIntegrationTest {
 		String user1Token = registerAndLogin("John", "Doe", "user1@example.com", "0501234567", "Password!1234");
 
 		// 2. user1 registers as admin
-		registerAdmin(user1Token, 200);
+		registerSuperAdmin(user1Token, 200);
 		
 		// 0. Setup topics and target audiences first (requires admin)
 		setupTopicsAndTargetAudiences(user1Token);
@@ -327,7 +327,7 @@ public class FlowIntegrationTest {
 		String user2Token = registerAndLogin("Jane", "Smith", "user2@example.com", "0502345678", "Password!4321");
 
 		// 4. user2 tries to make himself admin (should fail)
-		registerAdmin(user2Token, 403);
+		registerSuperAdmin(user2Token, 403);
 
 		// 5. user1 makes user2 admin (wrong email, should fail)
 		makeAdmin(user1Token, "user2", 400);
@@ -692,7 +692,7 @@ public class FlowIntegrationTest {
 
 		// Test 2: Add a new banner (admin only)
 		String newBannerJson = "{\"url\":\"https://example.com/new-banner.jpg\",\"title\":\"New Test Banner\",\"mediaType\":\"PHOTO\",\"position\":2}";
-		MvcResult addBannerResult = mockMvc.perform(post("/HomePage/admin/banner/url")
+		MvcResult addBannerResult = mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(newBannerJson))
@@ -707,13 +707,13 @@ public class FlowIntegrationTest {
 		assertEquals(2, addedBanner.getPosition(), "Banner should be added at position 2");
 
 		// Test 3: Try to add banner without admin token (should fail)
-		mockMvc.perform(post("/HomePage/admin/banner/url")
+		mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(newBannerJson))
 				.andExpect(status().isForbidden());
 
 		// Test 4: Try to add banner with duplicate URL (should fail)
-		mockMvc.perform(post("/HomePage/admin/banner/url")
+		mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(newBannerJson))
@@ -724,7 +724,7 @@ public class FlowIntegrationTest {
 
 		// Test 5: Add another banner at the end (no display order specified)
 		String endBannerJson = "{\"url\":\"https://example.com/end-banner.jpg\",\"title\":\"End Banner\",\"mediaType\":\"VIDEO\"}";
-		mockMvc.perform(post("/HomePage/admin/banner/url")
+		mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(endBannerJson))
@@ -744,7 +744,7 @@ public class FlowIntegrationTest {
 		// Test 7: Update banner with new URL and title
 		int oldBannerPosition = updatedBanners.get(2).getPosition();
 		String updateSingleBannerJson = "[{\"id\":" + updatedBanners.get(2).getId() + ",\"url\":\"https://example.com/updated-banner.jpg\",\"title\":\"Updated Banner Title\",\"mediaType\":\"PHOTO\"}]";
-		MvcResult updateSingleBannerResult = mockMvc.perform(put("/HomePage/admin/banner/urls")
+		MvcResult updateSingleBannerResult = mockMvc.perform(put("/HomePage/super-admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateSingleBannerJson))
@@ -761,23 +761,23 @@ public class FlowIntegrationTest {
 
 
 		// Test 8: Try to update banner without admin token (should fail)
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateSingleBannerJson))
 				.andExpect(status().isForbidden());
 
 		// Test 9: Delete a banner
 		Integer bannerToDeleteId = updatedBanners.get(3).getId();
-		mockMvc.perform(delete("/HomePage/admin/banner/url/" + bannerToDeleteId)
+		mockMvc.perform(delete("/HomePage/super-admin/banner/url/" + bannerToDeleteId)
 				.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().isOk());
 
 		// Test 10: Try to delete banner without admin token (should fail)
-		mockMvc.perform(delete("/HomePage/admin/banner/url/" + bannerToDeleteId))
+		mockMvc.perform(delete("/HomePage/super-admin/banner/url/" + bannerToDeleteId))
 				.andExpect(status().isForbidden());
 
 		// Test 11: Try to delete non-existent banner (should fail)
-		mockMvc.perform(delete("/HomePage/admin/banner/url/99999")
+		mockMvc.perform(delete("/HomePage/super-admin/banner/url/99999")
 				.header("Authorization", "Bearer " + adminToken))
 				.andExpect(status().isBadRequest());
 
@@ -800,7 +800,7 @@ public class FlowIntegrationTest {
 
 		// Test 15: Reorder banners
 		String reorderBannersJson = "[5,2,6,1,4]"; //id 3 was deleted
-		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls/reorder")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(reorderBannersJson))
@@ -824,7 +824,7 @@ public class FlowIntegrationTest {
 
 		// Test 16: Try to reorder banners with duplicate positions
 		String duplicatePositionsJson = "[2,6,1,4,2]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls/reorder")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(duplicatePositionsJson))
@@ -832,7 +832,7 @@ public class FlowIntegrationTest {
 
 		// Test 17: Try to reorder banners with invalid positions
 		String invalidPositionsJson = "[5,2,3,1,6]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls/reorder")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(invalidPositionsJson))
@@ -840,7 +840,7 @@ public class FlowIntegrationTest {
 
 		// Test 18: Try to reorder banners with negative positions
 		String negativePositionsJson = "[5,2,3,4,-1]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls/reorder")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls/reorder")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(negativePositionsJson))
@@ -880,7 +880,7 @@ public class FlowIntegrationTest {
 
 		// Test 2: Update banners with non-existent banner ID
 		String nonExistentBannerJson = "[{\"id\":99999,\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(nonExistentBannerJson))
@@ -888,7 +888,7 @@ public class FlowIntegrationTest {
 
 		// Test 3: Add banner with invalid URL format
 		String invalidUrlJson = "{\"url\":\"invalid-url\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}";
-		mockMvc.perform(post("/HomePage/admin/banner/url")
+		mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(invalidUrlJson))
@@ -896,7 +896,7 @@ public class FlowIntegrationTest {
 
 		// Test 4: Add banner with missing required fields
 		String missingFieldsJson = "{\"url\":\"https://example.com/test.jpg\"}";
-		mockMvc.perform(post("/HomePage/admin/banner/url")
+		mockMvc.perform(post("/HomePage/super-admin/banner/url")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(missingFieldsJson))
@@ -904,7 +904,7 @@ public class FlowIntegrationTest {
 
 		// Test 5: Update banners with conflicting display orders (same order for different banners)
 		String conflictingOrdersJson = "[{\"id\":" + initialBanners.get(0).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"},{\"id\":" + initialBanners.get(1).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"},{\"id\":" + initialBanners.get(2).getId() + ",\"url\":\"https://example.com/test.jpg\",\"title\":\"Invalid URL Banner\",\"mediaType\":\"PHOTO\"}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(conflictingOrdersJson))
@@ -916,7 +916,7 @@ public class FlowIntegrationTest {
 		HomePageBanner secondBanner = initialBanners.get(1);
 		
 		String duplicateUrlJson = "[{\"id\":" + firstBanner.getId() + ",\"url\":\"" + secondBanner.getUrl() + "\"}]";
-		mockMvc.perform(put("/HomePage/admin/banner/urls")
+		mockMvc.perform(put("/HomePage/super-admin/banner/urls")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(duplicateUrlJson))
@@ -955,9 +955,9 @@ public class FlowIntegrationTest {
 		assertTrue(aboutUs.getImageUrls() != null && !aboutUs.getImageUrls().isEmpty());
 		assertTrue(aboutUs.getVideoUrls() != null && !aboutUs.getVideoUrls().isEmpty());
 
-		// 3.b PUT /HomePage/admin/about_us (authorized)
+		// 3.b PUT /HomePage/super-admin/about_us (authorized)
 		String updateJson = "{\"text\":\"Updated about us text\",\"imageUrls\":[\"https://example.com/img1.jpg\",\"https://example.com/img2.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=abc\"]}";
-		MvcResult putRes = mockMvc.perform(put("/HomePage/admin/about_us")
+		MvcResult putRes = mockMvc.perform(put("/HomePage/super-admin/about_us")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
@@ -975,15 +975,15 @@ public class FlowIntegrationTest {
 		AboutUs updatedGet = objectMapper.readValue(getRes2.getResponse().getContentAsString(), AboutUs.class);
 		assertEquals("Updated about us text", updatedGet.getText());
 
-		// 3.d PUT /HomePage/admin/about_us (unauthorized)
-		mockMvc.perform(put("/HomePage/admin/about_us")
+		// 3.d PUT /HomePage/super-admin/about_us (unauthorized)
+		mockMvc.perform(put("/HomePage/super-admin/about_us")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updateJson))
 				.andExpect(status().isForbidden());
 
-		// 3.e POST /HomePage/admin/about_us (authorized) – create another record
+		// 3.e POST /HomePage/super-admin/about_us (authorized) – create another record
 		String createJson = "{\"text\":\"Another about us\",\"imageUrls\":[\"https://example.com/img3.jpg\"],\"videoUrls\":[\"https://youtube.com/watch?v=def\"]}";
-		MvcResult postRes = mockMvc.perform(post("/HomePage/admin/about_us")
+		MvcResult postRes = mockMvc.perform(post("/HomePage/super-admin/about_us")
 				.header("Authorization", "Bearer " + adminToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(createJson))
@@ -992,8 +992,8 @@ public class FlowIntegrationTest {
 		AboutUs created = objectMapper.readValue(postRes.getResponse().getContentAsString(), AboutUs.class);
 		assertEquals("Another about us", created.getText());
 
-		// 3.f POST /HomePage/admin/about_us (unauthorized)
-		mockMvc.perform(post("/HomePage/admin/about_us")
+		// 3.f POST /HomePage/super-admin/about_us (unauthorized)
+		mockMvc.perform(post("/HomePage/super-admin/about_us")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(createJson))
 				.andExpect(status().isForbidden());
@@ -1007,7 +1007,7 @@ public void testAdminApproveAndRejectFlow() throws Exception {
 	String token = registerAndLogin("Flow", "User", email, "0504567890", "Password!1234");
 
 	// 2. make him admin
-	registerAdmin(token, 200);
+	registerSuperAdmin(token, 200);
 
 	// prerequisites for lecturer/lecture creation
 	setupTopicsAndTargetAudiences(token);

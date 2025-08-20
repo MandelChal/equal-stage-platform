@@ -36,17 +36,17 @@ import com.equal_stage_platform.dev.exception.AuthException;
 public class LecturerService {
     private final LecturerRepository lecturerRepository;
     private final LectureRepository lectureRepository;
-    private final AuthService authService;
     private final LecturerTopicService topicService;
     private final MailService mailService;
     private final LectureService lectureService;
-    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, AuthService authService, LecturerTopicService topicService, MailService mailService, LectureService lectureService) {
+    private final UserRoleManagementService userRoleManagementService;
+    public LecturerService(LecturerRepository lecturerRepository, LectureRepository lectureRepository, UserRoleManagementService userRoleManagementService, LecturerTopicService topicService, MailService mailService, LectureService lectureService) {
         this.lecturerRepository = lecturerRepository;
         this.lectureRepository = lectureRepository;
-        this.authService = authService;
         this.topicService = topicService;
         this.mailService = mailService;
         this.lectureService = lectureService;
+        this.userRoleManagementService = userRoleManagementService;
     }
 
     // ---------------------- create / update / retrieve methods ----------------------
@@ -71,14 +71,14 @@ public class LecturerService {
     }
 
     private void checkIfUserIsLecturer(User user){
-        if(user.getRole() == Role.LECTURER){
+        if(user.isLecturer()){
             throw new LecturerException("User is already a lecturer");
         }
     }
 
     private User getUserById(UUID userId){
         try{
-            return authService.getUserById(userId);
+            return userRoleManagementService.getUserById(userId);
         }catch(AuthException e){
             throw new LecturerException(e.getMessage());
         }
@@ -197,7 +197,9 @@ public class LecturerService {
      *
      * @param userId The ID of the lecturer whose status is to be updated.
      * @param status The new status for the lecturer.
-     * @return A boolean indicating whether the update was successful.
+     * @param isAdmin Whether the user is an admin.
+     * @param note The note to be sent to the lecturer.
+     * @return A ResponseLecturerDTO containing the updated lecturer's details.
      */
     @Transactional
     public ResponseLecturerDTO updateLecturerStatus(UUID userId, LecturerStatus status, boolean isAdmin, String note) {
@@ -223,6 +225,37 @@ public class LecturerService {
             }
         }
         return new ResponseLecturerDTO(lecturer, isAdmin ? lecturer.getLectures() : lecturer.getLecturesByStatus(LectureStatus.ON_AIR));
+    }
+
+    /**
+     * Approves a lecturer.
+     *
+     * @param userId The ID of the lecturer to approve.
+     * @param note The note to be sent to the lecturer.
+     * @return ResponseLecturerDTO containing the updated lecturer's details.
+     */
+    @Transactional
+    public ResponseLecturerDTO approveLecturer(UUID userId, String note) {
+        if(userRoleManagementService.getUserRoles(userId).contains(Role.LECTURER)){
+            throw new LecturerException("Lecturer is already approved");
+        }
+        ResponseLecturerDTO res =  updateLecturerStatus(userId, LecturerStatus.APPROVED, true, note);
+        userRoleManagementService.addRole(userId, Role.LECTURER);
+        return res;
+    }
+
+    /**
+     * Rejects a lecturer.
+     *
+     * @param userId The ID of the lecturer to reject.
+     * @param note The note to be sent to the lecturer.
+     * @return ResponseLecturerDTO containing the updated lecturer's details.
+     */
+    @Transactional
+    public ResponseLecturerDTO rejectLecturer(UUID userId, String note) {
+        ResponseLecturerDTO res =  updateLecturerStatus(userId, LecturerStatus.REJECTED, true, note);
+        userRoleManagementService.removeRole(userId, Role.LECTURER); //remove lecturer role from user, if Role.LECTURER is not in the set, nothing will happen
+        return res;
     }
 
     /**
@@ -392,6 +425,7 @@ public class LecturerService {
     public String deleteLecturer(UUID userId) {
         Lecturer lecturer = lecturerRepository.findById(userId)
                 .orElseThrow(() -> new LecturerException("Lecturer not found with userId: " + userId));
+        User user = lecturer.getUser();
         Set<Lecture> lectures = new HashSet<>(lecturer.getLectures());
         for(Lecture lecture : lectures){
             lecture.removeLecturer(lecturer);
@@ -402,7 +436,7 @@ public class LecturerService {
                 lectureRepository.save(lecture);
             }
         }
-        authService.changeRole(userId, Role.CLIENT);
+        userRoleManagementService.removeRole(user, Role.LECTURER);
         lecturerRepository.delete(lecturer);
         return "Lecturer with userId: " + userId + " has been deleted successfully.";       
     }

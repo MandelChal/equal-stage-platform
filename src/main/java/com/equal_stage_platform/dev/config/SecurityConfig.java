@@ -32,28 +32,35 @@ public class SecurityConfig {
                 //----Faker endpoints----
                 .requestMatchers("/faker/**").permitAll()
                 //----Auth endpoints----
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/registerAdmin", "/api/auth/forgot-pass", "/api/auth/reset-pass-token").permitAll()
-                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")  // Only admins can create new admins
-                .requestMatchers("/api/auth/refresh", "/api/auth/logout", "/api/auth/reset-pass").hasAnyRole("CLIENT", "ADMIN", "LECTURER")
-                .requestMatchers("/api/auth/delete-account").hasAnyRole("CLIENT")
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/login/google", "/api/auth/registerSuperAdmin", "/api/auth/forgot-pass", "/api/auth/reset-pass-token").permitAll()
+                .requestMatchers("/api/auth/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")  // Only admins can create new admins
+                .requestMatchers("/api/auth/super-admin/**").hasRole("SUPER_ADMIN")  // Only admins can create new admins
+                .requestMatchers("/api/auth/refresh", "/api/auth/logout", "/api/auth/reset-pass", "/api/auth/self/del", "/api/auth/complete-registration").hasRole("CLIENT")
+
                 //----Lecturer endpoints----
-                .requestMatchers("/lecturers/create").hasAnyRole("CLIENT", "ADMIN")
-                .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasAnyRole("LECTURER", "ADMIN")
+                .requestMatchers("/lecturers/create").hasRole("CLIENT")
+                .requestMatchers( "/lecturers/update/**", "/lecturers/del/self").hasRole("LECTURER")
                 .requestMatchers("/lecturers/{lecturerId}/lectures/{lectureId}", "/lecturers/{lecturerId}/lectures/all", "/lecturers/search/**", "/lecturers/all/approved","/lecturers/paginated", "/lecturers/filter/**", "/lecturers/paginated/filter/**", "/lecturers/filter/**").permitAll()
-                .requestMatchers("/lecturers/admin/**").hasRole("ADMIN")
+                .requestMatchers("/lecturers/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/lecturers/super-admin/**").hasRole("SUPER_ADMIN")
+                
                 //----Lecture endpoints----
-                .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasAnyRole("LECTURER", "ADMIN")
-                .requestMatchers("/lectures/admin/**").hasRole("ADMIN")
+                .requestMatchers("/lectures/del/**", "/lectures/update/**", "/lectures/create").hasRole("LECTURER")
+                .requestMatchers("/lectures/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/lectures/super-admin/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/lectures/physical", "/lectures/{lectureId}", "/lectures/all/isOnline", "/lectures/search/**", "/lectures/paginated", "/lectures/topLectures/**", "/lectures/filter/**", "/lectures/paginated/filter/**", "/lectures/filter/**" ).permitAll()
                 //----Home Page Banner endpoints----
                 .requestMatchers("/HomePage/banner/urls", "/HomePage/about_us", "/HomePage/contact_us").permitAll()
-                .requestMatchers("/HomePage/admin/**").hasRole("ADMIN")
+                .requestMatchers("/HomePage/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/HomePage/super-admin/**").hasRole("SUPER_ADMIN")
                 //---TargetAudience endpoints---
                 .requestMatchers("/target-audiences/all", "/target-audiences/{id}", "/target-audiences/search/{prefix}").permitAll()
-                .requestMatchers("/target-audiences/admin/**").hasAnyRole("ADMIN")
+                .requestMatchers("/target-audiences/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/target-audiences/super-admin/**").hasRole("SUPER_ADMIN")
                 //---Topic endpoints---
                 .requestMatchers("/topics/all", "/topics/{id}", "/topics/search/{prefix}").permitAll()
-                .requestMatchers("/topics/admin/**").hasAnyRole("ADMIN")
+                .requestMatchers("/topics/admin/**").hasAnyRole("SUPER_ADMIN", "ADMIN")
+                .requestMatchers("/topics/super-admin/**").hasRole("SUPER_ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

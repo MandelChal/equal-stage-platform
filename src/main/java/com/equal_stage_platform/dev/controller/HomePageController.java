@@ -50,8 +50,8 @@ public class HomePageController {
         }
     }
 
-    @PostMapping("/admin/banner/url")
-    @Operation(summary = "Add Banner URL", description = "Adds a new banner URL to the home page. Access: Admin (requires authentication).")
+    @PostMapping("/super-admin/banner/url")
+    @Operation(summary = "Add Banner URL", description = "Adds a new banner URL to the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Banner URL added successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "500", description = "Internal server error")
@@ -65,8 +65,8 @@ public class HomePageController {
         }
     }
 
-    @DeleteMapping("/admin/banner/url/{id}")
-    @Operation(summary = "Delete Banner URL", description = "Deletes a banner URL from the home page. Access: Admin (requires authentication).")
+    @DeleteMapping("/super-admin/banner/url/{id}")
+    @Operation(summary = "Delete Banner URL", description = "Deletes a banner URL from the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Banner URL deleted successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "404", description = "Banner URL not found")
@@ -80,8 +80,8 @@ public class HomePageController {
         }
     }
 
-    @PutMapping("/admin/banner/urls")
-    @Operation(summary = "Edit Banner URLs", description = "Edits multiple banner URLs on the home page. Access: Admin (requires authentication).")
+    @PutMapping("/super-admin/banner/urls")
+    @Operation(summary = "Edit Banner URLs", description = "Edits multiple banner URLs on the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Banner URLs updated successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "404", description = "Banner not found")
@@ -96,8 +96,8 @@ public class HomePageController {
         }
     }
 
-    @PutMapping("/admin/banner/urls/reorder")
-    @Operation(summary = "Reorder Banner URLs", description = "Reorders the banner URLs on the home page. Access: Admin (requires authentication).")
+    @PutMapping("/super-admin/banner/urls/reorder")
+    @Operation(summary = "Reorder Banner URLs", description = "Reorders the banner URLs on the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Banner URLs reordered successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "500", description = "Internal server error")
@@ -141,8 +141,8 @@ public class HomePageController {
         }
     }
 
-    @PostMapping("/admin/about_us")
-    @Operation(summary = "Add About Us", description = "Adds the about us data for the home page. Access: Admin (requires authentication).")
+    @PostMapping("/super-admin/about_us")
+    @Operation(summary = "Add About Us", description = "Adds the about us data for the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "About us data added successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "500", description = "Internal server error")
@@ -156,8 +156,8 @@ public class HomePageController {
         }
     }
 
-    @PutMapping("/admin/about_us")
-    @Operation(summary = "Edit About Us", description = "Edits the about us data for the home page. Access: Admin (requires authentication).")
+    @PutMapping("/super-admin/about_us")
+    @Operation(summary = "Edit About Us", description = "Edits the about us data for the home page. Access: SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "About us data edited successfully")
     @ApiResponse(responseCode = "400", description = "Invalid input data")
     @ApiResponse(responseCode = "500", description = "Internal server error")

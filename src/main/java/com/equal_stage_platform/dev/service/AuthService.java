@@ -9,6 +9,7 @@ import com.equal_stage_platform.dev.model.enums.Role;
 import com.equal_stage_platform.dev.model.enums.UserStatus;
 import com.equal_stage_platform.dev.repository.UserRepository;
 
+
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,8 +22,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +32,11 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
+    private final RedisTokenService redisTokenService;
     private final MailService mailService;
     private final PasswordResetRedisService passwordResetRedisService;
+    private final LecturerService lecturerService;
+    private final UserRoleManagementService userRoleManagementService;
     @Value("${google.client-id}")
     private String googleClientId;
 
@@ -94,9 +97,7 @@ public class AuthService {
                 user = new User(email, googleId);
                 userRepository.save(user);
             }
-            String accessToken = jwtService.generateToken(user);
-            String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
-            return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()), user.isRegistrationCompleted());
+            return enrollUserSession(user);
         }catch(GeneralSecurityException e){
             throw new AuthException("Invalid Google ID token");
         }catch(AuthException e){
@@ -104,6 +105,13 @@ public class AuthService {
         }catch(Exception e){
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    private ResponseLoginDTO enrollUserSession(User user){
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = UUID.randomUUID().toString();
+        redisTokenService.enrollUserSession(user.getUserId(), accessToken, refreshToken);
+        return new ResponseLoginDTO(accessToken, refreshToken, user.getRoles(), user.isRegistrationCompleted());
     }
 
     @Transactional(readOnly = true)
@@ -115,59 +123,56 @@ public class AuthService {
             throw new AuthException("Invalid credentials");
         }
 
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = refreshTokenService.createRefreshToken(user.getUserId());
-        return new ResponseLoginDTO(accessToken, refreshToken, Set.of(user.getRole()), true);
+        return enrollUserSession(user);
     }
 
     @Transactional(readOnly = true)
-    public Role getUserRole(UUID userId) {
-        return userRepository.getRoleByUserId(userId)
-            .orElseThrow(() -> new AuthException("User not found or role not assigned"));
+    public Set<Role> getUserRoles(UUID userId) {
+        return userRepository.getRolesByUserId(userId)
+            .orElseThrow(() -> new AuthException("User not found"));
     }
 
     @Transactional(readOnly = true)
     public Map<String, String> refresh(String refreshToken) {
-        if (!refreshTokenService.isValid(refreshToken)) {
+        if (!redisTokenService.isValid(refreshToken)) {
             throw new AuthException("Invalid refresh token");
         }
 
-        UUID userId = refreshTokenService.getUserId(refreshToken);
+        UUID userId = redisTokenService.getUserId(refreshToken);
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User not found"));
 
         String newAccessToken = jwtService.generateToken(user);
+        redisTokenService.updateAccessToken(userId, newAccessToken);
         return Map.of("token", newAccessToken);
     }
 
     @Transactional(readOnly = true)
     public String logout(String accessToken, String refreshToken) {
         // Blacklist the access token
-        String jti = jwtService.extractJti(accessToken);
-        long expirationMillis = jwtService.extractExpiration(accessToken).getTime() - System.currentTimeMillis();
-        refreshTokenService.blacklistToken(jti, expirationMillis);
+        blacklistUserSession(accessToken);
         // Revoke the refresh token
-        refreshTokenService.revokeToken(refreshToken);
+        redisTokenService.revokeToken(refreshToken);
         return "Logged out successfully";
     }
 
     @Transactional
-    public String setupFirstAdmin(String token) {
-        if (userRepository.findByRole(Role.ADMIN).isPresent()) {
-            throw new AuthException("Admin already exists");
+    public String setupSuperAdmin(String token) {
+        if (userRepository.existsByRole(Role.SUPER_ADMIN)) {
+            throw new AuthException("Super Admin already exists");
         }
 
         UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User not found"));
 
-        if (user.getRole() == Role.ADMIN) {
-            throw new AuthException("User is already an admin");
+        if (user.isSuperAdmin()) {
+            throw new AuthException("User is already a super admin");
         }
 
-        user.setRole(Role.ADMIN);
+        user.addRole(Role.SUPER_ADMIN);
         userRepository.save(user);
-        return "Admin user created successfully";
+        return "Super Admin user created successfully";
     }
 
     @Transactional
@@ -176,8 +181,8 @@ public class AuthService {
         User requestingUser = userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User not found"));
 
-        if (requestingUser.getRole() != Role.ADMIN) {
-            throw new AuthException("Only admins can create new admin users");
+        if (!requestingUser.isSuperAdmin()) {
+            throw new AuthException("Only super admins can create new admin users");
         }
 
         if (requestingUser.getStatus() != UserStatus.ACTIVE) {
@@ -187,11 +192,10 @@ public class AuthService {
         User newAdmin = userRepository.findByEmail(newAdminEmail)
             .orElseThrow(() -> new AuthException("User not found"));
 
-        if (newAdmin.getRole() == Role.ADMIN) {
+        if (newAdmin.isAdmin()) {
             throw new AuthException("User is already an admin");
         }
-
-        newAdmin.setRole(Role.ADMIN);
+        newAdmin.addRole(Role.ADMIN);
         userRepository.save(newAdmin);
         return "New admin user created successfully";
     }
@@ -249,52 +253,56 @@ public class AuthService {
         return "Password Changes Succeesfuly";    
     }
     
+    // @Transactional
+    // public String changeRole(UUID userId, Role newRole) {
+    //     User user = userRepository.findById(userId)
+    //         .orElseThrow(() -> new AuthException("User not found"));
+
+    //     if (user.getRole() == newRole) {
+    //         throw new AuthException("User already has this role");
+    //     }
+
+    //     user.setRole(newRole);
+    //     userRepository.save(user);
+    //     return "User role changed successfully";
+    // }
+
     @Transactional
-    public String changeRole(UUID userId, Role newRole) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new AuthException("User not found"));
-
-        if (user.getRole() == newRole) {
-            throw new AuthException("User already has this role");
+    public String deleteClientAccount(String accessToken) {
+        UUID userId = jwtService.extractUserId(accessToken.replace("Bearer ", ""));
+        Set<Role> roles = getUserRoles(userId);
+        if(!roles.contains(Role.CLIENT)){
+            throw new AuthException("Error: User with userId: " + userId + " is not a client");
         }
-
-        user.setRole(newRole);
-        userRepository.save(user);
-        return "User role changed successfully";
-    }
-
-    @Transactional
-    public String deleteUser(String token) {
-        // Blacklist the access token
-        String jti = jwtService.extractJti(token.replace("Bearer ", ""));
-        long expirationMillis = jwtService.extractExpiration(token.replace("Bearer ", "")).getTime() - System.currentTimeMillis();
-        refreshTokenService.blacklistToken(jti, expirationMillis);
-        UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new AuthException("User not found"));
-        if (user.isAdmin()) {
-            throw new AuthException("Cannot delete admin user");
+        if(roles.contains(Role.SUPER_ADMIN)){
+            throw new AuthException("Error: Cannot delete Super Admin user");
         }
-        if (user.isLecturer()){
+        if (roles.contains(Role.ADMIN)) {
+            throw new AuthException("Error: Cannot delete an Admin user. Please contact Super Admin and request to delete the admin profile first.");
+        }
+        if (roles.contains(Role.LECTURER)){
             throw new AuthException("Error: Cannot delete a lecturer user. Please remove the lecturer profile first.");
         }
-      
+        // Blacklist the access token
+        blacklistUserSession(accessToken);
         // Delete the user
-        userRepository.delete(user);
+        userRepository.deleteById(userId);
         return "User deleted successfully";
     }
 
     @Transactional
-    public String deleteUserByAdmin(UUID userId){
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new AuthException("User not found"));
-            
-        if (user.isLecturer()){
-            throw new AuthException("Error: Cannot delete a lecturer user. Please remove the lecturer profile first.");
-        }
-      
-        // Delete the user
-        userRepository.delete(user);
+    public String deleteClientAccountBySuperAdmin(UUID userId){
+        Set<Role> roles = getUserRoles(userId);
+        if(roles.contains(Role.SUPER_ADMIN))
+            throw new AuthException("Error: Cannot delete Super Admin user");
+        if(roles.contains(Role.ADMIN))
+            throw new AuthException("Error: Cannot delete an Admin user. Please delete the admin profile first.");
+        if(roles.contains(Role.LECTURER))
+            throw new AuthException("Error: Cannot delete a lecturer user. Please delete the lecturer profile first.");
+        if(roles.contains(Role.CLIENT))
+            userRepository.deleteById(userId);
+        blacklistUserSession(redisTokenService.getAccessToken(userId));
+        userRepository.deleteById(userId);
         return "User deleted successfully";
     }
 
@@ -308,5 +316,40 @@ public class AuthService {
     public User getUserById(UUID userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new AuthException("User with userId: " + userId + " not found"));
+    }
+
+    @Transactional
+    public String deleteAdminProfileBySuperAdmin(UUID userId) {
+        if(userRoleManagementService.hasRole(userId, Role.SUPER_ADMIN)){
+            throw new AuthException("Error: Cannot delete Super Admin user");
+        }
+        if(!userRoleManagementService.hasRole(userId, Role.ADMIN)){
+            throw new AuthException("Error: User with userId: " + userId + " is not an admin");
+        }
+        userRoleManagementService.removeRole(userId, Role.ADMIN);
+        return "Admin profile deleted successfully";
+    }
+
+    @Transactional
+    public String deleteUserBySuperAdmin(UUID userId) {
+        Set<Role> roles = getUserRoles(userId);
+        if(roles.contains(Role.SUPER_ADMIN))
+            throw new AuthException("Error: Cannot delete Super Admin user");
+        if(roles.contains(Role.ADMIN))
+            userRoleManagementService.removeRole(userId, Role.ADMIN);
+        if(roles.contains(Role.LECTURER))
+            lecturerService.deleteLecturer(userId);
+        if(roles.contains(Role.CLIENT))
+            userRepository.deleteById(userId);
+        blacklistUserSession(redisTokenService.getAccessToken(userId));
+        return "All profiles deleted successfully";
+    }
+
+    private void blacklistUserSession(String accessToken){
+        if (accessToken == null)
+            return;
+        String jti = jwtService.extractJti(accessToken);
+        long expirationMillis = jwtService.extractExpiration(accessToken).getTime() - System.currentTimeMillis();
+        redisTokenService.blacklistToken(jti, expirationMillis);
     }
 }

@@ -28,8 +28,6 @@ import com.equal_stage_platform.dev.dto.PaginationRequest;
 import com.equal_stage_platform.dev.dto.UpdateLecturerDTO;
 import com.equal_stage_platform.dev.model.enums.Area;
 import com.equal_stage_platform.dev.model.enums.LecturerStatus;
-import com.equal_stage_platform.dev.model.enums.Role;
-import com.equal_stage_platform.dev.service.AuthService;
 import com.equal_stage_platform.dev.service.JwtService;
 import com.equal_stage_platform.dev.service.LectureService;
 import com.equal_stage_platform.dev.exception.LecturerException;
@@ -51,12 +49,10 @@ public class LecturerController {
     private final LecturerService lecturerService;
     private final LectureService lectureService;
     private final JwtService jwtService;
-    private final AuthService authService;
-    public LecturerController(LecturerService lecturerService, LectureService lectureService, JwtService jwtService, AuthService authService) {
+    public LecturerController(LecturerService lecturerService, LectureService lectureService, JwtService jwtService) {
         this.lecturerService = lecturerService;
         this.lectureService = lectureService;
         this.jwtService = jwtService;
-        this.authService = authService;
     }
 
     @Operation(summary = "Create a new lecturer", description = "Creates a new lecturer profile. Access: Only users with roles USER or ADMIN.")
@@ -83,19 +79,19 @@ public class LecturerController {
     }
 
 
-    @Operation(summary = "Update lecturer status by admin", description = "Updates the status of a lecturer by admin. Access: Only users with role ADMIN.")
-    @ApiResponse(responseCode = "200", description = "Lecturer status updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
-    @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
-    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
-    @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @PatchMapping("/admin/{lecturerId}/status/{status}")
-    public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status, @RequestBody Map<String, String> requestBody) {
-        String note = requestBody.get("note");
-        if(status == LecturerStatus.REJECTED && (note == null || note.isEmpty())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Note is required");
-        }
-        return updateLecturerStatus(userId, status, true, note);
-    }
+    // @Operation(summary = "Update lecturer status by admin", description = "Updates the status of a lecturer by admin. Access: Only users with role ADMIN.")
+    // @ApiResponse(responseCode = "200", description = "Lecturer status updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
+    // @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
+    // @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = String.class)))
+    // @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
+    // @PatchMapping("/admin/{lecturerId}/status/{status}")
+    // public ResponseEntity<?> updateLecturerStatusByAdmin(@PathVariable UUID userId, @PathVariable LecturerStatus status, @RequestBody Map<String, String> requestBody) {
+    //     String note = requestBody.get("note");
+    //     if(status == LecturerStatus.REJECTED && (note == null || note.isEmpty())) {
+    //         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Note is required");
+    //     }
+    //     return updateLecturerStatus(userId, status, true, note);
+    // }
 
     @Operation(summary = "Update lecturer status", description = "Updates the status of the authenticated lecturer. Access: Only users with roles LECTURER or ADMIN.")
     @ApiResponse(responseCode = "200", description = "Lecturer status updated", content = @Content(schema = @Schema(implementation = ResponseLecturerDTO.class)))
@@ -134,7 +130,6 @@ public class LecturerController {
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
     @GetMapping("/admin/all")
-    // @PreAuthorize("hasRole('ADMIN')") // Only admins can access this endpoint
     public ResponseEntity<?> getAllLecturers() {
         try {
             return ResponseEntity.ok(lecturerService.getAllLecturers());
@@ -260,11 +255,7 @@ public class LecturerController {
     public ResponseEntity<?> approveLecturer(@PathVariable UUID lecturerId, @RequestBody Map<String, String> requestBody) {
         try {
             String note = requestBody.get("note");
-            LecturerStatus status = LecturerStatus.APPROVED;
-            ResponseLecturerDTO lecturer = lecturerService.updateLecturerStatus(lecturerId, status, true, note);
-            if(authService.getUserRole(lecturerId) != Role.ADMIN) {
-                authService.changeRole(lecturerId, Role.LECTURER);
-            }
+            ResponseLecturerDTO lecturer = lecturerService.approveLecturer(lecturerId, note);
             return ResponseEntity.ok(lecturer);
         } catch (LecturerException e) {
             // logger.error("LecturerException while approving lecturer", e);
@@ -284,8 +275,7 @@ public class LecturerController {
     public ResponseEntity<?> rejectLecturer(@PathVariable UUID lecturerId, @RequestBody Map<String, String> requestBody) {
         try {
             String note = requestBody.get("note");
-            LecturerStatus status = LecturerStatus.REJECTED;
-            return ResponseEntity.ok(lecturerService.updateLecturerStatus(lecturerId, status, true, note));
+            return ResponseEntity.ok(lecturerService.rejectLecturer(lecturerId, note));
         } catch (LecturerException e) {
             // logger.error("LecturerException while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -325,14 +315,14 @@ public class LecturerController {
         }
     }
 
-    @Operation(summary = "Delete lecturer (admin)", description = "Deletes a lecturer by admin. Access: Only users with role ADMIN.")
+    @Operation(summary = "Delete lecturer (super admin)", description = "Deletes a lecturer by admin. Access: Only users with role SUPER_ADMIN.")
     @ApiResponse(responseCode = "200", description = "Lecturer deleted", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = String.class)))
     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(schema = @Schema(implementation = String.class)))
-    @DeleteMapping("/admin/del/{userId}")
+    @DeleteMapping("/super-admin/del/{userId}")
     // @PreAuthorize("hasRole('ADMIN')") // endpoint for admin to delete any lecturer
     public ResponseEntity<?> deleteLecturer(@PathVariable UUID userId) {
-        return deleteLecturer(userId, true);
+        return PrivatedeleteLecturer(userId);
     }
 
     @Operation(summary = "Delete own lecturer profile", description = "Deletes the authenticated lecturer's own profile. Access: Only users with roles LECTURER or ADMIN.")
@@ -344,14 +334,14 @@ public class LecturerController {
     public ResponseEntity<?> deleteLecturer(@RequestHeader("Authorization") String token) {
         try {
             UUID userId = jwtService.extractUserId(token.replace("Bearer ", ""));
-            return deleteLecturer(userId, false);
+            return PrivatedeleteLecturer(userId);
         } catch (Exception e) {
             // logger.error("Unexpected error while rejecting lecturer", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
 
-    private ResponseEntity<?> deleteLecturer(UUID userId, boolean isAdmin) {
+    private ResponseEntity<?> PrivatedeleteLecturer(UUID userId){
         try {
             return ResponseEntity.ok(lecturerService.deleteLecturer(userId));
         } catch (LecturerException e) {
