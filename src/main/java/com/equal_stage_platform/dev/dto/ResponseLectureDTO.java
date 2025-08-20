@@ -40,9 +40,6 @@ public class ResponseLectureDTO {
     @Schema(description = "Duration in minutes", example = "90")
     private Integer duration;
 
-    @Schema(description = "Price of the lecture", example = "100")
-    private Integer price;
-
     @Schema(description = "Rank of the lecture", example = "3.5")
     private Double rank;
 
@@ -92,7 +89,6 @@ public class ResponseLectureDTO {
         this.title = lecture.getTitle();
         this.description = lecture.getDescription();
         this.duration = lecture.getDuration();
-        this.price = lecture.getPrice();
         this.rank = lecture.getRank();
         this.createdAt = lecture.getCreatedAt().toString();
         this.updatedAt = lecture.getLastUpdatedAt().toString();
@@ -120,7 +116,6 @@ public class ResponseLectureDTO {
                 "title: " + title + "\n\t" +
                 "description: " + description + "\n\t" +
                 "duration: " + duration + "\n\t" +
-                "price: " + price + "\n\t" +
                 "createdAt: " + createdAt + "\n\t" +
                 "updatedAt: " + updatedAt + "\n\t" +
                 "status: " + status + "\n\t" +

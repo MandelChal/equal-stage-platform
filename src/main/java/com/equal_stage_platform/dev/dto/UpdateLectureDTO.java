@@ -24,9 +24,6 @@ public class UpdateLectureDTO {
     @Schema(description = "Duration in minutes, **if not need to update - send null**", example = "90")
     private Integer duration; // Duration in minutes
 
-    @Schema(description = "Price of the lecture, **if not need to update - send null**", example = "100")
-    private Integer price;
-
     @Schema(description = "Status of the lecture, **if not need to update - send null**", example = "ON_AIR, IN_PROGRESS, FREEZE")
     @Pattern(regexp = "^(ON_AIR|IN_PROGRESS|FREEZE)$", message = "Invalid lecture status") //TODO: Check if this is correct
     private String lectureStatus;

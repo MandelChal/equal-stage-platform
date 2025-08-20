@@ -30,10 +30,6 @@ public class CreateLectureDTO {
     @NotNull(message = "Duration is required")
     private Integer duration; // Duration in minutes
 
-    @Schema(description = "Price of the lecture", example = "100")
-    @NotNull(message = "Price is required")
-    private Integer price;
-
     @Schema(description = "Status of the lecture", example = "ACTIVE")
     @NotNull(message = "Lecture status is required")
     private LectureStatus lectureStatus;

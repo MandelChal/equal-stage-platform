@@ -68,10 +68,8 @@ public class LectureService {
         if (lecturer.getStatus() != LecturerStatus.APPROVED) {
             throw new LectureException("Lecturer is not approved");
         }
-        Set<LectureTopic> topics = null;
-        Set<TargetAudience> targetAudiences = null;
-        topics = getTopicsFromIds(lectureData.getTopicsIds());
-        targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
+        Set<LectureTopic> topics = getTopicsFromIds(lectureData.getTopicsIds());
+        Set<TargetAudience> targetAudiences = getTargetAudiencesFromIds(lectureData.getTargetAudiencesIds());
         Lecture lecture = lectureRepository.save(new Lecture(lectureData, targetAudiences, topics));
         lecturer.enrollLecture(lecture);
         lecturerRepository.save(lecturer);
@@ -414,9 +412,6 @@ public class LectureService {
         }
         if (lectureData.getDuration() != null) {
             lecture.setDuration(lectureData.getDuration());
-        }
-        if (lectureData.getPrice() != null) {
-            lecture.setPrice(lectureData.getPrice());
         }
         if (lectureData.getLectureStatus() != null) {
             LectureStatus status = LectureStatus.valueOf(lectureData.getLectureStatus());

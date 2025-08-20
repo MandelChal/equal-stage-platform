@@ -39,9 +39,6 @@ public class Lecture extends BaseAuditableEntity {
     @Column(name = "duration", nullable = false)
     private Integer duration; // Duration in minutes
 
-    @Column(name = "price", nullable = false)
-    private Integer price;
-
     @Column(name = "rank", nullable = false)
     private Double rank;
 
@@ -93,7 +90,6 @@ public class Lecture extends BaseAuditableEntity {
         this.title = lectureData.getTitle();
         this.description = lectureData.getDescription();
         this.duration = lectureData.getDuration();
-        this.price = lectureData.getPrice();
         this.rank = 4.0;
         // Timestamps are now handled automatically by JPA auditing
         this.imageUrl = lectureData.getImageUrl();

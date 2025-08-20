@@ -68,3 +68,8 @@ src/main/java/com/equal_stage_platform/dev/EqualStagePlatformApplication2.java
 # === 2nd docker-compose.yml ===
 docker-compose.override.yml
 
+# === run_tests.sh ===
+run_tests.sh
+
+# === test-logs ===
+.test-logs/
